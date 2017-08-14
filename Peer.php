@@ -20,6 +20,7 @@
   require_once ('BitWire/Message/Transaction.php');
   require_once ('BitWire/Message/Block.php');
   require_once ('BitWire/Message/Headers.php');
+  require_once ('BitWire/Message/NotFound.php');
   
   class BitWire_Peer extends qcEvents_Hookable implements qcEvents_Interface_Stream_Consumer {
     /* Publish-Methods */
@@ -86,6 +87,18 @@
         
         $this->sendPayload ($Version);
       };
+    }
+    // }}}
+    
+    // {{{ isConnected
+    /**
+     * Check if this peer is conntected to Bitcoin-Network
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function isConnected () {
+      return ($this->peerInit && ($this->peerVersion !== null) && $this->Peer->isConnected ());
     }
     // }}}
     
@@ -197,6 +210,7 @@
           
           // Run the generic callback
           $this->___callback ('eventPipedStream', $this->Peer);
+          $this->___callback ('bitwireConnected');
         }
         
         return;
@@ -332,6 +346,7 @@
       $this->sendPayload (new BitWire_Message_GetData ($Inventory));
     }
     
+    protected function bitwireConnected () { }
     protected function messageReceived (BitWire_Message $Message) { }
     protected function payloadReceived (BitWire_Message_Payload $Payload) { }
     protected function eventReadable () { }
