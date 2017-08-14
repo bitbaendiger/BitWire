@@ -1,6 +1,6 @@
 <?PHP
 
-  require_once ('BitWire/Message/Inventory.php');
+  require_once ('BitWire/Message/Payload.php');
   require_once ('BitWire/Hash.php');
   
   class BitWire_Message_GetBlocks extends BitWire_Message_Payload {
