@@ -125,6 +125,51 @@
     }
     // }}}
     
+    // {{{ base58Decode
+    /**
+     * Convert a base-58 encoded string into its binary representation
+     * 
+     * @param string $Data
+     * 
+     * @access public
+     * @return string
+     **/
+    public static function base58Decode ($Data) {
+      static $Alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+      
+      // Make sure GMP is available
+      if (!extension_loaded ('gmp')) {
+        trigger_error ('Missing GMP-Extension for base58-encoding');
+      
+        return false;
+      }
+      
+      // Initialize
+      $Result = gmp_init (0);
+      $Base = gmp_init (58);
+      
+      // Decode
+      for ($i = 0; $i < strlen ($Data); $i++) {
+        if (($p = strpos ($Alphabet, $Data [$i])) === false)
+          return false;
+        
+        $Result = gmp_add (gmp_mul ($Result, $Base), gmp_init ($p));
+      }
+      
+      $Result = gmp_export ($Result);
+      
+      // Prefix with leading zeros
+      for ($i = 0; $i < strlen ($Data); $i++)
+        if ($Data [$i] == '1')
+          $Result = "\x00" . $Result;
+        else
+          break;
+      
+      // Return the result
+      return $Result;
+    }
+    // }}}
+    
     // {{{ __construct
     /**
      * Create a new transaction-script
