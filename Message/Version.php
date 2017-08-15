@@ -142,6 +142,18 @@
     }
     // }}}
     
+    // {{{ getUserAgent
+    /**
+     * Retrive the useragent
+     * 
+     * @access public
+     * @return string
+     **/
+    public function getUserAgent () {
+      return $this->UserAgent;
+    }
+    // }}}
+    
     // {{{ parseData
     /**
      * Parse data for this payload
