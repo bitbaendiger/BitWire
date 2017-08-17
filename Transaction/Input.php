@@ -1,14 +1,41 @@
 <?PHP
 
+  /**
+   * BitWire - Transaction Input
+   * Copyright (C) 2017 Bernd Holzmueller <bernd@quarxconnect.de>
+   * 
+   * This program is free software: you can redistribute it and/or modify
+   * it under the terms of the GNU General Public License as published by
+   * the Free Software Foundation, either version 3 of the License, or
+   * (at your option) any later version.
+   * 
+   * This program is distributed in the hope that it will be useful,
+   * but WITHOUT ANY WARRANTY; without even the implied warranty of
+   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   * GNU General Public License for more details.
+   * 
+   * You should have received a copy of the GNU General Public License
+   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   **/
+  
   require_once ('BitWire/Hash.php');
   require_once ('BitWire/Message/Payload.php');
   require_once ('BitWire/Transaction/Script.php');
   
   class BitWire_Transaction_Input {
+    /* Transaction containing this input */
     private $Transaction = null;
+    
+    /* Hash of UTXO assigned to this input */
     private $Hash = null;
-    private $Script = null;
+    
+    /* Index of UTXO assigned to this input */
     private $Index = 0;
+    
+    /* Signature-Script */
+    private $Script = null;
+    
+    /* Sequence of input */
     private $Sequence = 0;
     
     // {{{ __construct
@@ -117,15 +144,15 @@
     }
     // }}}
     
-    // {{{ getAddress
+    // {{{ getAddresses
     /**
-     * Retrive address of this input
+     * Retrive addresses of this input
      * 
      * @access public
-     * @return string
+     * @return array
      **/
-    public function getAddress () {
-      return $this->Script->getAddress ();
+    public function getAddresses () {
+      return $this->Script->getAddresses ();
     }
     // }}}
     

@@ -1,5 +1,25 @@
 <?PHP
 
+  /**
+   * BitWire - Transaction Script
+   * Copyright (C) 2017 Bernd Holzmueller <bernd@quarxconnect.de>
+   * 
+   * This program is free software: you can redistribute it and/or modify
+   * it under the terms of the GNU General Public License as published by
+   * the Free Software Foundation, either version 3 of the License, or
+   * (at your option) any later version.
+   * 
+   * This program is distributed in the hope that it will be useful,
+   * but WITHOUT ANY WARRANTY; without even the implied warranty of
+   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   * GNU General Public License for more details.
+   * 
+   * You should have received a copy of the GNU General Public License
+   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   **/
+  
+  require_once ('BitWire/Address.php');
+  
   class BitWire_Transaction_Script {
     /* Well-known Opcodes */
     const OP_PUSHDATA_8  = 76;
@@ -200,7 +220,7 @@
      **/
     function __debugInfo () {
       return array (
-        'address' => $this->getAddress (),
+        'addresses' => $this->getAddresses (),
         'script' => $this->__toString (),
       );
     }
@@ -233,51 +253,44 @@
     }
     // }}}
     
-    // {{{ getAddress
+    // {{{ getAddresses
     /**
-     * Try to read address of this script
+     * Try to read addresses of this script
      * 
      * @access public
      * @return string
      **/
-    public function getAddress ($forceNet = null) {
+    public function getAddresses ($forceNet = null) {
       // Find the address and prefix with type
       $Stack = $this->getStack ();
       
-      if ($this->isSignatureInput ()) {
+      if ($this->isSignatureInput ())
         return null;
-      } elseif ($this->isPublicKeyHashInput ())
-        $Address = ($forceNet !== null ? chr ($forceNet) : "\x00") . hash ('ripemd160', hash ('sha256', $Stack [1][1], true), true);
+      
+      if ($this->isPublicKeyHashInput ())
+        $Addresses = [[ 0, hash ('ripemd160', hash ('sha256', $Stack [1][1], true), true) ]];
       elseif ($this->isScriptHashInput ())
-        $Address = ($forceNet !== null ? chr ($forceNet) : "\x05") . hash ('ripemd160', hash ('sha256', $Stack [1][1], true), true);
+        $Addresses = [[ 5, hash ('ripemd160', hash ('sha256', $Stack [1][1], true), true) ]];
       elseif ($this->isMultiSignatureScriptInput ())
-        $Address = ($forceNet !== null ? chr ($forceNet) : "\x05") . hash ('ripemd160', hash ('sha256', $Stack [count ($Stack) - 1][1], true), true);
+        $Addresses = [[ 5, hash ('ripemd160', hash ('sha256', $Stack [count ($Stack) - 1][1], true), true) ]];
       elseif ($this->isPublicKeyOutput ())
-        $Address = ($forceNet !== null ? chr ($forceNet) : "\x00") . hash ('ripemd160', hash ('sha256', $Stack [0][1], true), true);
+        $Addresses = [[ 0, hash ('ripemd160', hash ('sha256', $Stack [0][1], true), true) ]];
       elseif ($this->isPublicKeyHashOutput ())
-        $Address = ($forceNet !== null ? chr ($forceNet) : "\x00") . $Stack [2][1];
+        $Addresses = [[ 0, $Stack [2][1] ]];
       elseif ($this->isScriptHashOutput ())
-        $Address = ($forceNet !== null ? chr ($forceNet) : "\x05") . $Stack [1][1];
+        $Addresses = [[ 5, $Stack [1][1] ]];
       elseif ($this->isMultiSignatureOutput ()) {
-        $Address = array ();
+        $Addresses = [ ];
         
         for ($i = 1; $i < count ($Stack) - 2; $i++)
-          $Address [] = ($forceNet !== null ? chr ($forceNet) : "\x00") . hash ('ripemd160', hash ('sha256', $Stack [$i][1], true), true);
+          $Addresses [] = [ 0, hash ('ripemd160', hash ('sha256', $Stack [$i][1], true), true) ];
       } else
         return null;
       
-      if (!is_array ($Address))
-        $Address = array ($Address);
+      foreach ($Addresses as $i=>$v)
+        $Addresses [$i] = new BitWire_Address ($v [0], $v [1]);
       
-      foreach ($Address as $i=>$v) {
-        // Generate Checksum
-        $Checksum = substr (hash ('sha256', hash ('sha256', $v, true), true), 0, 4);
-        
-        // Generate address
-        $Address [$i] = self::base58Encode ($v . $Checksum);
-      }
-      
-      return implode (' ', $Address);
+      return $Addresses;
     }
     // }}}
     
