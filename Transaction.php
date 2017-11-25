@@ -30,6 +30,68 @@
     }
     // }}}
     
+    // {{{ getVersion
+    /**
+     * Retrive the version of this transaction
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getVersion () {
+      return $this->Version;
+    }
+    // }}}
+    
+    // {{{ setVersion
+    /**
+     * Set the version of this transaction
+     * 
+     * @param int $Version
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function setVersion ($Version) {
+      if (($Version < 1) || ($Version > 0xFFFFFFFF))
+        return false;
+      
+      $this->Version = (int)$Version;
+      
+      return true;
+    }
+    // }}}
+    
+    // {{{ getLockTime
+    /**
+     * Retrive the lock-time of this transaction
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getLockTime () {
+      return $this->lockTime;
+    }
+    // }}}
+    
+    // {{{ setLockTime
+    /** 
+     * Set a lock-time for this transaction
+     * 
+     * @param int $LockTime
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function setLockTime ($LockTime) {
+      if (($LockTime < 1) || ($LockTime > 0xFFFFFFFF))
+        return false;
+      
+      $this->lockTime = (int)$LockTime;
+      
+      return true;
+    }
+    // }}}
+    
     // {{{ getInputs
     /**
      * Retrive all inputs of this transaction
@@ -42,6 +104,22 @@
     }
     // }}}
     
+    // {{{ setInputs
+    /**
+     * Set all inputs for this transaction
+     * 
+     * @param array $Inputs
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function setInputs (array $Inputs) {
+      $this->Inputs = $Inputs;
+      
+      return true;
+    }
+    // }}}
+    
     // {{{ getOutputs
     /**
      * Retrive all outputs of this transaction
@@ -51,6 +129,22 @@
      **/
     public function getOutputs () {
       return $this->Outputs;
+    }
+    // }}}
+    
+    // {{{ setOutputs
+    /**
+     * Set all outputs for this transaction
+     * 
+     * @param array $Outputs
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function setOutputs (array $Outputs) {
+      $this->Outputs = $Outputs;
+      
+      return true;
     }
     // }}}
     

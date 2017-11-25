@@ -21,6 +21,20 @@
     }
     // }}}
     
+    // {{{ setTransaction
+    /**
+     * Store a transaction on this payload
+     * 
+     * @param BitWire_Transaction $Transaction
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setTransaction (BitWire_Transaction $Transaction) {
+      $this->Transaction = $Transaction;
+    }
+    // }}}
+    
     // {{{ parseData
     /**
      * Try to parse data for this payload
