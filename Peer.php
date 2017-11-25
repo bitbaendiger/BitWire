@@ -10,6 +10,7 @@
   require_once ('BitWire/Message/Ping.php');
   require_once ('BitWire/Message/Pong.php');
   require_once ('BitWire/Message/SendHeaders.php');
+  require_once ('BitWire/Message/SendCompact.php');
   require_once ('BitWire/Message/FeeFilter.php');
   require_once ('BitWire/Message/GetBlocks.php');
   require_once ('BitWire/Message/GetHeaders.php');
@@ -316,8 +317,8 @@
       
       $this->Peer->addHook ('socketConnected', $this->peerCallbackConnected);
       
-      if ($Peer->isConnected ())
-        $this->peerCallbackConnected ($this->Peer);
+      # if ($Peer->isConnected ())
+      #   call_user_func ($this->peerCallbackConnected, $this->Peer);
     }
     // }}}
     
@@ -349,6 +350,8 @@
     protected function bitwireConnected () { }
     protected function messageReceived (BitWire_Message $Message) { }
     protected function payloadReceived (BitWire_Message_Payload $Payload) { }
+    protected function messageSent (BitWire_Message $Message) { }
+    protected function payloadSent (BitWire_Message_Payload $Payload) { }
     protected function eventReadable () { }
     protected function eventClosed () { }
     
