@@ -221,7 +221,7 @@
      **/
     public function parseData ($Data) {
       if (strlen ($Data) > 0) {
-        trigger_error ('Unparsed data on payload for ' . get_class ($this));
+        trigger_error ('Unparsed data on payload for ' . get_class ($this) . '/' . $this->Command);
         
         if ($this::PAYLOAD_HAS_DATA === false)
           return false;
