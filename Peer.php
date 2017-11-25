@@ -137,7 +137,7 @@
       while ($Length > 0) {
         // Make sure we have a pending message
         if (!$this->pendingMessage)
-          $this->pendingMessage = new BitWire_Message (null, $this->peerVersion);
+          $this->pendingMessage = new BitWire_Message (null, ($this->peerVersion ? $this->peerVersion->getVersion () : null));
         
         // Forward the data to next message
         if (($consumedLength = $this->pendingMessage->consume ($Data)) === false) {
@@ -188,7 +188,7 @@
         // Check if we learned peer's version
         if ($Payload instanceof BitWire_Message_Version) {
           // Store the version of the peer
-          $this->peerVersion = $Payload->getVersion ();
+          $this->peerVersion = $Payload;
         
           // Respond
           $this->sendPayload (new BitWire_Message_Version_Acknowledgement);
@@ -211,7 +211,7 @@
           
           // Run the generic callback
           $this->___callback ('eventPipedStream', $this->Peer);
-          $this->___callback ('bitwireConnected');
+          $this->___callback ('bitwireConnected', $this->peerVersion);
         }
         
         return;
@@ -344,10 +344,11 @@
     // }}}
     
     public function requestInventory (array $Inventory) {
+      var_dump ($Inventory);
       $this->sendPayload (new BitWire_Message_GetData ($Inventory));
     }
     
-    protected function bitwireConnected () { }
+    protected function bitwireConnected (BitWire_Message_Version $PeerVersion) { }
     protected function messageReceived (BitWire_Message $Message) { }
     protected function payloadReceived (BitWire_Message_Payload $Payload) { }
     protected function messageSent (BitWire_Message $Message) { }
