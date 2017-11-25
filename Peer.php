@@ -59,18 +59,20 @@
     /**
      * Create a new BitWire-Peer
      * 
+     * @param BitWire_Controller $Controller (optional)
      * @param int $Version (optional) Negotiate this protocol-version
+     * @param string $UserAgent (optional)
      * 
      * @access friendly
      * @return void
      **/
-    function __construct (BitWire_Controller $Controller = null, $Version = 70015) {
+    function __construct (BitWire_Controller $Controller = null, $Version = null, $UserAgent = null) {
       // Store controller and version
       $this->Controller = $Controller;
-      $this->Version = $Version;
+      $this->Version = ($Version === null ? 70015 : $Version);
       
       // Create Callback for Connected-Event at peer
-      $this->peerCallbackConnected = function (qcEvents_Interface_Stream $Peer) {
+      $this->peerCallbackConnected = function (qcEvents_Interface_Stream $Peer) use ($UserAgent) {
         // Make sure the peer is known
         if (!$this->validatePeer ($Peer)) {
           trigger_error ('Connect-Event for invalid peer received');
@@ -86,6 +88,9 @@
         $Version->setPort ($Peer->getLocalPort ());
         $Version->setPeerAddress ($Peer->getRemoteAddress ());
         $Version->setPeerPort ($Peer->getRemotePort ());
+        
+        if ($UserAgent !== null)
+          $Version->setUserAgent ($UserAgent);
         
         $this->sendPayload ($Version);
       };
@@ -144,6 +149,19 @@
         $Address = '[' . $this->Peer::ip6fromBinary ($this->Peer::ip6toBinary ($Address)) . ']';
       
       return $Address . ':' . $this->Peer->getRemotePort ();
+    }
+    // }}}
+    
+    // {{{ getPeerUserAgent
+    /**
+     * Retrive the user-agent used at the peer
+     * 
+     * @access public
+     * @return string
+     **/
+    public function getPeerUserAgent () {
+      if ($this->peerVersion)
+        return $this->peerVersion->getUserAgent ();
     }
     // }}}
     
@@ -315,6 +333,8 @@
      * @return void
      **/
     public function close (callable $Callback = null, $Private = null) {
+      $this->___callback ('eventClosed');
+      
       if ($Callback)
         call_user_func ($Callback, $this, $Private);
     }

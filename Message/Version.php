@@ -40,7 +40,7 @@
     private $Nonce = 0x0000000000000000;
     
     /* Connecting User-Agent (merely since 60000) */
-    private $UserAgent = '/BitWire:0.1/';
+    private $UserAgent = '/BitWire:0.2/';
     
     /* Known height of block-chain */
     private $StartHeight = 0x00000000;
@@ -151,6 +151,22 @@
      **/
     public function getUserAgent () {
       return $this->UserAgent;
+    }
+    // }}}
+    
+    // {{{ setUserAgent
+    /**
+     * Set a user-agent
+     * 
+     * @param string $Agent
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function setUserAgent ($Agent) {
+      $this->UserAgent = $Agent;
+      
+      return true;
     }
     // }}}
     
