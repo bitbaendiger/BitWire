@@ -9,6 +9,7 @@
   require_once ('BitWire/Message/Version/Acknowledgement.php');
   require_once ('BitWire/Message/Ping.php');
   require_once ('BitWire/Message/Pong.php');
+  require_once ('BitWire/Message/Reject.php');
   require_once ('BitWire/Message/SendHeaders.php');
   require_once ('BitWire/Message/SendCompact.php');
   require_once ('BitWire/Message/FeeFilter.php');
@@ -114,6 +115,35 @@
      **/
     private function validatePeer (qcEvents_Interface_Stream $Peer) {
       return ($Peer === $this->Peer);
+    }
+    // }}}
+    
+    // {{{ getPeerSocket
+    /**
+     * Retrive the underlying socket-connection of this peer
+     * 
+     * @access public
+     * @return qcEvents_Socket
+     **/
+    public function getPeerSocket () {
+      return $this->Peer;
+    }
+    // }}}
+    
+    // {{{ getPeerAddress
+    /**
+     * Retrive the full address to this peer
+     * 
+     * @access public
+     * @return string
+     **/
+    public function getPeerAddress () {
+      $Address = $this->Peer->getRemoteAddress ();
+      
+      if ($this->Peer::isIPv4 ($Address))
+        $Address = '[' . $this->Peer::ip6fromBinary ($this->Peer::ip6toBinary ($Address)) . ']';
+      
+      return $Address . ':' . $this->Peer->getRemotePort ();
     }
     // }}}
     
@@ -343,10 +373,19 @@
     }
     // }}}
     
+    // {{{ requestInventory
+    /**
+     * Request inventory from this peer
+     * 
+     * @param array $Inventory
+     * 
+     * @access public
+     * @return void
+     **/
     public function requestInventory (array $Inventory) {
-      var_dump ($Inventory);
       $this->sendPayload (new BitWire_Message_GetData ($Inventory));
     }
+    // }}}
     
     protected function bitwireConnected (BitWire_Message_Version $PeerVersion) { }
     protected function messageReceived (BitWire_Message $Message) { }
