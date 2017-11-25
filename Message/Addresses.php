@@ -60,9 +60,9 @@
       for ($i = 0; $i < $Count; $i++) {
         // Try to unpack the data
         if ($Version >= 31402)
-          $Values = unpack ('Vtimestamp/Pservices/a16address/vport', substr ($Data, $i * 30, 30));
+          $Values = unpack ('Vtimestamp/Pservices/a16address/nport', substr ($Data, $i * 30, 30));
         else
-          $Values = unpack ('Pservices/a16address/vport', substr ($Data, $i * 26, 26));
+          $Values = unpack ('Pservices/a16address/nport', substr ($Data, $i * 26, 26));
         
         if (!$Values)
           return false;
@@ -95,9 +95,9 @@
       // Output each entry
       foreach ($this->Addresses as $Address)
         if ($Version >= 31402)
-          $Buffer .= pack ('VPa16v', $Address ['timestamp'], $Address ['services'], qcEvents_Socket::ip6toBinary ($Address ['address']), $Address ['port']);
+          $Buffer .= pack ('VPa16n', $Address ['timestamp'], $Address ['services'], qcEvents_Socket::ip6toBinary ($Address ['address']), $Address ['port']);
         else
-          $Buffer .= pack ('Pa16v', $Address ['services'], qcEvents_Socket::ip6toBinary ($Address ['address']), $Address ['port']);
+          $Buffer .= pack ('Pa16n', $Address ['services'], qcEvents_Socket::ip6toBinary ($Address ['address']), $Address ['port']);
       
       // Return the result
       return $Buffer;
