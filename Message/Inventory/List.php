@@ -4,6 +4,12 @@
   require_once ('BitWire/Hash.php');
   
   abstract class BitWire_Message_Inventory_List extends BitWire_Message_Payload {
+    /* Known inventory-types */
+    const TYPE_TRANSACTION = 0x01;
+    const TYPE_BLOCK = 0x02;
+    const TYPE_BLOCK_FILTERED = 0x03;
+    
+    /* Inventory of this payload */
     private $Inventory = array ();
     
     // {{{ __construct
