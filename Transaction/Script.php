@@ -294,14 +294,22 @@
     }
     // }}}
     
+    // {{{ isSignatureInput
+    /**
+     * Check if the script is a signature-input
+     * 
+     * @access public
+     * @return bool
+     **/
     public function isSignatureInput () {
       $Stack = $this->getStack ();
       
-      if (count ($Stack) != 1)
+      if ((count ($Stack) != 1) || !isset ($Stack [0][1]))
         return false;
       
       return $this->isSignature ($Stack [0][1]);
     }
+    // }}}
     
     // {{{ isPublicKeyHashInput
     /**
@@ -410,7 +418,7 @@
       }
       
       // Create an own script from last Stack
-      $Script = new $this ($this->Transaction, $Stack [$Length - 1][1]);
+      $Script = new $this ($this->Parent, $Stack [$Length - 1][1]);
       $sStack = $Script->getStack ();
       
       // Check the script
