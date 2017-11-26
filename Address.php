@@ -22,6 +22,9 @@
   
   class BitWire_Address {
     /* Type of this address */
+    const TYPE_BITCOIN_P2PKH = 0x00;
+    const TYPE_LITECOIN_P2PKH = 0x30;
+    
     private $Type = 0x00;
     
     /* RIPEMD160/SHA256 for this address */
