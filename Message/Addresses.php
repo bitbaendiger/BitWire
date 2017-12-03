@@ -1,6 +1,25 @@
 <?PHP
 
+  /**
+   * BitWire - Bitcoin Address Message Payload
+   * Copyright (C) 2017 Bernd Holzmueller <bernd@quarxconnect.de>
+   * 
+   * This program is free software: you can redistribute it and/or modify
+   * it under the terms of the GNU General Public License as published by
+   * the Free Software Foundation, either version 3 of the License, or
+   * (at your option) any later version.
+   * 
+   * This program is distributed in the hope that it will be useful,
+   * but WITHOUT ANY WARRANTY; without even the implied warranty of
+   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   * GNU General Public License for more details.
+   * 
+   * You should have received a copy of the GNU General Public License
+   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   **/
+  
   require_once ('qcEvents/Socket.php');
+  require_once ('BitWire/Controller/Address.php');
   
   class BitWire_Message_Addresses extends BitWire_Message_Payload {
     const PAYLOAD_COMMAND = 'addr';
@@ -67,11 +86,13 @@
         if (!$Values)
           return false;
         
-        // Convert IP-Address into something human readable
-        $Values ['address'] = qcEvents_Socket::ip6fromBinary ($Values ['address']);
-        
         // Push to addresses
-        $this->Addresses [] = $Values;
+        $this->Addresses [] = new BitWire_Controller_Address (
+          qcEvents_Socket::ip6fromBinary ($Values ['address']),
+          $Values ['port'],
+          $Values ['services'],
+          (isset ($Values ['timestamp']) ? $Values ['timestamp'] : null)
+        );
       }
       
       return true;
