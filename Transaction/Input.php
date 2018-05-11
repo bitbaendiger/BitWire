@@ -171,8 +171,11 @@
       // Check the length of the data
       $Length = strlen ($Data);
       
-      if ($Length < $Offset + 40)
+      if ($Length < $Offset + 40) {
+        trigger_error ('Input too short');
+        
         return false;
+      }
       
       // Read Hash and index
       $Values = unpack ('a32hash/Vindex', substr ($Data, $Offset, 36));
@@ -183,22 +186,34 @@
       $this->Index = $Values ['index'];
       
       // Try to read the script
-      if (($sSize = BitWire_Message_Payload::readCompactSize ($Data, $ssSize, $Offset)) === false)
+      if (($sSize = BitWire_Message_Payload::readCompactSize ($Data, $ssSize, $Offset)) === false) {
+        trigger_error ('Failed to read script-size');
+        
         return false;
+      }
       
       if ($this->isCoinbase ()) {
-        if ($sSize > 101)
+        if ($sSize > 101) {
+          trigger_error ('Coinbase too big');
+          
           return false;
+        }
         
         # TODO?
-      } elseif ($sSize > 10003)
+      } elseif ($sSize > 10003) {
+        trigger_error ('Input-script too big: ' . $sSize);
+        
         return false;
+      }
       
       $Size += $ssSize;
       $Offset += $ssSize;
       
-      if ($Length < $Offset + $sSize + 4)
+      if ($Length < $Offset + $sSize + 4) {
+        trigger_error ('Short read');
+        
         return false;
+      }
       
       $this->Script = new BitWire_Transaction_Script ($this, substr ($Data, $Offset, $sSize));
       
