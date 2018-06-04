@@ -6,6 +6,12 @@
   require_once ('BitWire/Interface/Hashable.php');
   
   class BitWire_Block implements BitWire_Interface_Hashable {
+    /* Type of this block */
+    const TYPE_POW = 0;
+    const TYPE_POS = 1;
+    
+    private $Type = BitWire_Block::TYPE_POW;
+    
     /* Version of this block */
     private $Version = 0x00000000;
     
@@ -24,6 +30,9 @@
     /* Nonce of this block */
     private $Nonce = 0x00000000;
     
+    /* Signature of PoS-Blocks */
+    private $Signature = '';
+    
     /* Transactions stored on this block */
     private $Transactions = array ();
     
@@ -34,9 +43,12 @@
      * @access friendly
      * @return void
      **/
-    function __construct () {
+    function __construct ($Type = null) {
       $this->PreviousHash = new BitWire_Hash;
       $this->MerkleRootHash = new BitWire_Hash;
+      
+      if ($Type !== null)
+        $this->Type = $Type;
     }
     // }}}
     
@@ -48,7 +60,7 @@
      * @return array
      **/
     function __debugInfo () {
-      return array (
+      $Info = array (
         'version' => sprintf ('0x%08x', $this->Version),
         'timestamp' => date ('Y-m-d H:i:s', $this->Timestamp),
         'hash' => strval ($this->getHash ()),
@@ -58,6 +70,11 @@
         'nonce' => $this->Nonce,
         '#txs' => count ($this->Transactions),
       );
+      
+      if ($this->Type == $this::TYPE_POS)
+        $Info ['Signature'] = bin2hex ($this->Signature);
+      
+      return $Info;
     }
     // }}}
     
@@ -254,6 +271,24 @@
     }
     // }}}
     
+    // {{{ addTransaction
+    /**
+     * Append a transaction to this block
+     * 
+     * @param BitWire_Transaction $Tx
+     * 
+     * @access public
+     * @return void
+     **/
+    public function addTransaction (BitWire_Transaction $Tx) {
+      // Append to transactions
+      $this->Transactions [] = $Tx;
+      
+      // Refresh merkle-root-hash
+      $this->setMerkleRootHash ($this->getMerkleRootHash (true));
+    }
+    // }}}
+    
     // {{{ getHash
     /**
      * Retrive a hash for this object
@@ -291,8 +326,11 @@
       // Check the length of input
       $Length = strlen ($Data);
       
-      if ($Length < 80)
+      if ($Length < 80) {
+        trigger_error ('Input too short');
+        
         return false;
+      }
       
       // Parse the header
       $Values = unpack ('Vversion/a32hash/a32roothash/Vtimestamp/Vthreshold/Vnonce', $Data);
@@ -304,8 +342,11 @@
       $this->Nonce = $Values ['nonce'];
       
       // Read the number of transactions
-      if (($Count = BitWire_Message_Payload::readCompactSize ($Data, $Size, 80)) === false)
+      if (($Count = BitWire_Message_Payload::readCompactSize ($Data, $Size, 80)) === false) {
+        trigger_error ('Failed to read number of transactions on block');
+        
         return false;
+      }
       
       $Offset = 80 + $Size;
       
@@ -317,8 +358,11 @@
         $Transaction = new BitWire_Transaction;
         
         // Try to parse the transaction
-        if (!$Transaction->parseData ($Data, $Size, $Offset))
+        if (!$Transaction->parseData ($Data, $Size, $Offset)) {
+          trigger_error ('Failed to read transaction #' . $i);
+          
           return false;
+        }
         
         // Double-check the transaction
         if (defined ('BITWIRE_DEBUG') && BITWIRE_DEBUG) {
@@ -349,10 +393,20 @@
         $Offset += $Size;
       }
       
-      if ($Offset < $Length)
-        return false;
+      // Read Signature of PoS-Blocks
+      if ($this->Type == $this::TYPE_POS) {
+        if (($Signature = BitWire_Message_Payload::readCompactString ($Data, $Size, $Offset)) === false) {
+          trigger_error ('Failed to read signature of PoS-Block');
+          
+          return false;
+        } else
+          $this->Signature = $Signature;
+        
+        $Offset += $Size;
+      }
       
-      return true;
+      // Check if all data was consumed
+      return ($Offset == $Length);
     }
     // }}}
     
@@ -372,6 +426,10 @@
       // Write out transactions
       foreach ($this->Transactions as $Transaction)
         $Buffer .= $Transaction->toBinary ();
+      
+      // Append signature
+      if ($this->Type == $this::TYPE_POS)
+        $Buffer .= BitWire_Message_Payload::toCompactString ($this->Signature);
       
       return $Buffer;
     }
