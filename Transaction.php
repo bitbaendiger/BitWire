@@ -27,6 +27,10 @@
     /* Outputs of transaction */
     private $Outputs = array ();
     
+    /* Comment of this transaction */
+    private $hasComment = false;
+    private $Comment = null;
+    
     // {{{ __construct
     /**
      * Create a new transaction
@@ -36,9 +40,12 @@
      * @access friendly
      * @return void
      **/
-    function __construct ($Type = null) {
+    function __construct ($Type = null, $hasComment = null) {
       if ($Type !== null)
         $this->Type = $Type;
+      
+      if ($hasComment !== null)
+        $this->hasComment = $hasComment;
     }
     // }}}
     
@@ -277,9 +284,22 @@
       // Parse locktime
       $Values = unpack ('Vlocktime', substr ($Data, $Offset, 4));
       $this->lockTime = array_shift ($Values);
+      $Offset += 4;
+      
+      // Check for a comment
+      if ($this->hasComment) {
+        if (($Comment = BitWire_Message_Payload::readCompactString ($Data, $Size, $Offset)) === false) {
+          trigger_error ('Failed to read comment from transaction');
+
+          return false;
+        } else
+          $this->Comment = $Comment;
+
+        $Offset += $Size;
+      }
       
       // Write out consumed length
-      $Length = $Offset + 4 - $Start;
+      $Length = $Offset - $Start;
       
       // Indicate success
       return true;
@@ -314,6 +334,10 @@
       
       // Append Locktime
       $Buffer .= pack ('V', $this->lockTime);
+      
+      // Append comment
+      if ($this->hasComment)
+        $Buffer .= BitWire_Message_Payload::toCompactString ($this->Comment);
       
       return $Buffer;
     }

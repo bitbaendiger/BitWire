@@ -36,19 +36,28 @@
     /* Transactions stored on this block */
     private $Transactions = array ();
     
+    /* Do transactions have comments */
+    private $hasTxComments = false;
+    
     // {{{ __construct
     /**
      * Create a new block
      * 
+     * @param enum $Type (optional)
+     * @param bool $hasTxComments (optional)
+     * 
      * @access friendly
      * @return void
      **/
-    function __construct ($Type = null) {
+    function __construct ($Type = null, $hasTxComments = null) {
       $this->PreviousHash = new BitWire_Hash;
       $this->MerkleRootHash = new BitWire_Hash;
       
       if ($Type !== null)
         $this->Type = $Type;
+      
+      if ($hasTxComments !== null)
+        $this->hasTxComments = $hasTxComments;
     }
     // }}}
     
@@ -355,7 +364,7 @@
       
       for ($i = 0; $i < $Count; $i++) {
         // Create a new transaction
-        $Transaction = new BitWire_Transaction;
+        $Transaction = new BitWire_Transaction ($this->Type, $this->hasTxComments);
         
         // Try to parse the transaction
         if (!$Transaction->parseData ($Data, $Size, $Offset)) {
