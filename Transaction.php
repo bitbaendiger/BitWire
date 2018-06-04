@@ -6,9 +6,18 @@
   require_once ('BitWire/Transaction/Script.php');
   
   class BitWire_Transaction extends BitWire_Hashable {
+    /* Type of transaction */
+    const TYPE_POW = 0;
+    const TYPE_POS = 1;
+    
+    private $Type = BitWire_Transaction::TYPE_POW;
+    
     /* Version of transaction */
     private $Version = 1;
     
+    /* Time of transaction (for PoS-Transactions) */
+    private $Time = 0;
+        
     /* Locktime of transaction */
     private $lockTime = 0;
     
@@ -17,6 +26,21 @@
     
     /* Outputs of transaction */
     private $Outputs = array ();
+    
+    // {{{ __construct
+    /**
+     * Create a new transaction
+     * 
+     * @param enum $Type (optional)
+     * 
+     * @access friendly
+     * @return void
+     **/
+    function __construct ($Type = null) {
+      if ($Type !== null)
+        $this->Type = $Type;
+    }
+    // }}}
     
     // {{{ isCoinbase
     /**
@@ -164,12 +188,34 @@
       $Start = $Offset;
       $Length = strlen ($Data);
       
-      if ($Length < $Offset + 5)
-        return false;
-      
-      $Values = unpack ('Vversion', substr ($Data, $Offset, 4));
-      $Offset += 4;
-      $this->Version = $Values ['version'];
+      // Read start of PoS-Transaction
+      if ($this->Type == $this::TYPE_POS) {
+        if ($Length < $Offset + 9) {
+          trigger_error ('PoS-Transaction too short');
+          
+          return false;
+        }
+        
+        $Values = unpack ('Vversion/Vtime', substr ($Data, $Offset, 8));
+        $Offset += 8;
+        
+        $this->Version = $Values ['version'];
+        $this->Time = $Values ['time'];
+        
+      // Read start of PoW-Transaction
+      } else {
+        if ($Length < $Offset + 5) {
+          trigger_error ('PoW-Transaction too short');
+          
+          return false;
+        }
+        
+        $Values = unpack ('Vversion', substr ($Data, $Offset, 4));
+        $Offset += 4;
+        
+        $this->Version = $Values ['version'];
+        $this->Time = null;
+      }
       
       // Read number of inputs on transaction
       if (($Count = BitWire_Message_Payload::readCompactSize ($Data, $Size, $Offset)) === false) {
@@ -248,11 +294,17 @@
      * @return string
      **/
     public function toBinary () {
-      $Buffer = pack ('V', $this->Version) . BitWire_Message_Payload::toCompactSize (count ($this->Inputs));
+      // Generate start of transaction
+      if ($this->Type == $this::TYPE_POS)
+        $Buffer = pack ('VV', $this->Version, $this->Time) . BitWire_Message_Payload::toCompactSize (count ($this->Inputs));
+      else
+        $Buffer = pack ('V', $this->Version) . BitWire_Message_Payload::toCompactSize (count ($this->Inputs));
       
+      // Append Inputs
       foreach ($this->Inputs as $Input)
         $Buffer .= $Input->toBinary ();
       
+      // Append Outputs
       $Buffer .= BitWire_Message_Payload::toCompactSize (count ($this->Outputs));
       
       foreach ($this->Outputs as $Output)
@@ -260,6 +312,7 @@
           pack ('P', $Output ['amount']) .
           BitWire_Message_Payload::toCompactString ($Output ['script']->toBinary ());
       
+      // Append Locktime
       $Buffer .= pack ('V', $this->lockTime);
       
       return $Buffer;
