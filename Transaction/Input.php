@@ -45,7 +45,7 @@
      * @access friendly
      * @return void
      **/
-    function __construct (BitWire_Transaction $Transaction) {
+    function __construct (BitWire_Transaction $Transaction = null) {
       $this->Transaction = $Transaction;
       $this->Hash = new BitWire_Hash;
       $this->Script = new BitWire_Transaction_Script ($this);
@@ -91,7 +91,7 @@
      * @access public
      * @return BitWire_Transaction
      **/
-    public function getTransaction () {
+    public function getTransaction () : ?BitWire_Transaction {
       return $this->Transaction;
     }
     // }}}
