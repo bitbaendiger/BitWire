@@ -86,7 +86,7 @@
      * @return bool
      **/
     public function isConnected () {
-      return ($this->peerInit && ($this->peerVersion !== null) && $this->Peer->isConnected ());
+      return ($this->peerInit && ($this->peerVersion !== null) && $this->Peer && $this->Peer->isConnected ());
     }
     // }}}
     
@@ -124,6 +124,9 @@
      * @return string
      **/
     public function getPeerAddress () {
+      if (!$this->Peer)
+        return null;
+      
       $Address = $this->Peer->getRemoteAddress ();
       
       if ($this->Peer::isIPv4 ($Address))
@@ -198,9 +201,7 @@
         } elseif ($consumedLength < $Length) {
           trigger_error ('Message did not consume all bytes but is still not ready - discarding');
           
-          $this->pendingMessage = null;
-          
-          return;
+          return ($this->pendingMessage = null);
         }
         
         // Move forward
@@ -289,29 +290,22 @@
      * Write out payload to peer
      * 
      * @param BitWire_Message_Payload $Payload
-     * @param callable $Callback (optional)
-     * @param mixed $Private (optional)
      * 
      * @access public
-     * @return void
+     * @return qcEvents_Promise
      **/
-    public function sendPayload (BitWire_Message_Payload $Payload, callable $Callback = null, $Private = null) {
+    public function sendPayload (BitWire_Message_Payload $Payload, callable $Callback = null, $Private = null) : qcEvents_Promise {
       // Create envelope
       $Message = new BitWire_Message ($Payload, $this->Version, $this->Network);
       
       // Write out to peer
-      $this->Peer->write ($Message->toBinary (), function ($Peer, $Status) use ($Message, $Payload, $Callback, $Private) {
-        // Raise the specific callback if there is one
-        $this->___raiseCallback ($Callback, $Status, $Private);
-        
-        // Only proceed on success
-        if (!$Status)
-          return;
-        
-        // Raise unspecific callbacks
-        $this->___callback ('payloadSent', $Payload);
-        $this->___callback ('messageSent', $Message);
-      });
+      return $this->Peer->write ($Message->toBinary ())->then (
+        function () use ($Message, $Payload) {
+          // Raise unspecific callbacks
+          $this->___callback ('payloadSent', $Payload);
+          $this->___callback ('messageSent', $Message);
+        }
+      );
     }
     // }}}
     
