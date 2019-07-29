@@ -25,6 +25,9 @@
   require_once ('BitWire/Message/Headers.php');
   require_once ('BitWire/Message/NotFound.php');
   
+  require_once ('BitWire/Message/DarkSend/ElectionEntryPing.php');
+  require_once ('BitWire/Message/Masternode/SyncStatusCount.php');
+  
   class BitWire_Peer extends qcEvents_Hookable implements qcEvents_Interface_Stream_Consumer {
     /* Publish-Methods */
     const PUBLISH_INVENTORY = 0;
@@ -40,6 +43,9 @@
     
     /* Network for this peer (see BitWire_Message) */
     private $Network = null;
+    
+    /* Custom user-agent to use */
+    private $UserAgent = null;
     
     /* Stream-Interface to peer */
     private $Peer = null;
@@ -75,6 +81,7 @@
       $this->Controller = $Controller;
       $this->Version = ($Version === null ? 70015 : $Version);
       $this->Network = ($Network === null ? BitWire_Message::BITCOIN_MAIN : $Network);
+      $this->UserAgent = $UserAgent;
     }
     // }}}
     
@@ -359,9 +366,8 @@
               $Version->setPeerAddress ($Peer->getRemoteAddress ());
               $Version->setPeerPort ($Peer->getRemotePort ());
               
-              # TODO
-              # if ($UserAgent !== null)
-              #  $Version->setUserAgent ($UserAgent);
+              if ($this->UserAgent !== null)
+                $Version->setUserAgent ($this->UserAgent);
               
               $this->sendPayload ($Version);
             }

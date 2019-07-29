@@ -150,6 +150,20 @@
     }
     // }}}
     
+    // {{{ writeCompactString
+    /**
+     * Convert a string to a binary compact string
+     * 
+     * @param string $Value
+     * 
+     * @access public
+     * @return string
+     **/
+    public static function writeCompactString ($Value) {
+      return self::toCompactSize (strlen ($Value)) . $Value;
+    }
+    // }}}
+    
     // {{{ toCompactSize
     /**
      * Convert an integer to compact-size
@@ -237,6 +251,20 @@
     }
     // }}}
     
+    // {{{ writeBoolean
+    /**
+     * Convert a boolean-value to binary
+     * 
+     * @param bool $Value
+     * 
+     * @access public
+     * @return string
+     **/
+    public static function writeBoolean ($Value) {
+      return chr ($Value ? 0x01 : 0x00);
+    }
+    // }}}
+    
     // {{{ readUInt16
     /**
      * Safely read an unsigned 16-bit Integer from an input-buffer
@@ -283,6 +311,20 @@
     }
     // }}}
     
+    // {{{ writeUInt32
+    /**
+     * Write an unsigned 32-bit integer
+     * 
+     * @param int $Value
+     * 
+     * @access public
+     * @return string
+     **/
+    public static function writeUInt32 ($Value) {
+      return pack ('V', $Value);
+    }
+    // }}}
+    
     // {{{ readUInt64
     /**
      * Safely read an unsigned 64-bit Integer from an input-buffer
@@ -306,6 +348,20 @@
     }
     // }}}
     
+    // {{{ writeUInt64
+    /**
+     * Write an unsigned 64-bit integer
+     * 
+     * @param int $Value
+     * 
+     * @access public
+     * @return string
+     **/
+    public static function writeUInt64 ($Value) {
+      return pack ('P', $Value);
+    }
+    // }}}
+    
     // {{{ readCTxIn
     /**
      * Safely read an Transaction-Input from an input-buffer
@@ -324,6 +380,20 @@
         return null;
       
       return $Input;
+    }
+    // }}}
+    
+    // {{{ writeCTxIn
+    /**
+     * Write a transaction-input to binary
+     * 
+     * @param BitWire_Transaction_Input $Input
+     * 
+     * @access public
+     * @return string
+     **/
+    public static function writeCTxIn (BitWire_Transaction_Input $Input) {
+      return $Input->toBinary ();
     }
     // }}}
     
