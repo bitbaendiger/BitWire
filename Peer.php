@@ -2,6 +2,7 @@
 
   require_once ('qcEvents/Interface/Stream/Consumer.php');
   require_once ('qcEvents/Hookable.php');
+  require_once ('qcEvents/Promise.php');
   
   // BitWire Messages / Payloads
   require_once ('BitWire/Message.php');
@@ -70,30 +71,6 @@
       // Store controller and version
       $this->Controller = $Controller;
       $this->Version = ($Version === null ? 70015 : $Version);
-      
-      // Create Callback for Connected-Event at peer
-      $this->peerCallbackConnected = function (qcEvents_Interface_Stream $Peer) use ($UserAgent) {
-        // Make sure the peer is known
-        if (!$this->validatePeer ($Peer)) {
-          trigger_error ('Connect-Event for invalid peer received');
-          
-          $Peer->removeHook ('socketConnected', $this->peerCallbackConnected);
-          
-          return;
-        }
-        
-        // Send out version
-        $Version = new BitWire_Message_Version;
-        $Version->setAddress ($Peer->getLocalAddress ());
-        $Version->setPort ($Peer->getLocalPort ());
-        $Version->setPeerAddress ($Peer->getRemoteAddress ());
-        $Version->setPeerPort ($Peer->getRemotePort ());
-        
-        if ($UserAgent !== null)
-          $Version->setUserAgent ($UserAgent);
-        
-        $this->sendPayload ($Version);
-      };
     }
     // }}}
     
@@ -149,6 +126,18 @@
         $Address = '[' . $this->Peer::ip6fromBinary ($this->Peer::ip6toBinary ($Address)) . ']';
       
       return $Address . ':' . $this->Peer->getRemotePort ();
+    }
+    // }}}
+    
+    // {{{ getPeerVersion
+    /**
+     * Retrive the version-message of this peer
+     * 
+     * @access public
+     * @return BitWire_Message_Version
+     **/
+    public function getPeerVersion () {
+      return $this->peerVersion;
     }
     // }}}
     
@@ -253,7 +242,7 @@
         if ($this->peerInit && ($this->peerVersion !== null)) {
           // Check for a registered callback
           if ($this->peerInitCallback) {
-            $this->___raiseCallback ($this->peerInitCallback [0], $this->Peer, $this, true, $this->peerInitCallback [1]);
+            call_user_func ($this->peerInitCallback [0]);
             $this->peerInitCallback = null;
           }
           
@@ -330,13 +319,12 @@
      * @param mixed $Private (optional) Private data to pass to the callback
      * 
      * @access public
-     * @return void
+     * @return qcEvents_Promise
      **/
-    public function close (callable $Callback = null, $Private = null) {
+    public function close () : qcEvents_Promise {
       $this->___callback ('eventClosed');
       
-      if ($Callback)
-        call_user_func ($Callback, $this, $Private);
+      return qcEvents_Promise::resolve ();
     }
     // }}}
     
@@ -345,30 +333,55 @@
      * Setup ourself to consume data from a stream
      * 
      * @param qcEvents_Interface_Source $Source
-     * @param callable $Callback (optional) Callback to raise once the pipe is ready
-     * @param mixed $Private (optional) Any private data to pass to the callback
-     * 
-     * The callback will be raised in the form of
-     *  
-     *   function (qcEvents_Interface_Stream $Source, qcEvents_Interface_Stream_Consumer $Destination, bool $Status, mixed $Private = null) { }
      * 
      * @access public
-     * @return callable
+     * @return qcEvents_Promise
      **/
-    public function initStreamConsumer (qcEvents_Interface_Stream $Peer, callable $Callback = null, $Private = null) {
-      // Store our new peer
-      $this->Peer = $Peer;
-      $this->peerInit = false;
-      $this->peerVersion = null;
-      
-      // Register callbacks
-      if ($Callback)
-        $this->peerInitCallback = array ($Callback, $Private);
-      
-      $this->Peer->addHook ('socketConnected', $this->peerCallbackConnected);
-      
-      # if ($Peer->isConnected ())
-      #   call_user_func ($this->peerCallbackConnected, $this->Peer);
+    public function initStreamConsumer (qcEvents_Interface_Stream $Peer) : qcEvents_Promise {
+      return new qcEvents_Promise (
+        function (callable $Resolve, callable $Reject) use ($Peer) {
+          // Store our new peer
+          $this->Peer = $Peer;
+          $this->peerInit = false;
+          $this->peerVersion = null;
+          
+          // Register callbacks
+          $this->peerInitCallback = array ($Resolve, $Reject);
+          
+          ($Peer->isConnected () ? qcEvents_Promise::resolve () : $this->Peer->once ('socketConnected'))->then (
+            function () use ($Peer) {
+              // Make sure the peer is still valid
+              if ($Peer !== $this->Peer)
+                return trigger_error ('Connect-Event for invalid peer received');
+              
+              // Send out version
+              $Version = new BitWire_Message_Version;
+              $Version->setAddress ($Peer->getLocalAddress ());
+              $Version->setPort ($Peer->getLocalPort ());
+              $Version->setPeerAddress ($Peer->getRemoteAddress ());
+              $Version->setPeerPort ($Peer->getRemotePort ());
+              
+              # TODO
+              # if ($UserAgent !== null)
+              #  $Version->setUserAgent ($UserAgent);
+              
+              $this->sendPayload ($Version);
+            }
+          );
+          
+          $Peer->getEventBase ()->addTimeout (5)->then (
+            function () use ($Peer) {
+              // Check if we are connected by now
+              if ($this->isConnected () || !$this->peerInitCallback || ($Peer !== $this->Peer))
+                return;
+              
+              // Fail to process
+              call_user_func ($this->peerInitCallback [1], 'Timeout reached');
+              $this->peerInitCallback = null;
+            }
+          );
+        }
+      );
     }
     // }}}
     
@@ -377,19 +390,12 @@
      * Callback: A source was removed from this consumer
      * 
      * @param qcEvents_Interface_Source $Source
-     * @param callable $Callback (optional) Callback to raise once the pipe is ready
-     * @param mixed $Private (optional) Any private data to pass to the callback
-     * 
-     * The callback will be raised in the form of 
-     * 
-     *   function (qcEvents_Interface_Source $Source, qcEvents_Interface_Stream_Consumer $Destination, bool $Status, mixed $Private = null) { }
      * 
      * @access public
-     * @return void
+     * @return qcEvents_Promise
      **/
-    public function deinitConsumer (qcEvents_Interface_Source $Source, callable $Callback = null, $Private = null) {
-      if ($Callback)
-        call_user_func ($Callback, $Source, $this, true, $Private);
+    public function deinitConsumer (qcEvents_Interface_Source $Source) : qcEvents_Promise {
+      return qcEvents_Promise::resolve ();
     }
     // }}}
     
