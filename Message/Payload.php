@@ -34,7 +34,7 @@
     }
     // }}}
     
-    // {{{ parse
+    // {{{ fromString
     /**
      * Create a new payload-object for a given command
      * 
@@ -45,7 +45,7 @@
      * @access public
      * @return BitWire_Message_Payload
      **/
-    public static function parse ($Command, $Data, BitWire_Message $Message = null) {
+    public static function fromString ($Command, $Data, BitWire_Message $Message = null) : ?BitWire_Message_Payload {
       if (isset (self::$Commands [$Command]))
         $Class = self::$Commands [$Command];
       else
@@ -57,8 +57,8 @@
       if ($Message)
         $Payload->setMessage ($Message);
       
-      if (!$Payload->parseData ($Data))
-        return false;
+      if (!$Payload->parse ($Data))
+        return null;
       
       return $Payload;
     }
@@ -69,43 +69,49 @@
      * Read a compact size
      * 
      * @param string $Data
-     * @param int &$Length (optional)
-     * @param int $Offset (optional)
+     * @param int $Offset
+     * @param int $Length (optional)
      * 
      * @access public
      * @return int
      **/
-    public static function readCompactSize ($Data, &$Length = null, $Offset = 0) {
-      // Check boundaries
-      $iLength = strlen ($Data);
+    public static function readCompactSize (&$Data, $Offset, $Length = null) {
+      // Make sure we know the length of our input
+      if ($Length === null)
+        $Length = strlen ($Data);
       
-      if ($iLength < $Offset + 1)
-        return false;
+      // Make sure there is something to read
+      if ($Length <= $Offset)
+        return null;
       
       // Try to read type of interger
       $Byte = ord ($Data [$Offset]);
-      $Length = 1;
       
       // Process the value
-      if ($Byte <= 252)
+      if ($Byte <= 252) {
+        $Offset++;
+        
         return $Byte;
+      }
       
       if ($Byte == 253) {
         $Mod = 'v';
-        $Length += 2;
+        $rLength = 2;
       } elseif ($Byte == 254) {
         $Mod = 'V';
-        $Length += 4;
+        $rLength = 4;
       } elseif ($Byte == 255) {
         $Mod = 'P';
-        $Length += 8;
+        $rLength = 8;
       }
       
-      if ($iLength < $Offset + $Length)
-        return false;
+      // Make sure we have enough bytes to read
+      if ($Length < $Offset + $rLength + 1)
+        return null;
       
       // Extract the value
       $Value = unpack ($Mod . 'value', substr ($Data, $Offset + 1, $Length - 1));
+      $Offset += $rLength + 1;
       
       return $Value ['value'];
     }
@@ -116,19 +122,31 @@
      * Read a string from data that is limited by a compact size
      * 
      * @param string $Data
+     * @param int $Offset
      * @param int &$Length (optional)
-     * @param int $Offset (optional)
      * 
      * @access public
      * @return string
      **/
-    public static function readCompactString ($Data, &$Length = null, $Offset = 0) {
-      if (($Size = self::readCompactSize ($Data, $Length, $Offset)) === false)
-        return false;
+    public static function readCompactString (&$Data, &$Offset, $Length = null) {
+      // Make sure we know the length of our input
+      if ($Length === null)
+        $Length = strlen ($Data);
       
-      $Length += $Size;
+      // Read the size of the string
+      $tOffset = $Offset;
       
-      return substr ($Data, $Offset + $Length - $Size, $Size);
+      if (($Size = self::readCompactSize ($Data, $tOffset, $Length)) === null)
+        return null;
+      
+      // Read the value
+      if (($Value = self::readChar ($Data, $tOffset, $Size, $Length)) === null)
+        return null;
+      
+      // Patch back offset
+      $Offset = $tOffset;
+      
+      return $Value;
     }
     // }}}
     
@@ -166,6 +184,125 @@
      **/
     public static function toCompactString ($Data) {
       return self::toCompactSize (strlen ($Data)) . $Data;
+    }
+    // }}}
+    
+    // {{{ readChar
+    /**
+     * Safely read a set of charaters from an input-buffer
+     * 
+     * @param string $Data
+     * @param int $Offset
+     * @param int $Size
+     * @param int $Length (optional)
+     * 
+     * @access public
+     * @return string
+     **/
+    public static function readChar (&$Data, &$Offset, $Size, $Length = null) {
+      // Make sure we know the length of our data
+      if ($Length === null)
+        $Length = strlen ($Data);
+      
+      // Check if there is enough data to read
+      if ($Length < $Offset + $Size)
+        return null;
+      
+      // Generate the result
+      $Result = substr ($Data, $Offset, $Size);
+      $Offset += $Size;
+      
+      return $Result;
+    }
+    // }}}
+    
+    // {{{ readUInt16
+    /**
+     * Safely read an unsigned 16-bit Integer from an input-buffer
+     * 
+     * @param string $Data
+     + @param int $Offset
+     * @param int $Length (optional)
+     * 
+     * @access public
+     * @return int
+     **/
+    public static function readUInt16 (&$Data, &$Offset, $Length = null) {
+      // Try to read the input
+      if (($Value = self::readChar ($Data, $Offset, 2, $Length)) === null)
+        return null;
+      
+      // Convert to uint16
+      $Value = unpack ('nvalue', $Value);
+      
+      return $Value ['value'];
+    }
+    // }}}
+    
+    // {{{ readUInt32
+    /**
+     * Safely read an unsigned 32-bit Integer from an input-buffer
+     * 
+     * @param string $Data
+     + @param int $Offset
+     * @param int $Length (optional)
+     * 
+     * @access public
+     * @return int
+     **/
+    public static function readUInt32 (&$Data, &$Offset, $Length = null) {
+      // Try to read the input
+      if (($Value = self::readChar ($Data, $Offset, 4, $Length)) === null)
+        return null;
+      
+      // Convert to uint32
+      $Value = unpack ('Vvalue', $Value);
+      
+      return $Value ['value'];
+    }
+    // }}}
+    
+    // {{{ readUInt64
+    /**
+     * Safely read an unsigned 64-bit Integer from an input-buffer
+     * 
+     * @param string $Data
+     + @param int $Offset
+     * @param int $Length (optional)
+     * 
+     * @access public
+     * @return int
+     **/
+    public static function readUInt64 (&$Data, &$Offset, $Length = null) {
+      // Try to read the input
+      if (($Value = self::readChar ($Data, $Offset, 8, $Length)) === null)
+        return null;
+      
+      // Convert to uint64
+      $Value = unpack ('Pvalue', $Value);
+      
+      return $Value ['value'];
+    }
+    // }}}
+    
+    // {{{ readCTxIn
+    /**
+     * Safely read an Transaction-Input from an input-buffer
+     * 
+     * @param string $Data
+     * @param int $Offset
+     * @param int $Length (optional)
+     * 
+     * @access public
+     * @return BitWire_Transaction_Input
+     **/
+    public static function readCTxIn (&$Data, &$Offset, $Length = null) : ?BitWire_Transaction_Input {
+      $Input = new BitWire_Transaction_Input;
+      
+      if (!$Input->parse ($Data, $Offset, $Length))
+        return null;
+      
+      return $Input;
     }
     // }}}
     
@@ -210,7 +347,7 @@
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /**
      * Parse data for this payload
      * 
@@ -219,7 +356,7 @@
      * @access public
      * @return bool
      **/
-    public function parseData ($Data) {
+    public function parse ($Data) {
       if (strlen ($Data) > 0) {
         trigger_error ('Unparsed data on payload for ' . get_class ($this) . '/' . $this->Command);
         

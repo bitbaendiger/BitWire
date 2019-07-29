@@ -77,7 +77,7 @@
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /**
      * Try to parse input data
      * 
@@ -86,16 +86,18 @@
      * @access public
      * @return bool
      **/
-    public function parseData ($Data) {
-      $Length = $Offset = 0;
+    public function parse ($Data) {
+      $Length = strlen ($Data);
+      $Offset = 0;
       
-      $this->Command = $this::readCompactString ($Data, $Length);
-      $Offset = $Length;
+      if ((($Command = $this::readCompactString ($Data, $Offset, $Length)) === null) ||
+          (($Code = $this::readChar ($Data, $Offset, 1, $Length)) === null) ||
+          (($Reason = $this::readCompactString ($Data, $Offset, $Length)) === null))
+        return false;
       
-      $this->Code = ord ($Data [$Offset++]);
-      $this->Reason = $this::readCompactString ($Data, $Length, $Offset);
-      $Offset += $Length;
-      
+      $this->Command = $Command;
+      $this->Code = $Code;
+      $this->Reason = $Reason;
       $this->Extra = substr ($Data, $Offset);
       
       return true;

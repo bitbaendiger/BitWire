@@ -22,7 +22,7 @@
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /**
      * Try to parse received payload for this message
      * 
@@ -31,15 +31,17 @@
      * @access public
      * @return bool
      **/
-    public function parseData ($Data) {
+    public function parse ($Data) {
+      // Check the length
+      $Length = strlen ($Data);
+      $Offset = null;
+      
       // Read number of headers
-      if (($Count = $this::readCompactSize ($Data, $Size)) === false)
+      if (($Count = BitWire_Message_Payload::readCompactSize ($Data, $Offset, $Length)) === null)
         return false;
       
       // Check the length
-      $Length = strlen ($Data);
-      
-      if ($Length != $Size + ($Count * 81))
+      if ($Length != $Offset + ($Count * 81))
         return false;
       
       // Read all headers
@@ -50,7 +52,7 @@
         $Header = new BitWire_Block;
         
         // Try to parse the header
-        if (!$Header->parseData (substr ($Data, $Size + $i * 81, 81)))
+        if (!$Header->parse ($Data, $Offset, $Length))
           return false;
         
         // Push to headers

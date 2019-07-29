@@ -35,7 +35,7 @@
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /**
      * Try to parse received payload for this message
      * 
@@ -44,7 +44,7 @@
      * @access public
      * @return bool
      **/
-    public function parseData ($Data) {
+    public function parse ($Data) {
       // Check the size of payload
       if (strlen ($Data) != 8)
         return false;

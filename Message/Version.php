@@ -1,5 +1,23 @@
 <?PHP
 
+  /**
+   * BitWire - Bitcoin Version Message
+   * Copyright (C) 2017 Bernd Holzmueller <bernd@quarxconnect.de>
+   * 
+   * This program is free software: you can redistribute it and/or modify
+   * it under the terms of the GNU General Public License as published by
+   * the Free Software Foundation, either version 3 of the License, or
+   * (at your option) any later version.
+   * 
+   * This program is distributed in the hope that it will be useful,
+   * but WITHOUT ANY WARRANTY; without even the implied warranty of
+   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   * GNU General Public License for more details.
+   * 
+   * You should have received a copy of the GNU General Public License
+   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   **/
+  
   // Check Integer-Size
   if (PHP_INT_MAX <= 0x7FFFFFFF)
     trigger_error ('BitWire requires a 64-Bit PHP to work properly and reliable');
@@ -142,6 +160,18 @@
     }
     // }}}
     
+    // {{{ getSerivceMask
+    /**
+     * Retrive mask of supported services
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getServiceMask () {
+      return $this->Services;
+    }
+    // }}}
+    
     // {{{ getUserAgent
     /**
      * Retrive the useragent
@@ -170,7 +200,7 @@
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /**
      * Parse data for this payload
      * 
@@ -179,20 +209,24 @@
      * @access public
      * @return bool
      **/
-    public function parseData ($Data) {
+    public function parse ($Data) {
       // Retrive length of data
       $Length = strlen ($Data);
+      $Offset = 0;
       
       // Make sure the min length is met
       if ($Length < 59)
         return false;
       
       // Parse first bits
-      $Values = unpack ('Vversion/Pservices/Ptimestamp', substr ($Data, 0, 20));
+      if ((($Version = self::readUInt32 ($Data, $Offset, $Length)) === null) ||
+          (($SupportedServices = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
+          (($Timestamp = self::readUInt64 ($Data, $Offset, $Length)) === null))
+        return false;
       
-      $this->Version = $Values ['version'];
-      $this->SupportedServices = $Values ['services'];
-      $this->Timestamp = $Values ['timestamp'];
+      $this->Version = $Version;
+      $this->SupportedServices = $SupportedServices;
+      $this->Timestamp = $Timestamp;
       
       // Parse additional peer-addresses
       if ($this->Version >= 106) {
@@ -200,36 +234,39 @@
         if ($Length < 85)
           return false;
         
-        $Values = unpack ('Pservices/a16address/nport', substr ($Data, 20, 26));
-        $this->PeerServices = $Values ['services'];
-        $this->PeerAddress = qcEvents_Socket::ip6fromBinary ($Values ['address']);
-        $this->PeerPort = $Values ['port'];
+        if ((($PeerServices = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
+            (($PeerAddress = self::readChar ($Data, $Offset, 16, $Length)) === null) ||
+            (($PeerPort = self::readUInt16 ($Data, $Offset, $Length)) === null))
+          return false;
         
-        $Data = substr ($Data, 46);
-      } else
-        $Data = substr ($Data, 20);
+        $this->PeerServices = $PeerServices;
+        $this->PeerAddress = qcEvents_Socket::ip6fromBinary ($PeerAddress);
+        $this->PeerPort = $PeerPort;
+      }
       
       // Parse additional standard-fields
-      $Values = unpack ('Pservices/a16address/nport/Pnonce', substr ($Data, 0, 34));
-      $this->Services = $Values ['services'];
-      $this->Address = qcEvents_Socket::ip6fromBinary ($Values ['address']);
-      $this->Port = $Values ['port'];
-      $this->Nonce = $Values ['nonce'];
+      if ((($Services = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
+          (($Address = self::readChar ($Data, $Offset, 16, $Length)) === null) ||
+          (($Port = self::readUInt16 ($Data, $Offset, $Length)) === null) ||
+          (($Nonce = self::readUInt64 ($Data, $Offset, $Length)) === null))
+        return false;
       
-      if (($this->UserAgent = $this::readCompactString ($Data, $Length, 34)) === false)
+      $this->Services = $Services;
+      $this->Address = qcEvents_Socket::ip6fromBinary ($Address);
+      $this->Port = $Port;
+      $this->Nonce = $Nonce;
+      
+      if (($this->UserAgent = $this::readCompactString ($Data, $Offset, $Length)) === false)
         return false;
       
       // Truncate the buffer and recheck the length
-      $Data = substr ($Data, $Length + 34);
-      $Length = strlen ($Data);
-      
-      if ($Length < 4)
+      if ($Length - $Offset < 4)
         return false;
       
-      if ($Length > 4)
-        $Values = unpack ('Vheight/Crelay', $Data);
+      if ($Length - $Offset > 4)
+        $Values = unpack ('Vheight/Crelay', substr ($Data, $Offset, 5));
       else
-        $Values = unpack ('Vheight', $Data);
+        $Values = unpack ('Vheight', substr ($Data, $Offset, 4));
       
       $this->StartHeight = $Values ['height'];
       

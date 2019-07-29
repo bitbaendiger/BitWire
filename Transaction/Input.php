@@ -38,6 +38,13 @@
     /* Sequence of input */
     private $Sequence = 0;
     
+    private static function checkCoinbase ($Hash, $Index) {
+      if ($Index != 0xFFFFFFFF)
+        return false;
+      
+      return (strcmp ($Hash, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00") == 0);
+    }
+    
     // {{{ __construct
     /**
      * Create a new transaction-input
@@ -77,10 +84,7 @@
      * @return bool
      **/
     public function isCoinbase () {
-      if ($this->Index != 0xFFFFFFFF)
-        return false;
-      
-      return ($this->Hash->toBinary () === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00");
+      return self::checkCoinbase ($this->Hash->toBinary (), $this->Index);
     }
     // }}}
     
@@ -156,75 +160,45 @@
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /**
      * Try to parse input-transaction from binary
      * 
      * @param string $Data
-     * @param int $Size (optional)
-     * @param int $Offset (optional)
+     * @param int $Offset
+     * @param int $Length (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function parseData ($Data, &$Size = null, $Offset = 0) {
-      // Check the length of the data
-      $Length = strlen ($Data);
+    public function parse (&$Data, &$Offset, $Length = null) {
+      // Make sure we know the length of our input
+      if ($Length === null)
+        $Length = strlen ($Data);
       
-      if ($Length < $Offset + 40) {
-        trigger_error ('Input too short');
-        
+      // Try to read everything into our memory
+      if ((($Hash = BitWire_Message_Payload::readChar ($Data, $Offset, 32, $Length)) === null) ||
+          (($Index = BitWire_Message_Payload::readUInt32 ($Data, $Offset, $Length)) === null) ||
+          (($Script = BitWire_Message_Payload::readCompactString ($Data, $Offset, $Length)) === null) ||
+          (($Sequence = BitWire_Message_Payload::readUInt32 ($Data, $Offset, $Length)) === null))
         return false;
-      }
       
-      // Read Hash and index
-      $Values = unpack ('a32hash/Vindex', substr ($Data, $Offset, 36));
-      $Size = 36;
-      $Offset += 36;
+      // Check size-constraints for script
+      $scriptSize = strlen ($Script);
       
-      $this->Hash = BitWire_Hash::fromBinary ($Values ['hash'], true);
-      $this->Index = $Values ['index'];
-      
-      // Try to read the script
-      if (($sSize = BitWire_Message_Payload::readCompactSize ($Data, $ssSize, $Offset)) === false) {
-        trigger_error ('Failed to read script-size');
-        
-        return false;
-      }
-      
-      if ($this->isCoinbase ()) {
-        if ($sSize > 101) {
-          trigger_error ('Coinbase too big');
-          
+      if (self::checkCoinbase ($Hash, $Index)) {
+        if ($scriptSize > 101)
           return false;
-        }
         
-        # TODO?
-      } elseif ($sSize > 10003) {
-        trigger_error ('Input-script too big: ' . $sSize);
-        
+        # TODO: Any further checks?
+      } elseif ($scriptSize > 10003)
         return false;
-      }
       
-      $Size += $ssSize;
-      $Offset += $ssSize;
-      
-      if ($Length < $Offset + $sSize + 4) {
-        trigger_error ('Short read');
-        
-        return false;
-      }
-      
-      $this->Script = new BitWire_Transaction_Script ($this, substr ($Data, $Offset, $sSize));
-      
-      $Size += $sSize + 4;
-      $Offset += $sSize;
-      
-      // Read sequence
-      $Values = unpack ('Vsequence', substr ($Data, $Offset, 4));
-      $Offset += 4;
-      
-      $this->Sequence = $Values ['sequence'];
+      // Store the results on this instance
+      $this->Hash = BitWire_Hash::fromBinary ($Hash, true);
+      $this->Index = $Index;
+      $this->Script = new BitWire_Transaction_Script ($this, $Script);
+      $this->Sequence = $Sequence;
       
       return true;
     }

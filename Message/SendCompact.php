@@ -12,7 +12,7 @@
     /* Version of this message */
     private $Version = 0x0000000000000000;
     
-    // {{{ parseData
+    // {{{ parse
     /**
      * Parse data for this payload
      * 
@@ -21,7 +21,7 @@
      * @access public
      * @return bool
      **/
-    public function parseData ($Data) {
+    public function parse ($Data) {
       if (strlen ($Data) != 9)
         return false;
       

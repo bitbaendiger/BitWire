@@ -39,7 +39,7 @@
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /** 
      * Parse binary contents for this payload
      * 
@@ -48,29 +48,27 @@
      * @access public
      * @return bool
      **/
-    public function parseData ($Data) {
+    public function parse ($Data) {
       // Try to read the version
       $Version = (is_object ($Message = $this->getMessage ()) ? $Message->getVersion () : null);
       
-      // Read the number of entries
-      if (($Count = $this::readCompactSize ($Data, $Length)) === false)
+      // Read the number of entries#
+      $Length = strlen ($Data);
+      $Offset = 0;
+      
+      if (($Count = $this::readCompactSize ($Data, $Offset, $Length)) === null)
         return false;
       
-      // Truncate number of entries from data
-      $Data = substr ($Data, $Length);
-      
       // Check wheter to auto-detect the version
-      $Length = strlen ($Data);
-      
       if ($Version === null) {
-        if (($Length % 30) == 0)
+        if ((($Length - $Offset) % 30) == 0)
           $Version = 70015;
         else
           $Version = 31401;
       }
       
       // Sanatize length of data
-      if (($Length % ($Version >= 31402 ? 30 : 26)) != 0)
+      if ((($Length - $Offset) % ($Version >= 31402 ? 30 : 26)) != 0)
         return false;
       
       // Read addresses
@@ -79,9 +77,9 @@
       for ($i = 0; $i < $Count; $i++) {
         // Try to unpack the data
         if ($Version >= 31402)
-          $Values = unpack ('Vtimestamp/Pservices/a16address/nport', substr ($Data, $i * 30, 30));
+          $Values = unpack ('Vtimestamp/Pservices/a16address/nport', substr ($Data, $Offset + $i * 30, 30));
         else
-          $Values = unpack ('Pservices/a16address/nport', substr ($Data, $i * 26, 26));
+          $Values = unpack ('Pservices/a16address/nport', substr ($Data, $Offset + $i * 26, 26));
         
         if (!$Values)
           return false;

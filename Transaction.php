@@ -179,129 +179,91 @@
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /**
-     * Try to parse data for this payload
+     * Try to parse an transaction from an input-buffer
      * 
      * @param string $Data
-     * @param int &$Length (optional)
-     * @param int $Offset (optional)
+     * @param int $Offset
+     * @param int $Length (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function parseData ($Data, &$Length = null, $Offset = 0) {
-      // Grep length of input
-      $Start = $Offset;
-      $Length = strlen ($Data);
+    public function parse (&$Data, &$Offset, $Length = null) {
+      // Make sure we know the length of our input
+      if ($Length === null)
+        $Length = strlen ($Data);
       
-      // Read start of PoS-Transaction
-      if ($this->Type == $this::TYPE_POS) {
-        if ($Length < $Offset + 9) {
-          trigger_error ('PoS-Transaction too short');
-          
-          return false;
-        }
-        
-        $Values = unpack ('Vversion/Vtime', substr ($Data, $Offset, 8));
-        $Offset += 8;
-        
-        $this->Version = $Values ['version'];
-        $this->Time = $Values ['time'];
-        
-      // Read start of PoW-Transaction
-      } else {
-        if ($Length < $Offset + 5) {
-          trigger_error ('PoW-Transaction too short');
-          
-          return false;
-        }
-        
-        $Values = unpack ('Vversion', substr ($Data, $Offset, 4));
-        $Offset += 4;
-        
-        $this->Version = $Values ['version'];
-        $this->Time = null;
-      }
+      // Copy offset to temporary offset
+      $tOffset = $Offset;
       
-      // Read number of inputs on transaction
-      if (($Count = BitWire_Message_Payload::readCompactSize ($Data, $Size, $Offset)) === false) {
-        trigger_error ('Failed to read number of inputs');
-        
+      // Try to read the version of this transaction
+      if (($Version = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null)
         return false;
-      }
       
-      $Offset += $Size;
+      // Read timestamp on PoS-Transaction
+      if ($this->Type != $this::TYPE_POS)
+        $Time = null;
+      elseif (($Time = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null)
+        return false;
       
-      // Try to read inputs
-      $this->Inputs = array ();
+      // Read number of inputs on this transaction
+      if (($Count = BitWire_Message_Payload::readCompactSize ($Data, $tOffset, $Length)) === null)
+        return false;
+      
+      // Try to read all inputs
+      $Inputs = array ();
       
       for ($i = 0; $i < $Count; $i++) {
-        $Input = new BitWire_Transaction_Input ($this);
+        $Inputs [] = $Input = new BitWire_Transaction_Input ($this);
         
-        if (!$Input->parseData ($Data, $Size, $Offset)) {
-          trigger_error ('Failed to read input');
-          
+        if (!$Input->parse ($Data, $tOffset, $Length))
           return false;
-        }
-        
-        $Offset += $Size;
-        $this->Inputs [] = $Input;
       }
       
-      // Read number of outputs on transaction
-      if (($Count = BitWire_Message_Payload::readCompactSize ($Data, $Size, $Offset)) === false) {
-        trigger_error ('Failed to read number of outputs');
-        
+      // Read number of outputs on this transaction
+      if (($Count = BitWire_Message_Payload::readCompactSize ($Data, $tOffset, $Length)) === null)
         return false;
-      }
       
-      $Offset += $Size;
-      
-      // Try to read outputs
-      $this->Outputs = array ();
+      // Try to read all outputs
+      $Outputs = array ();
       
       for ($i = 0; $i < $Count; $i++) {
-        $Values = unpack ('Pamount', substr ($Data, $Offset, 8));
-        $Offset += 8;
-        
-        if (($Values ['script'] = new BitWire_Transaction_Script ($this, BitWire_Message_Payload::readCompactString ($Data, $Size, $Offset))) === false) {
-          trigger_error ('Failed to read output-script');
-          
+        // Read values of the output
+        if ((($Amount = BitWire_Message_Payload::readUInt64 ($Data, $tOffset, $Length)) === null) ||
+            (($Script = BitWire_Message_Payload::readCompactString ($Data, $tOffset, $Length)) === null))
           return false;
-        }
         
-        if ($Size > 10003) {
-          trigger_error ('Output-script too large: ' . $Size);
-          
+        // Check size-constraints for script
+        if (strlen ($Script) > 10003)
           return false;
-        }
         
-        $this->Outputs [] = $Values;
-        $Offset += $Size;
+        $Outputs [] = array (
+          'amount' => $Amount,
+          'script' => new BitWire_Transaction_Script ($this, $Script),
+        );
       }
       
-      // Parse locktime
-      $Values = unpack ('Vlocktime', substr ($Data, $Offset, 4));
-      $this->lockTime = array_shift ($Values);
-      $Offset += 4;
+      // Try to read lock-time
+      if (($lockTime = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null)
+        return false;
       
-      // Check for a comment
-      if ($this->hasComment) {
-        if (($Comment = BitWire_Message_Payload::readCompactString ($Data, $Size, $Offset)) === false) {
-          trigger_error ('Failed to read comment from transaction');
-
-          return false;
-        } else
-          $this->Comment = $Comment;
-
-        $Offset += $Size;
-      }
+      if (!$this->hasComment)
+        $Comment = null;
+      elseif (($Comment = BitWire_Message_Payload::readCompactString ($Data, $tOffset, $Length)) === null)
+        return false;
       
-      // Write out consumed length
-      $Length = $Offset - $Start;
+      // Commit changes to this instance
+      $this->Version = $Version;
+      $this->Time = $Time;
+      $this->lockTime = $lockTime;
+      $this->Comment = $Comment;
+      $this->Inputs = $Inputs;
+      $this->Outputs = $Outputs;
       
-      // Indicate success
+      $Offset = $tOffset;
+      
       return true;
     }
     // }}}

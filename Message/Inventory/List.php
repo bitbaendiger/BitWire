@@ -65,7 +65,7 @@
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /** 
      * Parse binary contents for this payload
      * 
@@ -74,19 +74,16 @@
      * @access public
      * @return bool
      **/
-    public function parseData ($Data) {
+    public function parse ($Data) {
       // Read the number of entries
-      if (($Count = $this::readCompactSize ($Data, $Length)) === false)
+      $Length = strlen ($Data);
+      $Offset = 0;
+      
+      if (($Count = $this::readCompactSize ($Data, $Offset, $Length)) === null)
         return false;
       
-      // Truncate number of entries from data
-      $Data = substr ($Data, $Length);
-      
-      // Check wheter to auto-detect the version
-      $Length = strlen ($Data);
-      
       // Sanatize length of data
-      if (($Length % 36) != 0)
+      if ((($Length - $Offset) % 36) != 0)
         return false;
       
       // Read addresses
@@ -94,7 +91,7 @@
       
       for ($i = 0; $i < $Count; $i++) {
         // Try to unpack the data
-        if (!($Values = unpack ('Vtype/a32hash', substr ($Data, $i * 36, 36))))
+        if (!($Values = unpack ('Vtype/a32hash', substr ($Data, $Offset + ($i * 36), 36))))
           return false;
         
         $Values ['hash'] = BitWire_Hash::fromBinary ($Values ['hash'], true);

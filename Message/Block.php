@@ -42,12 +42,12 @@
      * @access public
      * @return BitWire_Block
      **/
-    public function getBlock () {
+    public function getBlock () : ?BitWire_Block {
       return $this->Block;
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /**
      * Try to parse data for this payload
      * 
@@ -56,10 +56,16 @@
      * @access public
      * @return bool
      **/
-    public function parseData ($Data) {
-      $this->Block = new BitWire_Block;
+    public function parse ($Data) {
+      $Block = new BitWire_Block;
+      $Offset = 0;
       
-      return $this->Block->parseData ($Data);
+      if (!$Block->parse ($Data, $Offset))
+        return false;
+      
+      $this->Block = $Block;
+      
+      return true;
     }
     // }}}
     
@@ -71,7 +77,8 @@
      * @return string
      **/
     public function toBinary () {
-      return $this->Block->toBinary ();
+      if ($this->Block)
+        return $this->Block->toBinary ();
     }
     // }}}
   }

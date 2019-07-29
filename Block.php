@@ -322,100 +322,107 @@
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /**
      * Try to parse data for this payload
      * 
      * @param string $Data
+     * @param int $Offset
+     * @param int $Length (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function parseData ($Data) {
+    public function parse (&$Data, &$Offset, $Length = null) {
       // Check the length of input
-      $Length = strlen ($Data);
-      
-      if ($Length < 80) {
-        trigger_error ('Input too short');
-        
-        return false;
-      }
+      if ($Length === null)
+        $Length = strlen ($Data);
       
       // Parse the header
-      $Values = unpack ('Vversion/a32hash/a32roothash/Vtimestamp/Vthreshold/Vnonce', $Data);
-      $this->Version = $Values ['version'];
-      $this->PreviousHash = BitWire_Hash::fromBinary ($Values ['hash'], true);
-      $this->MerkleRootHash = BitWire_Hash::fromBinary ($Values ['roothash'], true);
-      $this->Timestamp = $Values ['timestamp'];
-      $this->TargetThreshold = $Values ['threshold'];
-      $this->Nonce = $Values ['nonce'];
+      $tOffset = $Offset;
       
-      // Read the number of transactions
-      if (($Count = BitWire_Message_Payload::readCompactSize ($Data, $Size, 80)) === false) {
-        trigger_error ('Failed to read number of transactions on block');
-        
+      if ((($Version = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null) ||
+          (($Hash = BitWire_Message_Payload::readChar ($Data, $tOffset, 32, $Length)) === null) ||
+          (($MerkleRoot = BitWire_Message_Payload::readChar ($Data, $tOffset, 32, $Length)) === null) ||
+          (($Timestamp = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null) ||
+          (($Threshold = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null) ||
+          (($Nonce = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null) ||
+          (($Count = BitWire_Message_Payload::readCompactSize ($Data, $tOffset, $Length)) === null))
         return false;
-      }
       
-      $Offset = 80 + $Size;
-      
-      // Try to read all transactions
-      $this->Transactions = array ();
-      
-      for ($i = 0; $i < $Count; $i++) {
-        // Create a new transaction
-        $Transaction = new BitWire_Transaction ($this->Type, $this->hasTxComments);
+      // Check if there is more than just the header
+      if ($tOffset != $Length) {
+        // Try to read all transactions
+        $Transactions = array ();
         
-        // Try to parse the transaction
-        if (!$Transaction->parseData ($Data, $Size, $Offset)) {
-          trigger_error ('Failed to read transaction #' . $i);
+        for ($i = 0; $i < $Count; $i++) {
+          // Create a new transaction
+          $Transaction = new BitWire_Transaction ($this->Type, $this->hasTxComments);
           
-          return false;
-        }
-        
-        // Double-check the transaction
-        if (defined ('BITWIRE_DEBUG') && BITWIRE_DEBUG) {
-          $Binary = $Transaction->toBinary ();
-          $Original = substr ($Data, $Offset, $Size);
+          // Try to parse the transaction
+          $pOffset = $tOffset;
           
-          if (strcmp ($Binary, $Original) != 0) {
-            echo
-              'DEBUG: Binary of Transaction Payload "', $this->parsedCommand, '" differs:', "\n",
-              '  Length: in=', strlen ($Original), ' out=', strlen ($Binary), "\n",
-              '  MD5:  in=', md5 ($Original), "\n", 
-              '       out=', md5 ($Binary), "\n\n";
+          if (!$Transaction->parse ($Data, $tOffset, $Length)) {
+            trigger_error ('Failed to read transaction #' . $i);
             
-            // Check for dump-functions
-            if (function_exists ('dump_compare')) {
-              dumpCompare ($Original, $Binary);
-              echo "\n";
-            } elseif (function_exists ('dump')) {
-              dump ($Original);
-              dump ($Binary);
-              echo "\n";
+            return false;
+          }
+          
+          // Double-check the transaction
+          if (defined ('BITWIRE_DEBUG') && BITWIRE_DEBUG) {
+            $Binary = $Transaction->toBinary ();
+            $Original = substr ($Data, $pOffset, $tOffset - $pOffset);
+            
+            if (strcmp ($Binary, $Original) != 0) {
+              echo
+                'DEBUG: Binary of Transaction Payload "', $this->parsedCommand, '" differs:', "\n",
+                '  Length: in=', strlen ($Original), ' out=', strlen ($Binary), "\n",
+                '  MD5:  in=', md5 ($Original), "\n", 
+                '       out=', md5 ($Binary), "\n\n";
+              
+              // Check for dump-functions
+              if (function_exists ('dump_compare')) {
+                dumpCompare ($Original, $Binary);
+                echo "\n";
+              } elseif (function_exists ('dump')) {
+                dump ($Original);
+                dump ($Binary);
+                echo "\n";
+              }
             }
           }
+          
+          // Push to transactions
+          $Transactions [] = $Transaction;
+          $tOffset += $Size;
         }
+       
+        // Read Signature of PoS-Blocks
+        if ($this->Type != $this::TYPE_POS)
+          $Signature = null;
+        elseif (($Signature = BitWire_Message_Payload::readCompactString ($Data, $tOffset, $Length)) === null)
+          return false;
         
-        // Push to transactions
-        $this->Transactions [] = $Transaction;
-        $Offset += $Size;
+      } else {
+        $Transactions = array ();
+        $Signature = null;
       }
       
-      // Read Signature of PoS-Blocks
-      if ($this->Type == $this::TYPE_POS) {
-        if (($Signature = BitWire_Message_Payload::readCompactString ($Data, $Size, $Offset)) === false) {
-          trigger_error ('Failed to read signature of PoS-Block');
-          
-          return false;
-        } else
-          $this->Signature = $Signature;
-        
-        $Offset += $Size;
-      }
+      // Store all values read
+      $this->Version = $Version;
+      $this->PreviousHash = BitWire_Hash::fromBinary ($Hash, true);
+      $this->MerkleRootHash = BitWire_Hash::fromBinary ($MerkleRoot, true);
+      $this->Timestamp = $Timestamp;
+      $this->TargetThreshold = $Threshold;
+      $this->Nonce = $Nonce;
+      $this->Transactions = $Transactions;
+      $this->Signature = $Signature;
+      
+      // Push back the offset
+      $Offset = $tOffset;
       
       // Check if all data was consumed
-      return ($Offset == $Length);
+      return true;
     }
     // }}}
     

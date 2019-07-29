@@ -38,7 +38,7 @@
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /** 
      * Parse binary contents for this payload
      * 
@@ -47,39 +47,27 @@
      * @access public
      * @return bool
      **/
-    public function parseData ($Data) {
+    public function parse ($Data) {
       // Retrive the length of the buffer
       $Length = strlen ($Data);
+      $Offset = 0;
       
-      if ($Length < 38) {
-        trigger_error ('Input too short');
-        
+      // Read initial values
+      if ((($Version = BitWire_Message_Payload::readUInt32 ($Data, $Offset, $Length)) === null) ||
+          (($Count = BitWire_Message_Payload::readCompactSize ($Data, $Offset, $Length)) === null))
         return false;
-      }
       
-      // Read the version
-      $Values = unpack ('Vversion', substr ($Data, 0, 4));
-      $this->Version = $Values ['version'];
-      
-      // Read number of hashes
-      if (($Count = self::readCompactSize ($Data, $cLength, 4)) === false) {
-        trigger_error ('Failed to read length');
-        
-        return false;
-      }
+      $this->Version = $Version;
       
       // Check the length again
-      if ($Length != 36 + $cLength + $Count * 32) {
-        trigger_error ('Invalid size');
-        
+      if ($Length != $Offset + $Count * 32)
         return false;
-      }
       
       // Read all hashes
       $this->Hashes = array ();
       
       for ($i = 0; $i < $Count; $i++)
-        $this->Hashes [] = BitWire_Hash::fromBinary (substr ($Data, $i * 32 + 4 + $cLength, 32), true);
+        $this->Hashes [] = BitWire_Hash::fromBinary (substr ($Data, $Offset + $i * 32, 32), true);
       
       // Read the stop-hash
       $this->StopHash = BitWire_Hash::fromBinary (substr ($Data, -32, 32), true);

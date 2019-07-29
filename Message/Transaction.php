@@ -35,7 +35,7 @@
     }
     // }}}
     
-    // {{{ parseData
+    // {{{ parse
     /**
      * Try to parse data for this payload
      * 
@@ -44,16 +44,19 @@
      * @access public
      * @return bool
      **/
-    public function parseData ($Data) {
+    public function parse ($Data) {
       // Create a new transaction
       if (!$this->Transaction)
         $this->Transaction = new BitWire_Transaction;
       
       // Try to parse the data
-      if (!$this->Transaction->parseData ($Data, $Length))
+      $Length = strlen ($Data);
+      $Offset = 0;
+      
+      if (!$this->Transaction->parse ($Data, $Offset, $Length))
         return false;
       
-      return (strlen ($Data) == $Length);
+      return ($Length == $Offset);
     }
     // }}}
     
