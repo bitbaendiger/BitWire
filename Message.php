@@ -1,10 +1,14 @@
 <?PHP
 
   class BitWire_Message {
-    /* Well known Bitcoin-Networks */
+    /* Well known Bitcore-Networks (see their chainparams.cpp) */
     const BITCOIN_MAIN = 0xF9BEB4D9;
     const BITCOIN_TEST = 0x0B110907;
     const BITCOIN_REG  = 0xFABFB5DA;
+    
+    const BITMONEY_MAIN = 0xF9CD3B68;
+    const BITMONEY_TEST = 0xC7FF2D4F;
+    const BITMONEY_REG  = 0xC2FD5C1F;
     
     /* Version of this message */
     private $Version = 70015;
