@@ -75,7 +75,7 @@
      * @access public
      * @return int
      **/
-    public static function readCompactSize (&$Data, $Offset, $Length = null) {
+    public static function readCompactSize (&$Data, &$Offset, $Length = null) {
       // Make sure we know the length of our input
       if ($Length === null)
         $Length = strlen ($Data);
@@ -213,6 +213,27 @@
       $Offset += $Size;
       
       return $Result;
+    }
+    // }}}
+    
+    // {{{ readBoolean
+    /**
+     * Safely read a boolean from an input-buffer
+     * 
+     * @param string $Data
+     * @param int $Offset
+     * @param int $Length (optional)
+     * 
+     * @access public
+     * @return boolean
+     **/
+    public static function readBoolean (&$Data, &$Offset, $Length = null) {
+      // Try to read the value
+      if (($Value = self::readChar ($Data, $Offset, 1, $Length)) === null)
+        return null;
+      
+      // Return the value
+      return (strcmp ($Value, "\x00") != 0);
     }
     // }}}
     
