@@ -1,18 +1,16 @@
 <?PHP
 
-  require_once ('dump.php');
-  
   class BitWire_Message {
     /* Well known Bitcoin-Networks */
-    const NETWORK_MAIN = 0xF9BEB4D9;
-    const NETWORK_TEST = 0x0B110907;
-    const NETWORK_REG  = 0xFABFB5DA;
+    const BITCOIN_MAIN = 0xF9BEB4D9;
+    const BITCOIN_TEST = 0x0B110907;
+    const BITCOIN_REG  = 0xFABFB5DA;
     
     /* Version of this message */
     private $Version = 70015;
     
     /* Network for this message */
-    private $Network = BitWire_Message::NETWORK_MAIN;
+    private $Network = BitWire_Message::BITCOIN_MAIN;
     
     /* Payload of this message */
     private $Payload = null;
@@ -36,7 +34,7 @@
      * @access friendly
      * @return void
      **/
-    function __construct (BitWire_Message_Payload $Payload = null, $Version = 70015, $Network = BitWire_Message::NETWORK_MAIN) {
+    function __construct (BitWire_Message_Payload $Payload = null, $Version = 70015, $Network = BitWire_Message::BITCOIN_MAIN) {
       $this->Version = $Version;
       $this->Network = $Network;
       
