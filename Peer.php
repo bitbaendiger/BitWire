@@ -38,6 +38,9 @@
     /* Version to negotiate with the peer */
     private $Version = 70015;
     
+    /* Network for this peer (see BitWire_Message) */
+    private $Network = null;
+    
     /* Stream-Interface to peer */
     private $Peer = null;
     
@@ -67,10 +70,11 @@
      * @access friendly
      * @return void
      **/
-    function __construct (BitWire_Controller $Controller = null, $Version = null, $UserAgent = null) {
+    function __construct (BitWire_Controller $Controller = null, $Version = null, $Network = null, $UserAgent = null) {
       // Store controller and version
       $this->Controller = $Controller;
       $this->Version = ($Version === null ? 70015 : $Version);
+      $this->Network = ($Network === null ? BitWire_Message::BITCOIN_MAIN : $Network);
     }
     // }}}
     
@@ -174,7 +178,7 @@
       while ($Length > 0) {
         // Make sure we have a pending message
         if (!$this->pendingMessage)
-          $this->pendingMessage = new BitWire_Message (null, ($this->peerVersion ? $this->peerVersion->getVersion () : null));
+          $this->pendingMessage = new BitWire_Message (null, ($this->peerVersion ? $this->peerVersion->getVersion () : null), $this->Network);
         
         // Forward the data to next message
         if (($consumedLength = $this->pendingMessage->consume ($Data)) === false) {
@@ -293,7 +297,7 @@
      **/
     public function sendPayload (BitWire_Message_Payload $Payload, callable $Callback = null, $Private = null) {
       // Create envelope
-      $Message = new BitWire_Message ($Payload, $this->Version);
+      $Message = new BitWire_Message ($Payload, $this->Version, $this->Network);
       
       // Write out to peer
       $this->Peer->write ($Message->toBinary (), function ($Peer, $Status) use ($Message, $Payload, $Callback, $Private) {
