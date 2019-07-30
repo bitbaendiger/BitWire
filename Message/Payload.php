@@ -1,5 +1,8 @@
 <?PHP
 
+  require_once ('BitWire/Transaction/Input.php');
+  require_once ('BitWire/Peer/Address.php');
+  
   class BitWire_Message_Payload {
     const PAYLOAD_COMMAND = null;
     const PAYLOAD_HAS_DATA = null;
@@ -422,23 +425,13 @@
      * @access public
      * @return array
      **/
-    public static function readCAddress (&$Data, &$Offset, $Length = null) : ?array {
-      // Make sure we know the length
-      if ($Length === null)
-        $Length = strlen ($Data);
+    public static function readCAddress (&$Data, &$Offset, $Length = null) : ?BitWire_Peer_Address {
+      $Address = new BitWire_Peer_Address;
       
-      // Check available size
-      if ($Length - $Offset < 18)
+      if (!$Address->parse ($Data, $Offset, $Length))
         return null;
       
-      $Result = array (
-        'address' => qcEvents_Socket::ip6fromBinary (substr ($Data, $Offset, 16)),
-      );
-      
-      $Offset += 16;
-      $Result ['port'] = self::readUInt16 ($Data, $Offset, $Length);
-      
-      return $Result;
+      return $Address;
     }
     // }}}
     
@@ -446,15 +439,13 @@
     /**
      * Write a CAddress-Structure to binary
      * 
-     * @param array $Address
+     * @param BitWire_Peer_Address $Address
      * 
      * @access public
      * @return string
      **/
-    public static function writeCAddress (array $Address) {
-      return
-        qcEvents_Socket::ip6toBinary ($Address ['address']) .
-        self::writeUInt16 ($Address ['port']);
+    public static function writeCAddress (BitWire_Peer_Address $Address) {
+      return $Address->toBinary ();
     }
     // }}}
     
