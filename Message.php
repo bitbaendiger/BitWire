@@ -97,7 +97,10 @@
       
       // Generate Payload
       if (!is_object ($this->Payload = BitWire_Message_Payload::fromString ($this->parsedCommand, $Payload, $this))) {
-        trigger_error ('Failed to parse payload');
+        trigger_error ('Failed to parse payload of ' . $this->parsedCommand);
+        
+        if (function_exists ('dump'))
+          dump ($Payload);
         
         return false;
       }

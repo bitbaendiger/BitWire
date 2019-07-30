@@ -288,6 +288,20 @@
     }
     // }}}
     
+    // {{{ writeUInt16
+    /**
+     * Write an unsigned 16-bit integer
+     * 
+     * @param int $Value
+     * 
+     * @access public
+     * @return string
+     **/
+    public static function writeUInt16 ($Value) {
+      return pack ('n', $Value);
+    }
+    // }}}
+    
     // {{{ readUInt32
     /**
      * Safely read an unsigned 32-bit Integer from an input-buffer
@@ -394,6 +408,53 @@
      **/
     public static function writeCTxIn (BitWire_Transaction_Input $Input) {
       return $Input->toBinary ();
+    }
+    // }}}
+    
+    // {{{ readCAddress
+    /**
+     * Safely read an ip-address from an input-buffer
+     * 
+     * @param string $Data
+     * @param int $Offset
+     * @param int $Length (optional)
+     * 
+     * @access public
+     * @return array
+     **/
+    public static function readCAddress (&$Data, &$Offset, $Length = null) : ?array {
+      // Make sure we know the length
+      if ($Length === null)
+        $Length = strlen ($Data);
+      
+      // Check available size
+      if ($Length - $Offset < 18)
+        return null;
+      
+      $Result = array (
+        'address' => qcEvents_Socket::ip6fromBinary (substr ($Data, $Offset, 16)),
+      );
+      
+      $Offset += 16;
+      $Result ['port'] = self::readUInt16 ($Data, $Offset, $Length);
+      
+      return $Result;
+    }
+    // }}}
+    
+    // {{{ writeCAddress
+    /**
+     * Write a CAddress-Structure to binary
+     * 
+     * @param array $Address
+     * 
+     * @access public
+     * @return string
+     **/
+    public static function writeCAddress (array $Address) {
+      return
+        qcEvents_Socket::ip6toBinary ($Address ['address']) .
+        self::writeUInt16 ($Address ['port']);
     }
     // }}}
     

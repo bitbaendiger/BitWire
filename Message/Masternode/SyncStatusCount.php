@@ -49,7 +49,7 @@
       $Offset = 0;
       
       if ((($Item = self::readUInt32 ($Data, $Offset, $Length)) === null) ||
-          (($Count = self::readUInt32 ($data, $Offset, $Length)) === null))
+          (($Count = self::readUInt32 ($Data, $Offset, $Length)) === null))
         return false;
       
       // Commit to this instance

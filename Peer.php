@@ -25,6 +25,7 @@
   require_once ('BitWire/Message/Headers.php');
   require_once ('BitWire/Message/NotFound.php');
   
+  require_once ('BitWire/Message/DarkSend/ElectionEntry.php');
   require_once ('BitWire/Message/DarkSend/ElectionEntryPing.php');
   require_once ('BitWire/Message/Masternode/SyncStatusCount.php');
   
@@ -192,8 +193,6 @@
         
         // Forward the data to next message
         if (($consumedLength = $this->pendingMessage->consume ($Data)) === false) {
-          trigger_error ('Unable to parse message - discarding');
-          
           $this->pendingMessage = null;
           
           return;

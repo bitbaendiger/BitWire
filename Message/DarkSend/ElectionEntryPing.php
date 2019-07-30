@@ -76,7 +76,7 @@
       return
         self::writeCTxIn ($this->TxIn) .
         self::writeCompactString ($this->Signature) .
-        self::writeUInt64 ($this->Signature).
+        self::writeUInt64 ($this->Timestamp).
         self::writeBoolean ($this->Stop);
     }
     // }}}
