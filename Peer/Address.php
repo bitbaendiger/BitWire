@@ -76,6 +76,30 @@
     }
     // }}}
     
+    // {{{ toString
+    /**
+     * See CNetAddr::ToString()
+     * 
+     * @access public
+     * @return string
+     **/
+    public function toString () {
+      // Convert address to binary
+      $Binary = unpack ('n8', qcEvents_Socket::ip6toBinary ($this->Address));
+      
+      // Check for IPv4
+      if (($Binary [1] == $Binary [2]) && ($Binary [1] == $Binary [3]) && ($Binary [1] == $Binary [4]) && ($Binary [1] == $Binary [5]) && ($Binary [1] == 0) && ($Binary [6] == 0xffff))
+        $Host = sprintf ('%u.%u.%u.%u', ($Binary [7] >> 8) & 0xFF, $Binary [7] & 0xFF, ($Binary [8] >> 8) & 0xFF, $Binary [8] & 0xFF);
+      else
+        $Host = sprintf ('%x:%x:%x:%x:%x:%x:%x:%x', $Binary [1], $Binary [2], $Binary [3], $Binary [4], $Binary [5], $Binary [6], $Binary [7], $Binary [8]);
+      
+      if ($this->Port)
+        return $Host . ':' . $this->Port;
+      
+      return $Host;
+    }
+    // }}}
+    
     // {{{ parse
     /**
      * Try to parse contents from an input-buffer
@@ -99,7 +123,7 @@
       // Get the relevant data from the input-buffer
       $this->Address = qcEvents_Socket::ip6fromBinary (substr ($Data, $Offset, 16));
       $Offset += 16;
-      $this->Port = self::readUInt16 ($Data, $Offset, $Length);
+      $this->Port = BitWire_Message_Payload::readUInt16 ($Data, $Offset, $Length);
       
       return true;
     }
