@@ -36,10 +36,10 @@
     /* Time of signature */
     private $sigTime = 0;
     
-    /* Public key */
+    /* Public key of Collateral-Address */
     private $pubKey1 = null;
     
-    /* Second public key */
+    /* Public key of masternode */
     private $pubKey2 = null;
     
     /* Count */
@@ -132,8 +132,8 @@
      * @access public
      * @return string
      **/
-    public function getDonationAddress  () {
-      return $this->donationAddress
+    public function getDonationAddress () {
+      return $this->donationAddress;
     }
     // }}}
     
@@ -220,6 +220,36 @@
         self::writeUInt32 ($this->protocolVersion) .
         self::writeCompactString ($this->donationAddress) .
         self::writeUInt32 ($this->donationPercent);
+    }
+    // }}}
+    
+    // {{{ verify
+    /**
+     * Check if the signature here is valid
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function verify () {
+      // Make sure we have everything we need
+      if (!$this->Address || !$this->pubKey1 || !$this->pubKey2)
+        return false;
+      
+      // Reconstruct the message to verify
+      $Message =
+        self::writeCompactString ("DarkNet Signed Message:\n") .
+        self::writeCompactString (
+          $this->Address->toString () .
+          $this->sigTime .
+          $this->pubKey1->toBinary () .
+          $this->pubKey2->toBinary () .
+          $this->protocolVersion .
+          $this->donationAddress .
+          $this->donationPercent
+        );
+      
+      // Verify the message
+      return $this->pubKey1->verifyCompact ($Message, $this->Signature);
     }
     // }}}
   }
