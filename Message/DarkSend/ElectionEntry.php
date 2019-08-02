@@ -19,7 +19,8 @@
    **/
   
   require_once ('BitWire/Message/Payload.php');
-  
+  require_once ('BitWire/Crypto/PublicKey.php');
+    
   class BitWire_Message_DarkSend_ElectionEntry extends BitWire_Message_Payload {
     const PAYLOAD_COMMAND = 'dsee';
     
@@ -59,6 +60,95 @@
     /* Donation-Percent */
     private $donationPercent = 0;
     
+    // {{{ getAddress
+    /**
+     * Retrive the peer-address of this entry
+     * 
+     * @access public
+     * @return BitWire_Peer_Address
+     **/
+    public function getAddress () : ?BitWire_Peer_Address {
+      return $this->Address;
+    }
+    // }}}
+    
+    // {{{ getSignature
+    /**
+     * Retrive the signature for this entry
+     * 
+     * @access public
+     * @return string
+     **/
+    public function getSignature () {
+      return $this->Signature;
+    }
+    // }}}
+    
+    // {{{ getSignatureTime
+    /**
+     * Reitrve the time of the signature
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getSignatureTime () {
+      return $this->sigTime;
+    }
+    // }}}
+    
+    // {{{ getPublicKey
+    /**
+     * Retrive one of the public keys
+     * 
+     * @param int $Num (optional)
+     * 
+     * @access public
+     * @return BitWire_Crypto_PublicKey
+     **/
+    public function getPublicKey ($Num = 1) : ?BitWire_Crypto_PublicKey {
+      if ($Num == 1)
+        return $this->pubKey1;
+      elseif ($Num == 2)
+        return $this->pubKey2;
+    }
+    // }}}
+    
+    // {{{ getProtocolVersion
+    /**
+     * Retrive the protocol-version the node is running
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getProtocolVersion () {
+      return $this->protocolVersion;
+    }
+    // }}}
+    
+    // {{{ getDonationAddress
+    /**
+     * Retive donation-address (unused)
+     * 
+     * @access public
+     * @return string
+     **/
+    public function getDonationAddress  () {
+      return $this->donationAddress
+    }
+    // }}}
+    
+    // {{{ getDonactionPercent
+    /**
+     * Retrive amount of donation (unused)
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getDonationPercent () {
+      return $this->donationPercent;
+    }
+    // }}}
+    
     // {{{ parse
     /**
      * Parse data for this payload
@@ -85,6 +175,10 @@
           (($protocolVersion = self::readUInt32 ($Data, $Offset, $Length)) === null) ||
           (($donationAddress = self::readCompactString ($Data, $Offset, $Length)) === null) ||
           (($donationPercent = self::readUInt32 ($Data, $Offset, $Length)) === null))
+        return false;
+      
+      if ((($pubKey1 = BitWire_Crypto_PublicKey::fromBinary ($pubKey1)) === null) ||
+          (($pubKey2 = BitWire_Crypto_PublicKey::fromBinary ($pubKey2)) === null))
         return false;
       
       // Commit to this instance
@@ -118,8 +212,8 @@
         self::writeCAddress ($this->Address) .
         self::writeCompactString ($this->Signature) .
         self::writeUInt64 ($this->sigTime).
-        self::writeCompactString ($this->pubKey1) .
-        self::writeCompactString ($this->pubKey2) .
+        self::writeCompactString ($this->pubKey1->toBinary ()) .
+        self::writeCompactString ($this->pubKey2->toBinary ()) .
         self::writeUInt32 ($this->Count) .
         self::writeUInt32 ($this->Current) .
         self::writeUInt64 ($this->lastUpdate) .
