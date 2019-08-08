@@ -119,7 +119,7 @@
             '       out=', md5 ($pPayload), "\n\n";
           
           // Check for dump-functions
-          if (function_exists ('dump_compare')) {
+          if (function_exists ('dumpCompare')) {
             dumpCompare ($Payload, $pPayload);
             echo "\n";
           } elseif (function_exists ('dump')) {
