@@ -135,12 +135,14 @@
     /**
      * Retrive the unique ID of this public key
      * 
+     * @param bool $Compressed (optional)
+     * 
      * @access public
      * @return string
      **/
-    public function getID () {
+    public function getID ($Compressed = null) {
       // Convert this public key into binary
-      $Binary = $this->toBinary ();
+      $Binary = $this->toBinary ($Compressed);
       
       // Hash the key
       return hash ('ripemd160', hash ('sha256', $Binary, true));
