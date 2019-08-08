@@ -28,6 +28,7 @@
   require_once ('BitWire/Message/DarkSend/ElectionEntry.php');
   require_once ('BitWire/Message/DarkSend/ElectionEntryPing.php');
   require_once ('BitWire/Message/Masternode/SyncStatusCount.php');
+  require_once ('BitWire/Message/Masternode/Ping.php');
   
   class BitWire_Peer extends qcEvents_Hookable implements qcEvents_Interface_Stream_Consumer {
     /* Publish-Methods */
