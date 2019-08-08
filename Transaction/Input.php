@@ -70,6 +70,18 @@
     }
     // }}}
     
+    // {{{ __toString
+    /**
+     * Convert this one into a string
+     * 
+     * @access public
+     * @return string
+     **/
+    function __toString () {
+      return strval ($this->Hash) . ':' . $this->Index;
+    }
+    // }}}
+    
     // {{{ __debugInfo
     /**
      * Prepare output for vardump()
