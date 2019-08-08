@@ -485,7 +485,7 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return array
+     * @return BitWire_Peer_Address
      **/
     public static function readCAddress (&$Data, &$Offset, $Length = null) : ?BitWire_Peer_Address {
       $Address = new BitWire_Peer_Address;
@@ -508,6 +508,50 @@
      **/
     public static function writeCAddress (BitWire_Peer_Address $Address) {
       return $Address->toBinary ();
+    }
+    // }}}
+    
+    // {{{ readCPublicKey
+    /**
+     * Safely read a public key from an input-buffer
+     * 
+     * @param string $Data
+     * @param int $Offset
+     * @param int $Length (optional)
+     * 
+     * @access public
+     * @return BitWire_Crypto_PublicKey
+     **/
+    public static function readCPublicKey (&$Data, &$Offset, $Length = null) : ?BitWire_Crypto_PublicKey {
+      $tOffset = $Offset;
+      
+      if (($PublicKey = self::readCompactString ($Data, $tOffset, $Length)) === null)
+        return null;
+      
+      if (($PublicKey = BitWire_Crypto_PublicKey::fromBinary ($PublicKey)) === null)
+        return null;
+      
+      $Offset = $tOffset;
+      
+      return $PublicKey;
+    }
+    // }}}
+    
+    // {{{ writeCPublicKey
+    /**
+     * Write a public key binary
+     * 
+     * @param BitWire_Crypto_PublicKey $PublicKey (optional)
+     * 
+     * @access public
+     * @return string
+     **/
+    public static function writeCPublicKey (BitWire_Crypto_PublicKey $PublicKey = null) {
+      if ($PublicKey)
+        return $PublicKey->toBinary ();
+      
+      trigger_error ('Writing empty (invalid) public key');
+      return self::writeCompactString ('');
     }
     // }}}
     

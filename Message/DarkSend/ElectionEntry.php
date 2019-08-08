@@ -167,18 +167,14 @@
           (($Address = self::readCAddress ($Data, $Offset, $Length)) === null) ||
           (($Signature = self::readCompactString ($Data, $Offset, $Length)) === null) ||
           (($sigTime = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
-          (($pubKey1 = self::readCompactString ($Data, $Offset, $Length)) === null) ||
-          (($pubKey2 = self::readCompactString ($Data, $Offset, $Length)) === null) ||
+          (($pubKey1 = self::readCPublicKey ($Data, $Offset, $Length)) === null) ||
+          (($pubKey2 = self::readCPublicKey ($Data, $Offset, $Length)) === null) ||
           (($Count = self::readUInt32 ($Data, $Offset, $Length)) === null) ||
           (($Current = self::readUInt32 ($Data, $Offset, $Length)) === null) ||
           (($lastUpdate = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
           (($protocolVersion = self::readUInt32 ($Data, $Offset, $Length)) === null) ||
           (($donationAddress = self::readCompactString ($Data, $Offset, $Length)) === null) ||
           (($donationPercent = self::readUInt32 ($Data, $Offset, $Length)) === null))
-        return false;
-      
-      if ((($pubKey1 = BitWire_Crypto_PublicKey::fromBinary ($pubKey1)) === null) ||
-          (($pubKey2 = BitWire_Crypto_PublicKey::fromBinary ($pubKey2)) === null))
         return false;
       
       // Commit to this instance
@@ -212,8 +208,8 @@
         self::writeCAddress ($this->Address) .
         self::writeCompactString ($this->Signature) .
         self::writeUInt64 ($this->sigTime).
-        self::writeCompactString ($this->pubKey1->toBinary ()) .
-        self::writeCompactString ($this->pubKey2->toBinary ()) .
+        self::writeCPublicKey ($this->pubKey1) .
+        self::writeCPublicKey ($this->pubKey2) .
         self::writeUInt32 ($this->Count) .
         self::writeUInt32 ($this->Current) .
         self::writeUInt64 ($this->lastUpdate) .
