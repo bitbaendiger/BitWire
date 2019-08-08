@@ -98,9 +98,9 @@
         if ($Hash ['hash'] instanceof BitWire_Hash)
           continue;
         elseif (strlen ($Hash ['hash']) == 32)
-          $Inventory [$idx]['hash'] = BitWire_Hash::fromBinary ($Hash, true);
+          $Inventory [$idx]['hash'] = BitWire_Hash::fromBinary ($Hash ['hash'], (isset ($Hash ['internal']) ? $Hash ['internal'] : true));
         elseif (strlen ($Hash ['hash']) == 64)
-          $Inventory [$idx]['hash'] = BitWire_Hash::fromHex ($Hash, true);
+          $Inventory [$idx]['hash'] = BitWire_Hash::fromHex ($Hash ['hash'], (isset ($Hash ['internal']) ? $Hash ['internal'] : true));
         else
           unset ($Inventory [$idx]);
       
