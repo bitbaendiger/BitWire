@@ -548,7 +548,7 @@
      **/
     public static function writeCPublicKey (BitWire_Crypto_PublicKey $PublicKey = null) {
       if ($PublicKey)
-        return $PublicKey->toBinary ();
+        return self::writeCompactString ($PublicKey->toBinary ());
       
       trigger_error ('Writing empty (invalid) public key');
       return self::writeCompactString ('');
