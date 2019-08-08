@@ -58,10 +58,24 @@
     
     // {{{ getAddress
     /**
+     * Retrive the IP-Address of this peer
+     * 
+     * @param bool $unmappIPv4 (optional)
+     * 
      * @access public
      * @return string
      **/
-    public function getAddress () {
+    public function getAddress ($unmappIPv4 = false) {
+      if (!$unmappIPv4)
+        return '[' . $this->Address . ']';
+      
+      // Convert address to binary
+      $Binary = unpack ('n8', qcEvents_Socket::ip6toBinary ($this->Address));
+      
+      // Check for IPv4
+      if (($Binary [1] == $Binary [2]) && ($Binary [1] == $Binary [3]) && ($Binary [1] == $Binary [4]) && ($Binary [1] == $Binary [5]) && ($Binary [1] == 0) && ($Binary [6] == 0xffff))
+        return sprintf ('%u.%u.%u.%u', ($Binary [7] >> 8) & 0xFF, $Binary [7] & 0xFF, ($Binary [8] >> 8) & 0xFF, $Binary [8] & 0xFF);
+      
       return '[' . $this->Address . ']';
     }
     // }}}
@@ -84,19 +98,10 @@
      * @return string
      **/
     public function toString () {
-      // Convert address to binary
-      $Binary = unpack ('n8', qcEvents_Socket::ip6toBinary ($this->Address));
-      
-      // Check for IPv4
-      if (($Binary [1] == $Binary [2]) && ($Binary [1] == $Binary [3]) && ($Binary [1] == $Binary [4]) && ($Binary [1] == $Binary [5]) && ($Binary [1] == 0) && ($Binary [6] == 0xffff))
-        $Host = sprintf ('%u.%u.%u.%u', ($Binary [7] >> 8) & 0xFF, $Binary [7] & 0xFF, ($Binary [8] >> 8) & 0xFF, $Binary [8] & 0xFF);
-      else
-        $Host = sprintf ('%x:%x:%x:%x:%x:%x:%x:%x', $Binary [1], $Binary [2], $Binary [3], $Binary [4], $Binary [5], $Binary [6], $Binary [7], $Binary [8]);
-      
       if ($this->Port)
-        return $Host . ':' . $this->Port;
+        return $this->getAddress (true) . ':' . $this->Port;
       
-      return $Host;
+      return $this->getAddress (true);
     }
     // }}}
     
