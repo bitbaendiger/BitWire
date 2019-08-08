@@ -90,8 +90,8 @@
       if (($Flags < 27) || ($Flags > 34))
         return null;
       
-      $recID = ($Flags - 27) & 3;
-      $Compressed = (($Flags - 27) & 4 != 0);
+      $recID = ($Flags - 27) & 0x03;
+      $Compressed = ((($Flags - 27) & 0x04) != 0);
       
       // {{{ secp256k1_ecdsa_recoverable_signature_parse_compact
       $Order = $Curve->G->getOrder ();
@@ -140,7 +140,7 @@
      **/
     public function getID () {
       // Convert this public key into binary
-      $Binary = $this->toBinary (false);
+      $Binary = $this->toBinary ();
       
       // Hash the key
       return hash ('ripemd160', hash ('sha256', $Binary, true));
