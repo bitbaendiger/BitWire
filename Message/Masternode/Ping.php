@@ -35,6 +35,27 @@
     /* The signature itself */
     private $Signature = '';
     
+    // {{{ fromString
+    /**
+     * Try to read a masternode-ping from an input-buffer
+     * 
+     * @param string $Data
+     * @param int $Offset
+     * @param int $Length (optional)
+     * 
+     * @access public
+     * @return BitWire_Message_Masternode_Ping
+     **/
+    public static function readString (&$Data, &$Offset, $Length = null) : ?BitWire_Message_Masternode_Ping {
+      $Instance = new static;
+      
+      if (!$Instance->parse ($Data, $Offset, $Length))
+        return null;
+      
+      return $Instance;
+    }
+    // }}}
+    
     // {{{ parse
     /**
      * Parse data for this payload
@@ -44,15 +65,17 @@
      * @access public
      * @return bool
      **/
-    public function parse ($Data) {
+    public function parse ($Data, &$Offset = 0, $Length = null) {
       // Try to read all values
-      $Length = strlen ($Data);
-      $Offset = 0;
+      if ($Length === null)
+        $Length = strlen ($Data);
       
-      if ((($txIn = self::readCTxIn ($Data, $Offset, $Length)) === null) ||
-          (($Hash = self::readHash ($Data, $Offset, $Length)) === null) ||
-          (($signatureTime = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
-          (($Signature = self::readCompactString ($Data, $Offset, $Length)) === null))
+      $tOffset = $Offset;
+      
+      if ((($txIn = self::readCTxIn ($Data, $tOffset, $Length)) === null) ||
+          (($Hash = self::readHash ($Data, $tOffset, $Length)) === null) ||
+          (($signatureTime = self::readUInt64 ($Data, $tOffset, $Length)) === null) ||
+          (($Signature = self::readCompactString ($Data, $tOffset, $Length)) === null))
         return false;
       
       // Commit to this instance
@@ -60,6 +83,7 @@
       $this->Hash = $Hash;
       $this->signatureTime = $signatureTime;
       $this->Signature = $Signature;
+      $Offset = $tOffset;
       
       return true;
     }
