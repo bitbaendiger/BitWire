@@ -37,10 +37,10 @@
     private $sigTime = 0;
     
     /* Public key of Collateral-Address */
-    private $pubKey1 = null;
+    private $publicKeyCollateral = null;
     
     /* Public key of masternode */
-    private $pubKey2 = null;
+    private $publicKeyMasternode = null;
     
     /* Count */
     private $Count = 0;
@@ -96,20 +96,27 @@
     }
     // }}}
     
-    // {{{ getPublicKey
+    // {{{ getCollateralPublicKey
     /**
-     * Retrive one of the public keys
-     * 
-     * @param int $Num (optional)
+     * Retrive the public key of the collateral-address used
      * 
      * @access public
      * @return BitWire_Crypto_PublicKey
      **/
-    public function getPublicKey ($Num = 1) : ?BitWire_Crypto_PublicKey {
-      if ($Num == 1)
-        return $this->pubKey1;
-      elseif ($Num == 2)
-        return $this->pubKey2;
+    public function getCollateralPublicKey () : ?BitWire_Crypto_PublicKey {
+      return $this->publicKeyCollateral;
+    }
+    // }}}
+    
+    // {{{ getMasternodePublicKey
+    /**
+     * Retrive the public key of the masternode
+     * 
+     * @access public
+     * @return BitWire_Crypto_PublicKey
+     **/
+    public function getMasternodePublicKey () : ?BitWire_Crypto_PublicKey {
+      return $this->publicKeyMasternode;
     }
     // }}}
     
@@ -167,8 +174,8 @@
           (($Address = self::readCAddress ($Data, $Offset, $Length)) === null) ||
           (($Signature = self::readCompactString ($Data, $Offset, $Length)) === null) ||
           (($sigTime = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
-          (($pubKey1 = self::readCPublicKey ($Data, $Offset, $Length)) === null) ||
-          (($pubKey2 = self::readCPublicKey ($Data, $Offset, $Length)) === null) ||
+          (($publicKeyCollateral = self::readCPublicKey ($Data, $Offset, $Length)) === null) ||
+          (($publicKeyMasternode = self::readCPublicKey ($Data, $Offset, $Length)) === null) ||
           (($Count = self::readUInt32 ($Data, $Offset, $Length)) === null) ||
           (($Current = self::readUInt32 ($Data, $Offset, $Length)) === null) ||
           (($lastUpdate = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
@@ -182,8 +189,8 @@
       $this->Address = $Address;
       $this->Signature = $Signature;
       $this->sigTime = $sigTime;
-      $this->pubKey1 = $pubKey1;
-      $this->pubKey2 = $pubKey2;
+      $this->publicKeyCollateral = $publicKeyCollateral;
+      $this->publicKeyMasternode = $publicKeyMasternode;
       $this->Count = $Count;
       $this->Current = $Current;
       $this->lastUpdate = $lastUpdate;
@@ -208,8 +215,8 @@
         self::writeCAddress ($this->Address) .
         self::writeCompactString ($this->Signature) .
         self::writeUInt64 ($this->sigTime).
-        self::writeCPublicKey ($this->pubKey1) .
-        self::writeCPublicKey ($this->pubKey2) .
+        self::writeCPublicKey ($this->publicKeyCollateral) .
+        self::writeCPublicKey ($this->publicKeyMasternode) .
         self::writeUInt32 ($this->Count) .
         self::writeUInt32 ($this->Current) .
         self::writeUInt64 ($this->lastUpdate) .
@@ -228,7 +235,7 @@
      **/
     public function verify () {
       // Make sure we have everything we need
-      if (!$this->Address || !$this->pubKey1 || !$this->pubKey2)
+      if (!$this->Address || !$this->publicKeyCollateral || !$this->publicKeyMasternode)
         return false;
       
       // Reconstruct the message to verify
@@ -237,15 +244,15 @@
         self::writeCompactString (
           $this->Address->toString () .
           $this->sigTime .
-          $this->pubKey1->toBinary () .
-          $this->pubKey2->toBinary () .
+          $this->publicKeyCollateral->toBinary () .
+          $this->publicKeyMasternode->toBinary () .
           $this->protocolVersion .
           $this->donationAddress .
           $this->donationPercent
         );
       
       // Verify the message
-      return $this->pubKey1->verifyCompact ($Message, $this->Signature);
+      return $this->publicKeyCollateral->verifyCompact ($Message, $this->Signature);
     }
     // }}}
   }
