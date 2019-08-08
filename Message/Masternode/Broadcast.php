@@ -51,6 +51,30 @@
     /* Time of last dsq broadcast  */
     private $lastDSQ = 0;
     
+    // {{{ getTransactionInput
+    /**
+     * Retrive CTxIn of this election-entry
+     * 
+     * @access public
+     * @return BitWire_Transaction_Input
+     **/
+    public function getTransactionInput () : ?BitWire_Transaction_Input {
+      return $this->txIn;
+    }
+    // }}}
+    
+    // {{{ getAddress
+    /**
+     * Retrive the peer-address of this entry
+     * 
+     * @access public
+     * @return BitWire_Peer_Address
+     **/
+    public function getAddress () : ?BitWire_Peer_Address {
+      return $this->Address;
+    }
+    // }}}
+    
     // {{{ getCollateralPublicKey
     /**
      * Retrive the public key of the collateral-address used

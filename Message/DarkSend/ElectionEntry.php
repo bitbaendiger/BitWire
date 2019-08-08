@@ -60,6 +60,18 @@
     /* Donation-Percent */
     private $donationPercent = 0;
     
+    // {{{ getTransactionInput
+    /**
+     * Retrive CTxIn of this election-entry
+     * 
+     * @access public
+     * @return BitWire_Transaction_Input
+     **/
+    public function getTransactionInput () : ?BitWire_Transaction_Input {
+      return $this->TxIn;
+    }
+    // }}}
+    
     // {{{ getAddress
     /**
      * Retrive the peer-address of this entry
