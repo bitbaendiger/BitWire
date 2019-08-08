@@ -342,8 +342,8 @@
       $tOffset = $Offset;
       
       if ((($Version = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null) ||
-          (($Hash = BitWire_Message_Payload::readChar ($Data, $tOffset, 32, $Length)) === null) ||
-          (($MerkleRoot = BitWire_Message_Payload::readChar ($Data, $tOffset, 32, $Length)) === null) ||
+          (($Hash = BitWire_Message_Payload::readHash ($Data, $tOffset, $Length)) === null) ||
+          (($MerkleRoot = BitWire_Message_Payload::readHash ($Data, $tOffset, $Length)) === null) ||
           (($Timestamp = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null) ||
           (($Threshold = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null) ||
           (($Nonce = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null) ||
@@ -410,8 +410,8 @@
       
       // Store all values read
       $this->Version = $Version;
-      $this->PreviousHash = BitWire_Hash::fromBinary ($Hash, true);
-      $this->MerkleRootHash = BitWire_Hash::fromBinary ($MerkleRoot, true);
+      $this->PreviousHash = $Hash;
+      $this->MerkleRootHash = $MerkleRoot;
       $this->Timestamp = $Timestamp;
       $this->TargetThreshold = $Threshold;
       $this->Nonce = $Nonce;

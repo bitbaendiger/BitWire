@@ -1,7 +1,26 @@
 <?PHP
 
+  /**
+   * BitWire - Message Payload
+   * Copyright (C) 2019 Bernd Holzmueller <bernd@quarxconnect.de>
+   * 
+   * This program is free software: you can redistribute it and/or modify
+   * it under the terms of the GNU General Public License as published by
+   * the Free Software Foundation, either version 3 of the License, or
+   * (at your option) any later version.
+   * 
+   * This program is distributed in the hope that it will be useful,
+   * but WITHOUT ANY WARRANTY; without even the implied warranty of
+   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   * GNU General Public License for more details.
+   * 
+   * You should have received a copy of the GNU General Public License
+   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   **/
+  
   require_once ('BitWire/Transaction/Input.php');
   require_once ('BitWire/Peer/Address.php');
+  require_once ('BitWire/Hash.php');
   
   class BitWire_Message_Payload {
     const PAYLOAD_COMMAND = null;
@@ -379,6 +398,45 @@
     }
     // }}}
     
+    // {{{ readHash
+    /**
+     * Safely read a Hash from an input-buffer
+     * 
+     * @param string $Data
+     * @param int $Offset
+     * @param int $Length (optional)
+     * 
+     * @access public
+     * @return Bitwire_Hash
+     **/
+    public static function readHash (&$Data, &$Offset, $Length = null) : ?Bitwire_Hash {
+      // Try to read the input
+      if (($Hash = self::readChar ($Data, $Offset, 32, $Length)) === null)
+        return null;
+      
+      // Create Hash-Instance
+      return BitWire_Hash::fromBinary ($Hash, true);
+    }
+    // }}}
+    
+    // {{{ writeHash
+    /**
+     * Convert a hash to binary
+     * 
+     * @param BitWire_Hash $Hash (optional)
+     * 
+     * @access public
+     * @return string
+     **/
+    public static function writeHash (BitWire_Hash $Hash = null) {
+      if ($Hash)
+        return $Hash->toBinary (true);
+      
+      trigger_error ('Writing empty hash');
+      return str_repeat ("\x00", 32);
+    }
+    // }}}
+    
     // {{{ readCTxIn
     /**
      * Safely read an Transaction-Input from an input-buffer
@@ -404,13 +462,17 @@
     /**
      * Write a transaction-input to binary
      * 
-     * @param BitWire_Transaction_Input $Input
+     * @param BitWire_Transaction_Input $Input (optional)
      * 
      * @access public
      * @return string
      **/
-    public static function writeCTxIn (BitWire_Transaction_Input $Input) {
-      return $Input->toBinary ();
+    public static function writeCTxIn (BitWire_Transaction_Input $Input = null) {
+      if ($Input)
+        return $Input->toBinary ();
+      
+      trigger_error ('Writing empty CTxIn');
+      return str_repeat ("\x00", 41);
     }
     // }}}
     

@@ -38,12 +38,23 @@
     /* Sequence of input */
     private $Sequence = 0;
     
-    private static function checkCoinbase ($Hash, $Index) {
+    // {{{ checkCoinbase
+    /**
+     * Check if a given hash and index might represent a coinbase
+     * 
+     * @param BitWire_Hash $Hash
+     * @param int $Index
+     * 
+     * @access private
+     * @return bool
+     **/
+    private static function checkCoinbase (BitWire_Hash $Hash, $Index) {
       if ($Index != 0xFFFFFFFF)
         return false;
       
-      return (strcmp ($Hash, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00") == 0);
+      return (strcmp ($Hash->toBinary (), "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00") == 0);
     }
+    // }}}
     
     // {{{ __construct
     /**
@@ -84,7 +95,7 @@
      * @return bool
      **/
     public function isCoinbase () {
-      return self::checkCoinbase ($this->Hash->toBinary (), $this->Index);
+      return self::checkCoinbase ($this->Hash, $this->Index);
     }
     // }}}
     
@@ -177,7 +188,7 @@
         $Length = strlen ($Data);
       
       // Try to read everything into our memory
-      if ((($Hash = BitWire_Message_Payload::readChar ($Data, $Offset, 32, $Length)) === null) ||
+      if ((($Hash = BitWire_Message_Payload::readHash ($Data, $Offset, $Length)) === null) ||
           (($Index = BitWire_Message_Payload::readUInt32 ($Data, $Offset, $Length)) === null) ||
           (($Script = BitWire_Message_Payload::readCompactString ($Data, $Offset, $Length)) === null) ||
           (($Sequence = BitWire_Message_Payload::readUInt32 ($Data, $Offset, $Length)) === null))
@@ -195,7 +206,7 @@
         return false;
       
       // Store the results on this instance
-      $this->Hash = BitWire_Hash::fromBinary ($Hash, true);
+      $this->Hash = $Hash;
       $this->Index = $Index;
       $this->Script = new BitWire_Transaction_Script ($this, $Script);
       $this->Sequence = $Sequence;
@@ -213,9 +224,10 @@
      **/
     public function toBinary () {
       return
-        pack ('a32V', $this->Hash->toBinary (true), $this->Index) .
-        BitWire_Message_Payload::toCompactString ($this->Script->toBinary ()) .
-        pack ('V', $this->Sequence);
+        BitWire_Message_Payload::writeHash ($this->Hash) .
+        BitWire_Message_Payload::writeUInt32 ($this->Index) .
+        BitWire_Message_Payload::writeCompactString ($this->Script->toBinary ()) .
+        BitWire_Message_Payload::writeUInt32 ($this->Sequence);
     }
     // }}}
   }
