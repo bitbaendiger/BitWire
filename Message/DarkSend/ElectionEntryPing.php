@@ -52,7 +52,7 @@
       if ((($TxIn = self::readCTxIn ($Data, $Offset, $Length)) === null) ||
           (($Signature = self::readCompactString ($Data, $Offset, $Length)) === null) ||
           (($Timestamp = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
-          (($Stop = self::readBoolean ($data, $Offset, $Length)) === null))
+          (($Stop = self::readBoolean ($Data, $Offset, $Length)) === null))
         return false;
       
       // Commit to this instance
