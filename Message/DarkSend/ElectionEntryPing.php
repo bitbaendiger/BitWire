@@ -80,6 +80,30 @@
         self::writeBoolean ($this->Stop);
     }
     // }}}
+    
+    // {{{ verify
+    /**
+     * Verify this ping
+     * 
+     * @param BitWire_Peer_Address $Peer
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function verify (BitWire_Peer_Address $Peer, BitWire_Crypto_PublicKey $PublicKey) {
+      // Reconstruct the message to verify
+      $Message =
+        self::writeCompactString ("DarkNet Signed Message:\n") .
+        self::writeCompactString (
+          $Peer->toString () .
+          $this->Timestamp .
+          ($this->Stop ? 1 : 0)
+        );
+
+      // Verify the message
+      return $PublicKey->verifyCompact ($Message, $this->Signature);
+    }
+    // }}}
   }
   
   // Register this payload
