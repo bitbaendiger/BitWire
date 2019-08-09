@@ -145,7 +145,7 @@
       $Binary = $this->toBinary ($Compressed);
       
       // Hash the key
-      return hash ('ripemd160', hash ('sha256', $Binary, true));
+      return bin2hex (strrev (hash ('ripemd160', hash ('sha256', $Binary, true), true)));
     }
     // }}}
     

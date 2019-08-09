@@ -56,6 +56,46 @@
     }
     // }}}
     
+    // {{{ getTransactionInput
+    /**
+     * Retrive the transaction-input of this masternode-ping
+     * 
+     * @access public
+     * @return BitWire_Transaction_Input
+     **/
+    public function getTransactionInput () : ?BitWire_Transaction_Input {
+      return $this->txIn;
+    }
+    // }}}
+    
+    // {{{ setTransactionInput
+    /**
+     * Set transaction-input for this message
+     * 
+     * @param BitWire_Transaction_Input $Input
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setTransactionInput (BitWire_Transaction_Input $Input) {
+      $this->txIn = $Input;
+    }
+    // }}}
+    
+    // {{{ setHash
+    /**
+     * Set the blockhash contained in this ping
+     * 
+     * @param BitWire_Hash $Hash
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setHash (BitWire_Hash $Hash) {
+      $this->Hash = $Hash;
+    }
+    // }}}
+    
     // {{{ parse
     /**
      * Parse data for this payload
@@ -102,6 +142,67 @@
         self::writeHash ($this->Hash) .
         self::writeUInt64 ($this->signatureTime) .
         self::writeCompactString ($this->Signature);
+    }
+    // }}}
+    
+    // {{{ sign
+    /**
+     * Create a signature for this message
+     * 
+     * @param BitWire_Crypto_PrivateKey $PrivateKey
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function sign (BitWire_Crypto_PrivateKey $PrivateKey) {
+      // Update the timestamp
+      $oTimestamp = $this->signatureTime;
+      $this->signatureTime = time ();
+      
+      // Try to generate signature
+      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature (), false)) === false) {
+        // Restore the old timestamp
+        $this->signatureTime = $oTimestamp;
+        
+        return false;
+      }
+      
+      // Set the signature
+      $this->Signature = $Signature;
+      
+      return true;
+    }
+    // }}}
+    
+    // {{{ verify
+    /**
+     * Verify this ping
+     * 
+     * @param BitWire_Crypto_PublicKey $PublicKey
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function verify (BitWire_Crypto_PublicKey $PublicKey) {
+      return $PublicKey->verifyCompact ($this->getMessageForSignature (), $this->Signature);
+    }
+    // }}}
+    
+    // {{{ getMessageForSignature
+    /**
+     * Prepare the message for our signature
+     * 
+     * @access private
+     * @return string
+     **/
+    private function getMessageForSignature () {
+      return
+        self::writeCompactString ("DarkNet Signed Message:\n") .
+        self::writeCompactString (
+          $this->txIn->toString () .
+          strval ($this->Hash) .
+          $this->signatureTime
+        );
     }
     // }}}
   }

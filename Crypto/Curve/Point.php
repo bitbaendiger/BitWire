@@ -66,7 +66,7 @@
         $Curve->p
       );
       
-      if ($Negative)
+      if (!$Negative)
         return new static ($Curve, $x, gmp_mod (gmp_sub ($Curve->p, $y), $Curve->p), $order);
       
       return new static ($Curve, $x, $y, $order);

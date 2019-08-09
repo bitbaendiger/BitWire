@@ -71,11 +71,12 @@
      * Create a compact signature for a given message
      * 
      * @param string $Message
+     * @param bool $Compressed (optional)
      * 
      * @access public
      * @return string
      **/
-    public function signCompact ($Message) {
+    public function signCompact ($Message, $Compressed = null) {
       // Create hash of the message
       $Digest = hash ('sha256', hash ('sha256', $Message, true), true);
       
@@ -84,21 +85,22 @@
          return false;
       
       // Sign with nonce
-      $P = $this->Point->Curve->G->mul ($Nonce);
-      $r = $P->x % $this->Point->Curve->G->getOrder ();
+      $G = $this->Point->Curve->G;
+      $P = $G->mul ($Nonce);
+      $r = $P->x % $G->getOrder ();
       
       if ($r == 0)
         return false;
       
       $edr = gmp_import ($Digest) + ($this->Key * $r);
-      $invk = gmp_invert ($Nonce, $this->Point->Curve->G->getOrder ());
+      $invk = gmp_invert ($Nonce, $G->getOrder ());
       $kedr = $invk * $edr;
       
-      $s = $kedr % $this->Point->Curve->G->getOrder ();
+      $s = $kedr % $G->getOrder ();
       
       // Create recoverable signature
-      $Overflow = ($r > $this->Point->Curve->G->getOrder () ? 2 : 0);
-      $Compressed = ($this->Compressed ? 4 : 0);
+      $Overflow = ($r > $G->getOrder () ? 2 : 0);
+      $Compressed = (($Compressed === true) || (($Compressed === null) && $this->Compressed) ? 4 : 0);
       $Odd = ($P->y % 2 == 1 ? 1 : 0);
       
       return

@@ -24,16 +24,42 @@
     const PAYLOAD_COMMAND = 'dseep';
     
     /* Transaction-Input used */
-    private $TxIn = null;
+    private $txIn = null;
     
     /* Signature for the ping */
     private $Signature = '';
     
     /* Timestamp of the ping */
-    private $Timestamp = 0;
+    private $signatureTime = 0;
     
     /* Stop this election-entry ?! (unused) */
     private $Stop = false;
+    
+    // {{{ getTransactionInput
+    /**
+     * Retrive the transaction-input of this darksend-ping
+     * 
+     * @access public
+     * @return BitWire_Transaction_Input
+     **/
+    public function getTransactionInput () : ?BitWire_Transaction_Input {
+      return $this->txIn;
+    }
+    // }}}
+    
+    // {{{ setTransactionInput
+    /**
+     * Set transaction-input for this message
+     * 
+     * @param BitWire_Transaction_Input $Input
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setTransactionInput (BitWire_Transaction_Input $Input) {
+      $this->txIn = $Input;
+    }
+    // }}}
     
     // {{{ parse
     /**
@@ -49,16 +75,16 @@
       $Length = strlen ($Data);
       $Offset = 0;
       
-      if ((($TxIn = self::readCTxIn ($Data, $Offset, $Length)) === null) ||
+      if ((($txIn = self::readCTxIn ($Data, $Offset, $Length)) === null) ||
           (($Signature = self::readCompactString ($Data, $Offset, $Length)) === null) ||
-          (($Timestamp = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
+          (($signatureTime = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
           (($Stop = self::readBoolean ($Data, $Offset, $Length)) === null))
         return false;
       
       // Commit to this instance
-      $this->TxIn = $TxIn;
+      $this->txIn = $txIn;
       $this->Signature = $Signature;
-      $this->Timestamp = $Timestamp;
+      $this->signatureTime = $signatureTime;
       $this->Stop = $Stop;
       
       return true;
@@ -74,10 +100,40 @@
      **/
     public function toBinary () {
       return
-        self::writeCTxIn ($this->TxIn) .
+        self::writeCTxIn ($this->txIn) .
         self::writeCompactString ($this->Signature) .
-        self::writeUInt64 ($this->Timestamp).
+        self::writeUInt64 ($this->signatureTime).
         self::writeBoolean ($this->Stop);
+    }
+    // }}}
+    
+    // {{{ sign
+    /**
+     * Create a signature for this message
+     * 
+     * @param BitWire_Peer_Address $Peer
+     * @param BitWire_Crypto_PrivateKey $PrivateKey
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function sign (BitWire_Peer_Address $Peer, BitWire_Crypto_PrivateKey $PrivateKey) {
+      // Update the timestamp
+      $oTimestamp = $this->signatureTime;
+      $this->signatureTime = time ();
+      
+      // Try to generate signature
+      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($Peer), false)) === false) {
+        // Restore the old timestamp
+        $this->signatureTime = $oTimestamp;
+        
+        return false;
+      }
+      
+      // Set the signature
+      $this->Signature = $Signature;
+      
+      return true;
     }
     // }}}
     
@@ -86,22 +142,33 @@
      * Verify this ping
      * 
      * @param BitWire_Peer_Address $Peer
+     * @param BitWire_Crypto_PublicKey $PublicKey
      * 
      * @access public
      * @return bool
      **/
     public function verify (BitWire_Peer_Address $Peer, BitWire_Crypto_PublicKey $PublicKey) {
-      // Reconstruct the message to verify
-      $Message =
+      return $PublicKey->verifyCompact ($this->getMessageForSignature ($Peer), $this->Signature);
+    }
+    // }}}
+    
+    // {{{ getMessageForSignature
+    /**
+     * Prepare the message for our signature
+     * 
+     * @param BitWire_Peer_Address $Peer
+     * 
+     * @access private
+     * @return string
+     **/
+    private function getMessageForSignature (BitWire_Peer_Address $Peer) {
+      return
         self::writeCompactString ("DarkNet Signed Message:\n") .
         self::writeCompactString (
           $Peer->toString () .
-          $this->Timestamp .
+          $this->signatureTime .
           ($this->Stop ? 1 : 0)
         );
-
-      // Verify the message
-      return $PublicKey->verifyCompact ($Message, $this->Signature);
     }
     // }}}
   }
