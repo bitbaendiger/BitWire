@@ -115,6 +115,20 @@
     }
     // }}}
     
+    // {{{ setLastPing
+    /**
+     * Store last send/received masternode-ping on this broadcast
+     * 
+     * @param BitWire_Message_Masternode_Ping $Ping
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setLastPing (BitWire_Message_Masternode_Ping $Ping) {
+      $this->lastPing = $Ping;
+    }
+    // }}}
+    
     // {{{ parse
     /**
      * Parse data for this payload
