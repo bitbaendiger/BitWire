@@ -98,6 +98,18 @@
     }
     // }}}
     
+    // {{{ getTimestamp
+    /**
+     * Retrive the timestamp of last connection to this address
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getTimestamp () {
+      return $this->Timestamp;
+    }
+    // }}}
+    
     // {{{ unsetTimestamp
     /**
      * Remove last connection-attemp-timestamp
@@ -109,6 +121,10 @@
       $this->Timestamp = null;
     }
     // }}}
+    
+    public function getServices () {
+      return $this->Services;
+    }
     
     // {{{ hasConnection
     /**

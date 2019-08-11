@@ -114,9 +114,9 @@
       // Output each entry
       foreach ($this->Addresses as $Address)
         if ($Version >= 31402)
-          $Buffer .= pack ('VPa16n', $Address ['timestamp'], $Address ['services'], qcEvents_Socket::ip6toBinary ($Address ['address']), $Address ['port']);
+          $Buffer .= pack ('VPa16n', $Address->getTimestamp (), $Address->getServices (), qcEvents_Socket::ip6toBinary ($Address->getIPAddress ()), $Address->getPort ());
         else
-          $Buffer .= pack ('Pa16n', $Address ['services'], qcEvents_Socket::ip6toBinary ($Address ['address']), $Address ['port']);
+          $Buffer .= pack ('Pa16n', $Address->getServices (), qcEvents_Socket::ip6toBinary ($Address->getIPAddress ()), $Address->getPort ());
       
       // Return the result
       return $Buffer;
