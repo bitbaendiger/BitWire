@@ -249,7 +249,7 @@
         
         // Anything else is unwanted here
         } else
-          trigger_error ('Invalid message during negotiation');
+          trigger_error ('Invalid message during negotiation (' . get_class ($Payload) . ')');
         
         // Check wheter to run callbacks
         if ($this->peerInit && ($this->peerVersion !== null)) {
@@ -274,19 +274,13 @@
       elseif ($Payload instanceof BitWire_Message_FeeFilter)
         $this->minFee = $Payload->getFee ();
       
-      // Do something automatically
-      elseif ($Payload instanceof BitWire_Message_Ping)
-        $this->sendPayload (new BitWire_Message_Pong ($Payload));
-      
-      
-      # sendcmpct
-      # addr
-      # getaddr
-      # filterload
-      # filterclear
-      # filteradd
-      # feefilter
-      # reject
+      // Reply to pings automatically
+      elseif ($Payload instanceof BitWire_Message_Ping) {
+        if ($this->___callback ('peerPingReceived', $Payload) === false)
+          return;
+        
+        return $this->sendPayload (new BitWire_Message_Pong ($Payload));
+      }
       
       $this->___callback ('messageReceived', $Message);
       $this->___callback ('payloadReceived', $Payload);
@@ -421,6 +415,7 @@
     protected function bitwireConnected (BitWire_Message_Version $PeerVersion) { }
     protected function messageReceived (BitWire_Message $Message) { }
     protected function payloadReceived (BitWire_Message_Payload $Payload) { }
+    protected function peerPingReceived (BitWire_Message_Payload $Ping) { }
     protected function messageSent (BitWire_Message $Message) { }
     protected function payloadSent (BitWire_Message_Payload $Payload) { }
     protected function eventReadable () { }
