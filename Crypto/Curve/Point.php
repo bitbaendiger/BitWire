@@ -36,8 +36,21 @@
       // Generate the values
       $x = gmp_import (substr ($Key, 1, 32));
       
-      if (($Type == 0x02) || ($Type == 0x03))
-        return static::fromCompressed ($Curve, $x, ($Type == 0x03));
+      if (($Type == 0x02) || ($Type == 0x03)) {
+        $Point = static::fromCompressed ($Curve, $x, ($Type == 0x03));
+        
+        // UGLY HACK: Check twice if imported key exports to the same
+        if (strcmp ($Point->toPublicKey (true), $Key) != 0) {
+          $Point2 = static::fromCompressed ($Curve, $x, ($Type != 0x03));
+          
+          if (strcmp ($Point2->toPublicKey (true), $Key) == 0)
+            return $Point2;
+          
+          trigger_error ('Export does not equal import, inverting was unsuccessfull');
+        }
+        
+        return $Point;
+      }
       
       return new static ($Curve, $x, gmp_import (substr ($Key, 33, 32)));
     }
