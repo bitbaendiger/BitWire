@@ -56,6 +56,21 @@
     }
     // }}}
     
+    // {{{ getHash
+    /**
+     * Retrive the hash for this broadcast
+     * 
+     * @access public
+     * @return BitWire_Hash
+     **/
+    public function getHash () : BitWire_Hash {
+      return new BitWire_Hash (
+        self::writeCTxIn ($this->txIn) .
+        self::writeUInt64 ($this->signatureTime)
+      );
+    }
+    // }}}
+    
     // {{{ getTransactionInput
     /**
      * Retrive the transaction-input of this masternode-ping
@@ -82,7 +97,7 @@
     }
     // }}}
     
-    // {{{ setHash
+    // {{{ setBlockHash
     /**
      * Set the blockhash contained in this ping
      * 
@@ -91,7 +106,7 @@
      * @access public
      * @return void
      **/
-    public function setHash (BitWire_Hash $Hash) {
+    public function setBlockHash (BitWire_Hash $Hash) {
       $this->Hash = $Hash;
     }
     // }}}

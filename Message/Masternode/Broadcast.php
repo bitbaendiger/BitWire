@@ -19,6 +19,7 @@
    **/
   
   require_once ('BitWire/Message/Payload.php');
+  require_once ('BitWire/Hash.php');
   require_once ('BitWire/Message/Masternode/Ping.php');
   
   class BitWire_Message_Masternode_Broadcast extends BitWire_Message_Payload {
@@ -45,11 +46,26 @@
     /* Used protocol-version */
     private $protocolVersion = 0;
     
-    /* Time of last ping */
-    private $lastPing = 0;
+    /* Last masternode ping */
+    private $lastPing = null;
     
     /* Time of last dsq broadcast  */
     private $lastDSQ = 0;
+    
+    // {{{ getHash
+    /**
+     * Retrive the hash for this broadcast
+     * 
+     * @access public
+     * @return BitWire_Hash
+     **/
+    public function getHash () : BitWire_Hash {
+      return new BitWire_Hash (
+        self::writeUInt64 ($this->signatureTime) .
+        self::writeCPublicKey ($this->publicKeyCollateral)
+      );
+    }
+    // }}}
     
     // {{{ getTransactionInput
     /**
