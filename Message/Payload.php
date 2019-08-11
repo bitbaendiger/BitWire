@@ -472,7 +472,7 @@
         return $Input->toBinary ();
       
       trigger_error ('Writing empty CTxIn');
-      return str_repeat ("\x00", 41);
+      return str_repeat ("\x00", 32) . "\xff\xff\xff\xff\x00\xff\xff\xff\xff";
     }
     // }}}
     
