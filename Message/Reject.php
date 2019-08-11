@@ -96,7 +96,7 @@
         return false;
       
       $this->Command = $Command;
-      $this->Code = $Code;
+      $this->Code = ord ($Code);
       $this->Reason = $Reason;
       $this->Extra = substr ($Data, $Offset);
       
