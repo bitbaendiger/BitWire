@@ -59,7 +59,7 @@
       $Instance = new static ();
       $Instance->Version = $Version;
       $Instance->Key = $Key;
-      $Instance->Compresses = $Compressed;
+      $Instance->Compressed = $Compressed;
       $Instance->Point = $Curve->G->mul ($Key);
       
       return $Instance;
@@ -85,7 +85,7 @@
         $Instance->Version = (int)$Version;
       
       $Instance->Key = gmp_random_range ($Curve->m, $Curve->n);
-      $Instance->Compresses = $Compressed;
+      $Instance->Compressed = $Compressed;
       $Instance->Point = $Curve->G->mul ($Instance->Key);
       
       // Return the key
