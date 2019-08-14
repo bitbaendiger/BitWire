@@ -18,6 +18,7 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
+  require_once ('BitWire/Address.php');
   require_once ('BitWire/Crypto/Curve.php');
   require_once ('BitWire/Crypto/Curve/Point.php');
   
@@ -146,6 +147,20 @@
       
       // Hash the key
       return bin2hex (strrev (hash ('ripemd160', hash ('sha256', $Binary, true), true)));
+    }
+    // }}}
+    
+    // {{{ getAddress
+    /**
+     * Retrive the address for this public key
+     * 
+     * @param bool $Compressed (optional)
+     * 
+     * @access public
+     * @return BitWire_Address
+     **/
+    public function getAddress ($Compressed = null) : BitWire_Address {
+      return new BitWire_Address (0x00, hash ('ripemd160', hash ('sha256', $this->toBinary ($Compressed), true), true));
     }
     // }}}
     

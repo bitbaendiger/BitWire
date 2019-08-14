@@ -119,6 +119,20 @@
     }
     // }}}
     
+    // {{{ setType
+    /**
+     * Override the type of this address
+     * 
+     * @param enum $Type
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setType ($Type) {
+      $this->Type = (int)$Type;
+    }
+    // }}}
+    
     // {{{ getHash
     /**
      * Retrive the RIPEMD160/SHA256-Hash for this address
