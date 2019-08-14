@@ -66,6 +66,33 @@
     }
     // }}}
     
+    // {{{ newKey
+    /**
+     * Create a new private key
+     * 
+     * @access public
+     * @return BitWire_Crypto_PrivateKey
+     **/
+    public static function newKey (BitWire_Crypto_Curve $Curve = null, $Compressed = true, $Version = null) : BitWire_Crypto_PrivateKey {
+      // Make sure we have a curve
+      if (!$Curve)
+        $Curve = BitWire_Crypto_Curve_secp256k1::singleton ();
+      
+      // Create a new key
+      $Instance = new static ();
+      
+      if ($Version !== null)
+        $Instance->Version = (int)$Version;
+      
+      $Instance->Key = gmp_random_range ($Curve->m, $Curve->n);
+      $Instance->Compresses = $Compressed;
+      $Instance->Point = $Curve->G->mul ($Instance->Key);
+      
+      // Return the key
+      return $Instance;
+    }
+    // }}}
+    
     // {{{ signCompact
     /**
      * Create a compact signature for a given message
@@ -164,6 +191,26 @@
       
       // Return error
       return null;
+    }
+    // }}}
+    
+    // {{{ toString
+    /**
+     * Export the private key to a string
+     * 
+     * @access public
+     * @return string
+     **/
+    public function toString () {
+      $Binary =
+        chr ($this->Version) .
+        str_pad (gmp_export ($this->Key), 32, "\x00", STR_PAD_LEFT) .
+        ($this->Compressed ? "\x01" : '');
+      
+      return BitWire_Transaction_Script::base58Encode (
+        $Binary .
+        substr (hash ('sha256', hash ('sha256', $Binary, true), true), 0, 4)
+      );
     }
     // }}}
   }
