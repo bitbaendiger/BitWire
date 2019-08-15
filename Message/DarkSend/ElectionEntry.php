@@ -426,7 +426,7 @@
       $this->signatureTime = ($Timestamp !== null ? $Timestamp : time ());
       
       // Try to generate signature
-      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($Magic), false)) === false) {
+      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($Magic))) === false) {
         // Restore the old timestamp
         $this->signatureTime = $oTimestamp;
         
@@ -449,8 +449,11 @@
      **/
     public function verify ($Magic = null) {
       // Make sure we have everything we need
-      if (!$this->publicKeyCollateral)
+      if (!$this->publicKeyCollateral) {
+        trigger_error ('Missing collateral public key');
+        
         return false;
+      }
       
       // Verify the message
       return $this->publicKeyCollateral->verifyCompact ($this->getMessageForSignature ($Magic), $this->Signature);
