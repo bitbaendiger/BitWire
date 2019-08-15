@@ -30,13 +30,13 @@
     private $Hash = null;
     
     /* Index of UTXO assigned to this input */
-    private $Index = 0;
+    private $Index = 0xffffffff;
     
     /* Signature-Script */
     private $Script = null;
     
     /* Sequence of input */
-    private $Sequence = 0;
+    private $Sequence = 0xffffffff;
     
     // {{{ checkCoinbase
     /**
@@ -135,6 +135,20 @@
     }
     // }}}
     
+    // {{{ setIndex
+    /**
+     * Set the index of out previous output
+     * 
+     * @param int $Index
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setIndex ($Index) {
+      $this->Index = (int)$Index;
+    }
+    // }}}
+    
     // {{{ getSequence
     /**
      * Retrive the sequence of this input
@@ -154,8 +168,22 @@
      * @access public
      * @return BitWire_Hash
      **/
-    public function getHash () {
+    public function getHash () : BitWire_Hash {
       return $this->Hash;
+    }
+    // }}}
+    
+    // {{{ setHash
+    /**
+     * Store the hash if the previous output
+     * 
+     * @param BitWire_Hash $Hash
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setHash (BitWire_Hash $Hash) {
+      $this->Hash = $Hash;
     }
     // }}}
     
