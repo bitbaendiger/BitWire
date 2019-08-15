@@ -32,7 +32,7 @@
     private $Type = BitWire_Message_DarkSend_ElectionEntry::TYPE_DONATION;
     
     /* Transaction-Input */
-    private $TxIn = null;
+    private $txIn = null;
     
     /* Address of node */
     private $Address = null;
@@ -75,7 +75,21 @@
      * @return BitWire_Transaction_Input
      **/
     public function getTransactionInput () : ?BitWire_Transaction_Input {
-      return $this->TxIn;
+      return $this->txIn;
+    }
+    // }}}
+    
+    // {{{ setTransactionInput
+    /**
+     * Set transaction-input (collateral-transactio) for this entry
+     * 
+     * @param BitWire_Transaction_Input $txIn
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setTransactionInput (BitWire_Transaction_Input $txIn) {
+      $this->txIn = $txIn;
     }
     // }}}
     
@@ -88,6 +102,20 @@
      **/
     public function getAddress () : ?BitWire_Peer_Address {
       return $this->Address;
+    }
+    // }}}
+    
+    // {{{ setAddress
+    /**
+     * Set address for this masternode-entry
+     * 
+     * @param BitWire_Peer_Address $Address
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setAddress (BitWire_Peer_Address $Address) {
+      $this->Address = $Address;
     }
     // }}}
     
@@ -127,6 +155,20 @@
     }
     // }}}
     
+    // {{{ setCollateralPublicKey
+    /**
+     * Assign collateral-public-key
+     * 
+     * @param BitWire_Crypto_PublicKey $PublicKey
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setCollateralPublicKey (BitWire_Crypto_PublicKey $PublicKey) {
+      $this->publicKeyCollateral = $PublicKey;
+    }
+    // }}}
+    
     // {{{ getMasternodePublicKey
     /**
      * Retrive the public key of the masternode
@@ -139,6 +181,62 @@
     }
     // }}}
     
+    // {{{ setMasternodePublicKey
+    /**
+     * Assign a masternode-public-key
+     * 
+     * @param BitWire_Crypto_PublicKey $PublicKey
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setMasternodePublicKey (BitWire_Crypto_PublicKey $PublicKey) {
+      $this->publicKeyMasternode = $PublicKey;
+    }
+    // }}}
+    
+    // {{{ setCount
+    /**
+     * Update number of masternodes
+     * 
+     * @param int $Count
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setCount ($Count) {
+      $this->Count = (int)$Count;
+    }
+    // }}}
+    
+    // {{{ setCurrent
+    /**
+     * Update index-position of this entry
+     * 
+     * @param int $Current
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setCurrent ($Current) {
+      $this->Current = (int)$Current;
+    }
+    // }}}
+    
+    // {{{ setLastUpdate
+    /**
+     * Set timestamp of last update of this entry
+     * 
+     * @param int $lastUpdate
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setLastUpdate ($lastUpdate) {
+      $this->lastUpdate = (int)$lastUpdate;
+    }
+    // }}}
+    
     // {{{ getProtocolVersion
     /**
      * Retrive the protocol-version the node is running
@@ -148,6 +246,20 @@
      **/
     public function getProtocolVersion () {
       return $this->protocolVersion;
+    }
+    // }}}
+    
+    // {{{ setProtocolVersion
+    /**
+     * Set the protocol-version the node is running on
+     * 
+     * @param int $protocolVersion
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setProtocolVersion ($protocolVersion) {
+      $this->protocolVersion = (int)$protocolVersion;
     }
     // }}}
     
@@ -194,7 +306,7 @@
        * It should be save to require anything up to $protocolVersion, while the rest
        * is optional e.g. should be configurable.
        **/
-      if ((($TxIn = self::readCTxIn ($Data, $Offset, $Length)) === null) ||
+      if ((($txIn = self::readCTxIn ($Data, $Offset, $Length)) === null) ||
           (($Address = self::readCAddress ($Data, $Offset, $Length)) === null) ||
           (($Signature = self::readCompactString ($Data, $Offset, $Length)) === null) ||
           (($sigTime = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
@@ -221,7 +333,7 @@
       }
       
       // Commit to this instance
-      $this->TxIn = $TxIn;
+      $this->txIn = $txIn;
       $this->Address = $Address;
       $this->Signature = $Signature;
       $this->sigTime = $sigTime;
@@ -247,7 +359,7 @@
      **/
     public function toBinary () {
       return
-        self::writeCTxIn ($this->TxIn) .
+        self::writeCTxIn ($this->txIn) .
         self::writeCAddress ($this->Address) .
         self::writeCompactString ($this->Signature) .
         self::writeUInt64 ($this->sigTime).
@@ -268,9 +380,13 @@
      * @access public
      * @return bool
      **/
-    public function verify () {
+    public function verify ($Magic = null) {
+      // Make sure we have everything we need
+      if (!$this->publicKeyCollateral)
+        return false;
+      
       // Verify the message
-      return $this->publicKeyCollateral->verifyCompact ($this->getMessageForSignature (), $this->Signature);
+      return $this->publicKeyCollateral->verifyCompact ($this->getMessageForSignature ($Magic), $this->Signature);
     }
     // }}}
     
@@ -278,16 +394,21 @@
     /**
      * Prepare the message for our signature
      * 
+     * @param string $Magic (optional)
+     * 
      * @access private
      * @return string
      **/
-    private function getMessageForSignature () {
+    private function getMessageForSignature ($Magic = null) {
       // Make sure we have everything we need
       if (!$this->Address || !$this->publicKeyCollateral || !$this->publicKeyMasternode)
         return false;
       
+      if ($Magic === null)
+        $Magic = "DarkNet Signed Message:\n";
+      
       return
-        self::writeCompactString ("DarkNet Signed Message:\n") .
+        self::writeCompactString ($Magic) .
         self::writeCompactString (
           $this->Address->toString () .
           $this->sigTime .
