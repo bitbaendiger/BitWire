@@ -195,6 +195,18 @@
     }
     // }}}
     
+    // {{{ getCount
+    /**
+     * Retrive number of masternodes
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getCount () {
+      return $this->Count;
+    }
+    // }}}
+    
     // {{{ setCount
     /**
      * Update number of masternodes
@@ -209,6 +221,18 @@
     }
     // }}}
     
+    // {{{ getCurrent
+    /**
+     * Retrive the index-postion of this entry
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getCurrent () {
+      return $this->Current;
+    }
+    // }}}
+    
     // {{{ setCurrent
     /**
      * Update index-position of this entry
@@ -220,6 +244,18 @@
      **/
     public function setCurrent ($Current) {
       $this->Current = (int)$Current;
+    }
+    // }}}
+    
+    // {{{ getLastUpdate
+    /**
+     * Retrive timestamp when this entry was last updated
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getLastUpdate () {
+      return $this->lastUpdate;
     }
     // }}}
     
