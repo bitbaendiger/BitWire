@@ -41,7 +41,7 @@
     private $Signature = '';
     
     /* Time of signature */
-    private $sigTime = 0;
+    private $signatureTime = 0;
     
     /* Public key of Collateral-Address */
     private $publicKeyCollateral = null;
@@ -139,7 +139,7 @@
      * @return int
      **/
     public function getSignatureTime () {
-      return $this->sigTime;
+      return $this->signatureTime;
     }
     // }}}
     
@@ -309,7 +309,7 @@
       if ((($txIn = self::readCTxIn ($Data, $Offset, $Length)) === null) ||
           (($Address = self::readCAddress ($Data, $Offset, $Length)) === null) ||
           (($Signature = self::readCompactString ($Data, $Offset, $Length)) === null) ||
-          (($sigTime = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
+          (($signatureTime = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
           (($publicKeyCollateral = self::readCPublicKey ($Data, $Offset, $Length)) === null) ||
           (($publicKeyMasternode = self::readCPublicKey ($Data, $Offset, $Length)) === null) ||
           (($Count = self::readUInt32 ($Data, $Offset, $Length)) === null) ||
@@ -336,7 +336,7 @@
       $this->txIn = $txIn;
       $this->Address = $Address;
       $this->Signature = $Signature;
-      $this->sigTime = $sigTime;
+      $this->signatureTime = $signatureTime;
       $this->publicKeyCollateral = $publicKeyCollateral;
       $this->publicKeyMasternode = $publicKeyMasternode;
       $this->Count = $Count;
@@ -362,7 +362,7 @@
         self::writeCTxIn ($this->txIn) .
         self::writeCAddress ($this->Address) .
         self::writeCompactString ($this->Signature) .
-        self::writeUInt64 ($this->sigTime).
+        self::writeUInt64 ($this->signatureTime).
         self::writeCPublicKey ($this->publicKeyCollateral) .
         self::writeCPublicKey ($this->publicKeyMasternode) .
         self::writeUInt32 ($this->Count) .
@@ -370,6 +370,37 @@
         self::writeUInt64 ($this->lastUpdate) .
         self::writeUInt32 ($this->protocolVersion) .
         ($this->getType () == $this::TYPE_DONATION ? self::writeCompactString ($this->donationAddress) . self::writeUInt32 ($this->donationPercent) : '');
+    }
+    // }}}
+    
+    // {{{ sign
+    /**
+     * Create a signature for this message
+     * 
+     * @param BitWire_Crypto_PrivateKey $PrivateKey
+     * @param int $Timestamp (optional)
+     * @param string $Magic (optional)
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function sign (BitWire_Crypto_PrivateKey $PrivateKey, $Timestamp = null, $Magic = null) {
+      // Update the timestamp
+      $oTimestamp = $this->signatureTime;
+      $this->signatureTime = ($Timestamp !== null ? $Timestamp : time ());
+      
+      // Try to generate signature
+      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($Magic), false)) === false) {
+        // Restore the old timestamp
+        $this->signatureTime = $oTimestamp;
+        
+        return false;
+      }
+      
+      // Set the signature
+      $this->Signature = $Signature;
+      
+      return true;
     }
     // }}}
     
@@ -411,7 +442,7 @@
         self::writeCompactString ($Magic) .
         self::writeCompactString (
           $this->Address->toString () .
-          $this->sigTime .
+          $this->signatureTime .
           $this->publicKeyCollateral->toBinary () .
           $this->publicKeyMasternode->toBinary () .
           $this->protocolVersion .
