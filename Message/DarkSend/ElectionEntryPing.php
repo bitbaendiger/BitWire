@@ -113,17 +113,18 @@
      * 
      * @param BitWire_Peer_Address $Peer
      * @param BitWire_Crypto_PrivateKey $PrivateKey
+     * @param string $Magic (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function sign (BitWire_Peer_Address $Peer, BitWire_Crypto_PrivateKey $PrivateKey) {
+    public function sign (BitWire_Peer_Address $Peer, BitWire_Crypto_PrivateKey $PrivateKey, $Magic = null) {
       // Update the timestamp
       $oTimestamp = $this->signatureTime;
       $this->signatureTime = time ();
       
       // Try to generate signature
-      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($Peer), false)) === false) {
+      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($Peer, $Magic), false)) === false) {
         // Restore the old timestamp
         $this->signatureTime = $oTimestamp;
         
@@ -143,12 +144,13 @@
      * 
      * @param BitWire_Peer_Address $Peer
      * @param BitWire_Crypto_PublicKey $PublicKey
+     * @param string $Magic (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function verify (BitWire_Peer_Address $Peer, BitWire_Crypto_PublicKey $PublicKey) {
-      return $PublicKey->verifyCompact ($this->getMessageForSignature ($Peer), $this->Signature);
+    public function verify (BitWire_Peer_Address $Peer, BitWire_Crypto_PublicKey $PublicKey, $Magic = null) {
+      return $PublicKey->verifyCompact ($this->getMessageForSignature ($Peer, $Magic), $this->Signature);
     }
     // }}}
     
@@ -157,13 +159,17 @@
      * Prepare the message for our signature
      * 
      * @param BitWire_Peer_Address $Peer
+     * @param string $Magic (optional)
      * 
      * @access private
      * @return string
      **/
-    private function getMessageForSignature (BitWire_Peer_Address $Peer) {
+    private function getMessageForSignature (BitWire_Peer_Address $Peer, $Magic = null) {
+      if ($Magic === null)
+        $Magic = "DarkNet Signed Message:\n";
+      
       return
-        self::writeCompactString ("DarkNet Signed Message:\n") .
+        self::writeCompactString ($Magic) .
         self::writeCompactString (
           $Peer->toString () .
           $this->signatureTime .
