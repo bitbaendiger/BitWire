@@ -24,6 +24,13 @@
   class BitWire_Message_DarkSend_ElectionEntry extends BitWire_Message_Payload {
     const PAYLOAD_COMMAND = 'dsee';
     
+    /* Subtype of this entry */
+    const TYPE_SIMPLE = 0x00;
+    const TYPE_DONATION = 0x01;
+    const DSEE_FORCE_TYPE = null;
+    
+    private $Type = BitWire_Message_DarkSend_ElectionEntry::TYPE_DONATION;
+    
     /* Transaction-Input */
     private $TxIn = null;
     
@@ -182,6 +189,11 @@
       $Length = strlen ($Data);
       $Offset = 0;
       
+      /**
+       * There are multiple versions of dsee around.
+       * It should be save to require anything up to $protocolVersion, while the rest
+       * is optional e.g. should be configurable.
+       **/
       if ((($TxIn = self::readCTxIn ($Data, $Offset, $Length)) === null) ||
           (($Address = self::readCAddress ($Data, $Offset, $Length)) === null) ||
           (($Signature = self::readCompactString ($Data, $Offset, $Length)) === null) ||
@@ -191,10 +203,22 @@
           (($Count = self::readUInt32 ($Data, $Offset, $Length)) === null) ||
           (($Current = self::readUInt32 ($Data, $Offset, $Length)) === null) ||
           (($lastUpdate = self::readUInt64 ($Data, $Offset, $Length)) === null) ||
-          (($protocolVersion = self::readUInt32 ($Data, $Offset, $Length)) === null) ||
-          (($donationAddress = self::readCompactString ($Data, $Offset, $Length)) === null) ||
-          (($donationPercent = self::readUInt32 ($Data, $Offset, $Length)) === null))
+          (($protocolVersion = self::readUInt32 ($Data, $Offset, $Length)) === null))
         return false;
+      
+      if (($this::DSEE_FORCE_TYPE == $this::TYPE_DONATION) ||
+          (($Length != $Offset) && ($this::DSEE_FORCE_TYPE === null))) {
+        if ((($donationAddress = self::readCompactString ($Data, $Offset, $Length)) === null) ||
+            (($donationPercent = self::readUInt32 ($Data, $Offset, $Length)) === null))
+          return false;
+        
+        $this->Type = $this::TYPE_DONATION;
+      } else {
+        $donationAddress = null;
+        $donationPercent = null;
+        
+        $this->Type = $this::TYPE_SIMPLE;
+      }
       
       // Commit to this instance
       $this->TxIn = $TxIn;
@@ -233,8 +257,7 @@
         self::writeUInt32 ($this->Current) .
         self::writeUInt64 ($this->lastUpdate) .
         self::writeUInt32 ($this->protocolVersion) .
-        self::writeCompactString ($this->donationAddress) .
-        self::writeUInt32 ($this->donationPercent);
+        ($this->getType () == $this::TYPE_DONATION ? self::writeCompactString ($this->donationAddress) . self::writeUInt32 ($this->donationPercent) : '');
     }
     // }}}
     
@@ -246,12 +269,24 @@
      * @return bool
      **/
     public function verify () {
+      // Verify the message
+      return $this->publicKeyCollateral->verifyCompact ($this->getMessageForSignature (), $this->Signature);
+    }
+    // }}}
+    
+    // {{{ getMessageForSignature
+    /**
+     * Prepare the message for our signature
+     * 
+     * @access private
+     * @return string
+     **/
+    private function getMessageForSignature () {
       // Make sure we have everything we need
       if (!$this->Address || !$this->publicKeyCollateral || !$this->publicKeyMasternode)
         return false;
       
-      // Reconstruct the message to verify
-      $Message =
+      return
         self::writeCompactString ("DarkNet Signed Message:\n") .
         self::writeCompactString (
           $this->Address->toString () .
@@ -259,12 +294,23 @@
           $this->publicKeyCollateral->toBinary () .
           $this->publicKeyMasternode->toBinary () .
           $this->protocolVersion .
-          $this->donationAddress .
-          $this->donationPercent
+          ($this->getType () == $this::TYPE_DONATION ? $this->donationAddress . $this->donationPercent : '')
         );
+    }
+    // }}}
+    
+    // {{{ getType
+    /**
+     * Retrive the actual type of this election-entry
+     * 
+     * @access private
+     * @return enum
+     **/
+    private function getType () {
+      if ($this::DSEE_FORCE_TYPE !== null)
+        return $this::DSEE_FORCE_TYPE;
       
-      // Verify the message
-      return $this->publicKeyCollateral->verifyCompact ($Message, $this->Signature);
+      return $this->Type;
     }
     // }}}
   }

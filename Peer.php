@@ -26,6 +26,7 @@
   require_once ('BitWire/Message/NotFound.php');
   
   require_once ('BitWire/Message/DarkSend/ElectionEntry.php');
+  require_once ('BitWire/Message/DarkSend/ElectionEntryPlus.php');
   require_once ('BitWire/Message/DarkSend/ElectionEntryPing.php');
   require_once ('BitWire/Message/Masternode/SyncStatusCount.php');
   require_once ('BitWire/Message/Masternode/Ping.php');
