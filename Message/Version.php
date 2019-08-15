@@ -263,17 +263,15 @@
       if ($Length - $Offset < 4)
         return false;
       
-      if ($Length - $Offset > 4)
+      if ($Length - $Offset > 4) {
         $Values = unpack ('Vheight/Crelay', substr ($Data, $Offset, 5));
-      else
+        $this->Relay = ($Values ['relay'] != 0x00);
+      } else {
         $Values = unpack ('Vheight', substr ($Data, $Offset, 4));
+        $this->Relay = null;
+      }
       
       $this->StartHeight = $Values ['height'];
-      
-      if ($Length > 4)
-        $this->Relay = ($Values ['relay'] != 0x00);
-      else
-        $this->Relay = null;
       
       return true;
     }
