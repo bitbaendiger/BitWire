@@ -97,6 +97,18 @@
     }
     // }}}
     
+    // {{{ getBlockHash
+    /**
+     * Retrive the blockhash form this ping
+     * 
+     * @access public
+     * @return BitWire_Hash
+     **/
+    public function getBlockHash () : ?BitWire_Hash {
+      return $this->Hash;
+    }
+    // }}}
+    
     // {{{ setBlockHash
     /**
      * Set the blockhash contained in this ping
@@ -108,6 +120,18 @@
      **/
     public function setBlockHash (BitWire_Hash $Hash) {
       $this->Hash = $Hash;
+    }
+    // }}}
+    
+    // {{{ getSignatureTime
+    /**
+     * Retrive timestamp of signature
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getSignatureTime () {
+      return $this->signatureTime;
     }
     // }}}
     
@@ -165,17 +189,18 @@
      * Create a signature for this message
      * 
      * @param BitWire_Crypto_PrivateKey $PrivateKey
+     * @param string $Magic (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function sign (BitWire_Crypto_PrivateKey $PrivateKey) {
+    public function sign (BitWire_Crypto_PrivateKey $PrivateKey, $Magic = null) {
       // Update the timestamp
       $oTimestamp = $this->signatureTime;
       $this->signatureTime = time ();
       
       // Try to generate signature
-      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature (), false)) === false) {
+      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($Magic))) === false) {
         // Restore the old timestamp
         $this->signatureTime = $oTimestamp;
         
@@ -194,12 +219,13 @@
      * Verify this ping
      * 
      * @param BitWire_Crypto_PublicKey $PublicKey
+     * @param string $Magic (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function verify (BitWire_Crypto_PublicKey $PublicKey) {
-      return $PublicKey->verifyCompact ($this->getMessageForSignature (), $this->Signature);
+    public function verify (BitWire_Crypto_PublicKey $PublicKey, $Magic = null) {
+      return $PublicKey->verifyCompact ($this->getMessageForSignature ($Magic), $this->Signature);
     }
     // }}}
     
@@ -207,12 +233,17 @@
     /**
      * Prepare the message for our signature
      * 
+     * @param string $Magic (optional)
+     * 
      * @access private
      * @return string
      **/
-    private function getMessageForSignature () {
+    private function getMessageForSignature ($Magic = null) {
+      if ($Magic === null)
+        $Magic = "DarkNet Signed Message:\n";
+      
       return
-        self::writeCompactString ("DarkNet Signed Message:\n") .
+        self::writeCompactString ($Magic) .
         self::writeCompactString (
           $this->txIn->toString () .
           strval ($this->Hash) .
