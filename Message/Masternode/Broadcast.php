@@ -360,9 +360,6 @@
       $oTimestamp = $this->signatureTime;
       $this->signatureTime = ($Timestamp !== null ? $Timestamp : time ());
       
-      require_once ('dump.php');
-      dump ($this->getMessageForSignature ($Magic));
-      
       // Try to generate signature
       if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($Magic))) === false) {
         // Restore the old timestamp
