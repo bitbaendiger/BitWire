@@ -43,8 +43,8 @@
     /* Minimum fee for transactions to be relayed */
     private $minFee = 0;
     
-    /* Version to negotiate with the peer */
-    private $Version = 70015;
+    /* Protocol-Version to negotiate with the peer */
+    private $protocolVersion = 70015;
     
     /* Network for this peer (see BitWire_Message) */
     private $Network = null;
@@ -75,16 +75,17 @@
      * Create a new BitWire-Peer
      * 
      * @param BitWire_Controller $Controller (optional)
-     * @param int $Version (optional) Negotiate this protocol-version
+     * @param int $protocolVersion (optional) Negotiate this protocol-version
+     * @param int $Network (optional) Magic bytes identifying this network
      * @param string $UserAgent (optional)
      * 
      * @access friendly
      * @return void
      **/
-    function __construct (BitWire_Controller $Controller = null, $Version = null, $Network = null, $UserAgent = null) {
+    function __construct (BitWire_Controller $Controller = null, $protocolVersion = null, $Network = null, $UserAgent = null) {
       // Store controller and version
       $this->Controller = $Controller;
-      $this->Version = ($Version === null ? 70015 : $Version);
+      $this->protocolVersion = ($protocolVersion === null ? 70015 : $protocolVersion);
       $this->Network = ($Network === null ? BitWire_Message::BITCOIN_MAIN : $Network);
       $this->UserAgent = $UserAgent;
     }
@@ -170,6 +171,18 @@
     public function getPeerUserAgent () {
       if ($this->peerVersion)
         return $this->peerVersion->getUserAgent ();
+    }
+    // }}}
+    
+    // {{{ getProtocolVersion
+    /**
+     * Retrive the protocol-version configured on this peer
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getProtocolVersion () {
+      return $this->protocolVersion;
     }
     // }}}
     
@@ -300,7 +313,7 @@
      **/
     public function sendPayload (BitWire_Message_Payload $Payload, callable $Callback = null, $Private = null) : qcEvents_Promise {
       // Create envelope
-      $Message = new BitWire_Message ($Payload, $this->Version, $this->Network);
+      $Message = new BitWire_Message ($Payload, $this->protocolVersion, $this->Network);
       
       // Write out to peer
       return $this->Peer->write ($Message->toBinary ())->then (
@@ -358,6 +371,7 @@
               
               // Send out version
               $Version = new BitWire_Message_Version;
+              $Version->setVersion ($this->protocolVersion);
               $Version->setAddress ($Peer->getLocalAddress ());
               $Version->setPort ($Peer->getLocalPort ());
               $Version->setPeerAddress ($Peer->getRemoteAddress ());
