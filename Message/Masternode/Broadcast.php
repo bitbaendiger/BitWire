@@ -52,6 +52,28 @@
     /* Time of last dsq broadcast  */
     private $lastDSQ = 0;
     
+    // {{{ fromDarkSendEntry
+    /**
+     * Fake a masternode-broadcast from a dark-send-entry
+     * 
+     * @param BitWire_Message_DarkSend_ElectionEntry $darkSendEntry
+     * 
+     * @access public
+     * @return BitWire_Message_Masternode_Broadcast
+     **/
+    public static function fromDarkSendEntry (BitWire_Message_DarkSend_ElectionEntry $darkSendEntry) : BitWire_Message_Masternode_Broadcast {
+      $Broadcast = new BitWire_Message_Masternode_Broadcast;
+      $Broadcast->txIn = $darkSendEntry->getTransactionInput ();
+      $Broadcast->Address = $darkSendEntry->getAddress ();
+      $Broadcast->publicKeyCollateral = $darkSendEntry->getCollateralPublicKey ();
+      $Broadcast->publicKeyMasternode = $darkSendEntry->getMasternodePublicKey ();
+      $Broadcast->signatureTime = $darkSendEntry->getSigantureTime ();
+      $Broadcast->protocolVersion = $darkSendEntry->getProtocolVersion ();
+      
+      return $Broadcast;
+    }
+    // }}}
+    
     // {{{ getHash
     /**
      * Retrive the hash for this broadcast
@@ -79,6 +101,20 @@
     }
     // }}}
     
+    // {{{ setTransactionInput
+    /**
+     * Set the transaction-input for this masternode-broadcast
+     * 
+     * @param BitWire_Transaction_Input $txIn
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setTransactionInput (BitWire_Transaction_Input $txIn) {
+      $this->txIn = $txIn;
+    }
+    // }}}
+    
     // {{{ getAddress
     /**
      * Retrive the peer-address of this entry
@@ -88,6 +124,20 @@
      **/
     public function getAddress () : ?BitWire_Peer_Address {
       return $this->Address;
+    }
+    // }}}
+    
+    // {{{ setAddress
+    /**
+     * Set the address for this broadcast
+     * 
+     * @param BitWire_Peer_Address $Address
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setAddress (BitWire_Peer_Address $Address) {
+      $this->Address = $Address;
     }
     // }}}
     
@@ -103,6 +153,20 @@
     }
     // }}}
     
+    // {{{ setCollateralPublicKey
+    /**
+     * Set public key of collateral address
+     * 
+     * @param BitWire_Crypto_PublicKey $PublicKey
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setCollateralPublicKey (BitWire_Crypto_PublicKey $PublicKey) {
+      $this->publicKeyCollateral = $PublicKey;
+    }
+    // }}}
+    
     // {{{ getMasternodePublicKey
     /**
      * Retrive the public key of the masternode
@@ -112,6 +176,58 @@
      **/
     public function getMasternodePublicKey () : ?BitWire_Crypto_PublicKey {
       return $this->publicKeyMasternode;
+    }
+    // }}}
+    
+    // {{{ setMasternodePublicKey
+    /**
+     * Set public key of masternode
+     * 
+     * @param BitWire_Crypto_PublicKey $PublicKey
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setMasternodePublicKey (BitWire_Crypto_PublicKey $PublicKey) {
+      $this->publicKeyMasternode = $PublicKey;
+    }
+    // }}}
+    
+    // {{{ getProtocolVersion
+    /**
+     * Retrive the protocol-version announced on this broadcast
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getProtocolVersion () {
+      return $this->protocolVersion;
+    }
+    // }}}
+    
+    // {{{ setProtocolVersion
+    /**
+     * Set the announced protocol-version of this broadcast
+     * 
+     * @param int $Version
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setProtocolVersion ($Version) {
+      $this->protocolVersion = (int)$Version;
+    }
+    // }}}
+    
+    // {{{ getLastPing
+    /**
+     * Retirve the last received ping for this broadcast
+     * 
+     * @access public
+     * @return BitWire_Message_Masternode_Ping
+     **/
+    public function getLastPing () : ?BitWire_Message_Masternode_Ping {
+      return $this->lastPing;
     }
     // }}}
     
@@ -126,6 +242,44 @@
      **/
     public function setLastPing (BitWire_Message_Masternode_Ping $Ping) {
       $this->lastPing = $Ping;
+    }
+    // }}}
+    
+    // {{{ getLastDSQ
+    /**
+     * Get last DarkSend-Queue
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getLastDSQ () {
+      return $this->lastDSQ;
+    }
+    // }}}
+    
+    // {{{ setLastDSQ
+    /**
+     * Set last DarkSend-Queue
+     * 
+     * @param int $lastDSQ
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setLastDSQ ($lastDSQ) {
+      $this->lastDSQ = (int)$lastDSQ;
+    }
+    // }}}
+    
+    // {{{ getSignatureTime
+    /**
+     * Retrive timestamp when this broadcast was signed
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getSignatureTime () {
+      return $this->signatureTime;
     }
     // }}}
     
@@ -190,43 +344,88 @@
     }
     // }}}
     
-    // {{{ verify
+    // {{{ sign
     /**
-     * Check if the signature here is valid
+     * Create a signature for this message
+     * 
+     * @param BitWire_Crypto_PrivateKey $PrivateKey
+     * @param int $Timestamp (optional)
+     * @param string $Magic (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function verify () {
+    public function sign (BitWire_Crypto_PrivateKey $PrivateKey, $Timestamp = null, $Magic = null) {
+      // Update the timestamp
+      $oTimestamp = $this->signatureTime;
+      $this->signatureTime = ($Timestamp !== null ? $Timestamp : time ());
+      
+      require_once ('dump.php');
+      dump ($this->getMessageForSignature ($Magic));
+      
+      // Try to generate signature
+      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($Magic))) === false) {
+        // Restore the old timestamp
+        $this->signatureTime = $oTimestamp;
+        
+        return false;
+      }
+    
+      // Set the signature
+      $this->Signature = $Signature;
+      
+      return true;
+    }
+    // }}}
+    
+    // {{{ verify
+    /**
+     * Check if the signature here is valid
+     * 
+     * @param string $Magic (optional)
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function verify ($Magic = null) {
+      // Make sure we have everything we need
+      if (!$this->publicKeyCollateral)
+        return false;
+      
+      // Verify the message
+      return
+        $this->publicKeyCollateral->verifyCompact ($this->getMessageForSignature ($Magic, false), $this->Signature) ||
+        $this->publicKeyCollateral->verifyCompact ($this->getMessageForSignature ($Magic, true), $this->Signature);
+    }
+    // }}}
+    
+    // {{{ getMessageForSignature
+    /**
+     * Generate message used for signing this broadcast
+     * 
+     * @param string $Magic (optional)
+     * @param bool $Old (optional)
+     * 
+     * @access public
+     * @return string
+     **/
+    public function getMessageForSignature ($Magic = null, $Old = false) {
       // Make sure we have everything we need
       if (!$this->publicKeyCollateral || !$this->publicKeyMasternode || !$this->Address)
         return false;
       
-      // Reconstruct the messages to verify
-      $newMessage =
-        self::writeCompactString ("DarkNet Signed Message:\n") .
-        self::writeCompactString (
-          $this->Address->toString () .
-          $this->signatureTime .
-          $this->publicKeyCollateral->getID () .
-          $this->publicKeyMasternode->getID () .
-          $this->protocolVersion
-        );
+      if ($Magic === null)
+        $Magic = "DarkNet Signed Message:\n";
       
-      $oldMessage =
-        self::writeCompactString ("DarkNet Signed Message:\n") .
-        self::writeCompactString (
-          $this->Address->toString () .
-          $this->signatureTime .
-          $this->publicKeyCollateral->toBinary () .
-          $this->publicKeyMasternode->toBinary () .
-          $this->protocolVersion
-        );
-      
-      // Verify the message
       return
-        $this->publicKeyCollateral->verifyCompact ($newMessage, $this->Signature) ||
-        $this->publicKeyCollateral->verifyCompact ($oldMessage, $this->Signature);
+        self::writeCompactString ($Magic) .
+        self::writeCompactString (
+          $this->Address->toString () .
+          $this->signatureTime .
+          ($Old ? $this->publicKeyCollateral->toBinary () : $this->publicKeyCollateral->getID ()) .
+          ($Old ? $this->publicKeyMasternode->toBinary () : $this->publicKeyMasternode->getID ()) .
+          $this->protocolVersion
+        );
     }
     // }}}
   }
