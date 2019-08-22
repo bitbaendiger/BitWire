@@ -90,6 +90,20 @@
     }
     // }}}
     
+    // {{{ setVersion
+    /**
+     * Set the version of this message
+     * 
+     * @param int $Version
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setVersion ($Version) {
+      $this->Version = (int)$Version;
+    }
+    // }}}
+    
     // {{{ setAddress
     /**
      * Set our local address as human-readable string
