@@ -16,11 +16,12 @@
      * 
      * @param BitWire_Crypto_Curve $Curve
      * @param string $Key
+     * @param GMP $order (optional)
      * 
      * @access public
      * @return BitWire_Crypto_Curve_Point
      **/
-    public static function fromPublicKey (BitWire_Crypto_Curve $Curve, $Key) : ?BitWire_Crypto_Curve_Point {
+    public static function fromPublicKey (BitWire_Crypto_Curve $Curve, $Key, GMP $order = null) : ?BitWire_Crypto_Curve_Point {
       // Get the length of the key
       if (($Length = strlen ($Key)) < 1)
         return null;
@@ -37,11 +38,11 @@
       $x = gmp_import (substr ($Key, 1, 32));
       
       if (($Type == 0x02) || ($Type == 0x03)) {
-        $Point = static::fromCompressed ($Curve, $x, ($Type == 0x03));
+        $Point = static::fromCompressed ($Curve, $x, ($Type == 0x03), $order);
         
         // UGLY HACK: Check twice if imported key exports to the same
         if (strcmp ($Point->toPublicKey (true), $Key) != 0) {
-          $Point2 = static::fromCompressed ($Curve, $x, ($Type != 0x03));
+          $Point2 = static::fromCompressed ($Curve, $x, ($Type != 0x03), $order);
           
           if (strcmp ($Point2->toPublicKey (true), $Key) == 0)
             return $Point2;
@@ -52,7 +53,7 @@
         return $Point;
       }
       
-      return new static ($Curve, $x, gmp_import (substr ($Key, 33, 32)));
+      return new static ($Curve, $x, gmp_import (substr ($Key, 33, 32)), $order);
     }
     // }}}
     
@@ -136,7 +137,9 @@
     function __clone () {
       $this->x = clone $this->x;
       $this->y = clone $this->y;
-      $this->order = clone $this->order;
+      
+      if ($this->order !== null)
+        $this->order = clone $this->order;
     }
     // }}}
     

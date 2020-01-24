@@ -2,7 +2,7 @@
 
   /**
    * BitWire - ECDSA Private Key
-   * Copyright (C) 2019 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2020 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
   
   class BitWire_Crypto_PrivateKey extends BitWire_Crypto_PublicKey {
     /* Version-Byte (merely for export) */
-    private $Version = 0x00;
+    private $keyVersion = 0x00;
     
     /* Private part of this key */
     private $Key = null;
@@ -51,13 +51,13 @@
         $Curve = BitWire_Crypto_Curve_secp256k1::singleton ();
       
       // Extract informations from the key
-      $Version = ord ($String [0]);
+      $keyVersion = ord ($String [0]);
       $Key = gmp_import (substr ($String, 1, 32));
       $Compressed = (($Length == 38) && (ord ($String [33]) == 0x01));
       
       // Create the result
       $Instance = new static ();
-      $Instance->Version = $Version;
+      $Instance->keyVersion = $keyVersion;
       $Instance->Key = $Key;
       $Instance->Compressed = $Compressed;
       $Instance->Point = $Curve->G->mul ($Key);
@@ -66,14 +66,172 @@
     }
     // }}}
     
-    // {{{ newKey
+    // {{{ fromDER
     /**
-     * Create a new private key
+     * Read a private Key from DER-encoded data
+     * 
+     * @param string $Data
+     * @param BitWire_Crypto_Curve $Curve (optional)
      * 
      * @access public
      * @return BitWire_Crypto_PrivateKey
      **/
-    public static function newKey (BitWire_Crypto_Curve $Curve = null, $Compressed = true, $Version = null) : BitWire_Crypto_PrivateKey {
+    public static function fromDER ($Data, BitWire_Crypto_Curve $Curve = null) : ?BitWire_Crypto_PrivateKey {
+      // Read the whole sequence from DER
+      $Offset = $Type = 0;
+      $Sequence = self::asn1read ($Data, $Offset, $Type);
+      
+      if ($Type != 0x30)
+        return null;
+      
+      // Check version
+      $Offset = 0;
+      
+      if ((($keyVersion = self::asn1read ($Sequence, $Offset, $Type)) === null) ||
+          ($Type != 0x02) ||
+          (strcmp ($keyVersion, "\x01") != 0))
+        return null;
+      
+      // Extract the key
+      if ((($Key = self::asn1read ($Sequence, $Offset, $Type)) === null) ||
+          ($Type != 0x04))
+        return null;
+      
+      // Check for additional data
+      $Compressed = true;
+      
+      if (($Data = self::asn1read ($Sequence, $Offset, $Type)) !== null) {
+        // Check for EC-Parameters
+        if ($Type == 0xA0) {
+          $cOffset = 0;
+          $cSequence = self::asn1read ($Data, $cOffset, $Type);
+          
+          $cOffset = 0;
+          $cVersion = self::asn1read ($cSequence, $cOffset, $Type);
+          
+          $cCurve = self::asn1read ($cSequence, $cOffset, $Type);
+          $oCurve = 0;
+          $CurveID = self::asn1read ($cCurve, $oCurve, $Type);
+          $CurveP = self::asn1read ($cCurve, $oCurve, $Type);
+          
+          $cCurveP = self::asn1read ($cSequence, $cOffset, $Type);
+          $oCurve = 0;
+          $CurveA = self::asn1read ($cCurveP, $oCurve, $Type);
+          $CurveB = self::asn1read ($cCurveP, $oCurve, $Type);
+          
+          $CurveG = self::asn1read ($cSequence, $cOffset, $Type);
+          $CurveN = self::asn1read ($cSequence, $cOffset, $Type);
+          $CurveM = self::asn1read ($cSequence, $cOffset, $Type);
+          
+          $nCurve = new BitWire_Crypto_Curve (gmp_import ($CurveP), gmp_import ($CurveA), gmp_import ($CurveB));
+          $nCurve->m = gmp_import ($CurveM);
+          $nCurve->n = gmp_import ($CurveN);
+          $nCurve->G = BitWire_Crypto_Curve_Point::fromPublicKey ($nCurve, $CurveG, $Curve->n);
+          
+          if ($Curve) {
+            if (($Curve->p <> $nCurve->p) ||
+                ($Curve->a <> $nCurve->a) ||
+                ($Curve->b <> $nCurve->b) ||
+                ($Curve->m <> $nCurve->m) ||
+                ($Curve->n <> $nCurve->n))
+              trigger_error ('Specified curve does not match', E_USER_WARNING);
+          } else
+            $Curve = $nCurve;
+          
+          // Check if there is a public key as well
+          $Data = self::asn1read ($Sequence, $Offset, $Type);
+        }
+        
+        // Check for public key
+        if (($Data !== null) && ($Type == 0xA1))
+          // TODO?
+          $Compressed = (strlen ($Data) < 37);
+      }
+      
+      if (!$Curve) {
+        trigger_error ('Missing curve for import');
+        
+        return null;
+      }
+      
+      // Extract informations from the key
+      $keyVersion = 1;
+      $Key = gmp_import ($Key);
+      $Compressed = $Compressed;
+      
+      // Create the result
+      $Instance = new static ();
+      $Instance->keyVersion = $keyVersion;
+      $Instance->Key = $Key;
+      $Instance->Compressed = $Compressed;
+      $Instance->Point = $Curve->G->mul ($Key);
+      
+      return $Instance;
+    }
+    // }}}
+    
+    // {{{ asn1read
+    /**
+     * Read an ASN.1-Bucket from a string
+     * 
+     * @param string $Data
+     * @param int $Offset
+     * @param int $Type (optional)
+     * @param int $Length (optional)
+     * 
+     * @access private
+     * @return string
+     **/
+    private static function asn1read (&$Data, &$Offset, &$Type = null, $Length = null) {
+      // Make sure we know the length of our input
+      if ($Length === null)
+        $Length = strlen ($Data);
+
+      // Make sure we have enough data to read
+      if ($Length - $Offset < 2)
+        return null;
+
+      $pOffset = $Offset;
+      $pType = ord ($Data [$pOffset++]);
+      $pLength = ord ($Data [$pOffset++]);
+
+      if ($pLength > 0x80) {
+        // Check if there are enough bytes to read the extended length
+        if ($Length - $pOffset < $pLength - 0x80)
+          return null;
+
+        // Read the extended length
+        $b = $pLength - 0x80;
+        $pLength = 0;
+        
+        for ($i = 0; $i < $b; $i++)
+          $pLength = ($pLength << 8) | ord ($Data [$pOffset++]);
+      }
+
+      // Make sure there are enough bytes to read the payload
+      if ($Length - $pOffset < $pLength)
+        return null;
+
+      // Read all data and move the offset
+      $Type = $pType;
+      $Offset = $pOffset + $pLength;
+      
+      return substr ($Data, $pOffset, $pLength);
+    }
+    // }}}
+    
+    // {{{ newKey
+    /**
+     * Create a new private key
+     * 
+     * @param BitWire_Crypto_Curve $Curve (optional)
+     * @param bool $Compressed (optional)
+     * @param int $keyVersion (optional)
+     * 
+     * @access public
+     * @return BitWire_Crypto_PrivateKey
+     **/
+    public static function newKey (BitWire_Crypto_Curve $Curve = null, $Compressed = true, $keyVersion = null) : BitWire_Crypto_PrivateKey {
       // Make sure we have a curve
       if (!$Curve)
         $Curve = BitWire_Crypto_Curve_secp256k1::singleton ();
@@ -81,8 +239,8 @@
       // Create a new key
       $Instance = new static ();
       
-      if ($Version !== null)
-        $Instance->Version = (int)$Version;
+      if ($keyVersion !== null)
+        $Instance->keyVersion = (int)$keyVersion;
       
       $Instance->Key = gmp_random_range ($Curve->m, $Curve->n);
       $Instance->Compressed = $Compressed;
@@ -90,6 +248,20 @@
       
       // Return the key
       return $Instance;
+    }
+    // }}}
+    
+    // {{{ setVersion
+    /**
+     * Set the version of this private key
+     * 
+     * @param int $keyVersion
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setVersion ($keyVersion) {
+      $this->keyVersion = (int)$keyVersion;
     }
     // }}}
     
@@ -203,7 +375,7 @@
      **/
     public function toString () {
       $Binary =
-        chr ($this->Version) .
+        chr ($this->keyVersion) .
         str_pad (gmp_export ($this->Key), 32, "\x00", STR_PAD_LEFT) .
         ($this->Compressed ? "\x01" : '');
       
