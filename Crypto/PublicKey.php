@@ -164,6 +164,18 @@
     }
     // }}}
     
+    // {{{ getCurve
+    /**
+     * Retrive the curve for this public key
+     * 
+     * @access public
+     * @return BitWire_Crypto_Curve
+     **/
+    public function getCurve () : BitWire_Crypto_Curve {
+      return $this->Point->Curve;
+    }
+    // }}}
+    
     // {{{ verifyCompact
     /**
      * Verify the signature for a given message
