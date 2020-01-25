@@ -42,13 +42,19 @@
      * Create a new Hash
      * 
      * @param string $Data (optional) Generate hash from this data
+     * @param bool $Internal (optional)
      * 
      * @access friendly
      * @return void
      **/
-    function __construct ($Data = null) {
-      if ($Data !== null)
-        $this->Data = strrev (hash ('sha256', hash ('sha256', $Data, true), true));
+    function __construct ($Data = null, $Internal = true) {
+      if ($Data === null)
+        return;
+      
+      $this->Data = hash ('sha256', hash ('sha256', $Data, true), true);
+      
+      if ($Internal)
+        $this->Data = strrev ($this->Data);
     }
     // }}}
     
