@@ -2,7 +2,7 @@
 
   /**
    * BitWire - ECDSA Public Key
-   * Copyright (C) 2019 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2020 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
+  require_once ('BitWire/Hash.php');
   require_once ('BitWire/Address.php');
   require_once ('BitWire/Crypto/Curve.php');
   require_once ('BitWire/Crypto/Curve/Point.php');
@@ -26,10 +27,10 @@
     const COMPACT_SIGNATURE_SIZE = 65;
     
     /* Curve-Point of this public key */
-    protected $Point = null;
+    protected $curvePoint = null;
     
     /* Prefer compressed output */
-    protected $Compressed = true;
+    protected $isCompressed = true;
     
     // {{{ fromBinary
     /**
@@ -56,10 +57,10 @@
       // Create the result-key
       $Result = new static;
       
-      if (($Result->Point = BitWire_Crypto_Curve_Point::fromPublicKey ($Curve, $Binary)) === null)
+      if (($Result->curvePoint = BitWire_Crypto_Curve_Point::fromPublicKey ($Curve, $Binary)) === null)
         return null;
       
-      $Result->Compressed = (($Type == 0x02) || ($Type == 0x03));
+      $Result->isCompressed = (($Type == 0x02) || ($Type == 0x03));
       
       return $Result;
     }
@@ -125,8 +126,8 @@
       // }}}
       
       $PublicKey = new static ();
-      $PublicKey->Point = $Point;
-      $PublicKey->Compressed = $Compressed;
+      $PublicKey->curvePoint = $Point;
+      $PublicKey->isCompressed = $Compressed;
       
       return $PublicKey;
     }
@@ -172,7 +173,31 @@
      * @return BitWire_Crypto_Curve
      **/
     public function getCurve () : BitWire_Crypto_Curve {
-      return $this->Point->Curve;
+      return $this->curvePoint->Curve;
+    }
+    // }}}
+    
+    // {{{ getHash
+    /**
+     * Create a hash for this public key
+     * 
+     * @access public
+     * @return BitWire_Hash
+     **/
+    public function getHash () : BitWire_Hash {
+      return new BitWire_Hash ($this->toBinary (), false);
+    }
+    // }}}
+    
+    // {{{ isCompressed
+    /**
+     * Check if this public key is compressed
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function isCompressed () {
+      return $this->isCompressed;
     }
     // }}}
     
@@ -212,8 +237,8 @@
       
       // Create a copy of our public part
       $Result = new BitWire_Crypto_PublicKey;
-      $Result->Point = clone $this->Point;
-      $Result->Compressed = $this->Compressed;
+      $Result->curvePoint = clone $this->curvePoint;
+      $Result->isCompressed = $this->isCompressed;
       
       return $Result;
     }
@@ -228,9 +253,9 @@
      **/
     public function toBinary ($Compressed = null) {
       if ($Compressed === null)
-        $Compressed = $this->Compressed;
+        $Compressed = $this->isCompressed;
       
-      return $this->Point->toPublicKey ($Compressed);
+      return $this->curvePoint->toPublicKey ($Compressed);
     }
     // }}}
   }

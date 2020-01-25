@@ -27,19 +27,19 @@
     private $keyVersion = 0x00;
     
     /* Private part of this key */
-    private $Key = null;
+    private $gmpKey = null;
     
     // {{{ fromString
     /**
      * Import a private key from a base58-encoded string
      * 
      * @param string $String
-     * @param BitWire_Crypto_Curve $Curve
+     * @param BitWire_Crypto_Curve $onCurve
      * 
      * @access public
      * @return BitWire_Crypto_PrivateKey
      **/
-    public static function fromString ($String, BitWire_Crypto_Curve $Curve = null) : ?BitWire_Crypto_PrivateKey {
+    public static function fromString ($String, BitWire_Crypto_Curve $onCurve = null) : ?BitWire_Crypto_PrivateKey {
       // Remove Base58-Envelope
       $String = BitWire_Transaction_Script::base58Decode ($String);
       
@@ -47,8 +47,8 @@
         return null;
       
       // Make sure we have a curve
-      if (!$Curve)
-        $Curve = BitWire_Crypto_Curve_secp256k1::singleton ();
+      if (!$onCurve)
+        $onCurve = BitWire_Crypto_Curve_secp256k1::singleton ();
       
       // Extract informations from the key
       $keyVersion = ord ($String [0]);
@@ -58,9 +58,39 @@
       // Create the result
       $Instance = new static ();
       $Instance->keyVersion = $keyVersion;
-      $Instance->Key = $Key;
-      $Instance->Compressed = $Compressed;
-      $Instance->Point = $Curve->G->mul ($Key);
+      $Instance->gmpKey = $Key;
+      $Instance->isCompressed = $Compressed;
+      $Instance->curvePoint = $onCurve->G->mul ($Key);
+      
+      return $Instance;
+    }
+    // }}}
+    
+    // {{{ fromBinaryNumber
+    /**
+     * Restore a private key from binary data
+     * 
+     * @param string $binaryData
+     * @param bool $isCompressed
+     * @param BitWire_Crypto_Curve $onCurve (optional)
+     * 
+     * @access public
+     * @return BitWire_Crypto_PrivateKey
+     **/
+    public static function fromBinaryNumber ($binaryData, $isCompressed, BitWire_Crypto_Curve $onCurve = null) : ?BitWire_Crypto_PrivateKey {
+      // Check size of the key
+      if (strlen ($binaryData) != 32)
+        return null;
+      
+      // Make sure we have a curve
+      if (!$onCurve)
+        $onCurve = BitWire_Crypto_Curve_secp256k1::singleton ();
+      
+      // Create private key
+      $Instance = new static ();
+      $Instance->gmpKey = gmp_import ($binaryData);
+      $Instance->isCompressed = $isCompressed;
+      $Instance->curvePoint = $onCurve->G->mul ($Instance->gmpKey);
       
       return $Instance;
     }
@@ -71,12 +101,12 @@
      * Read a private Key from DER-encoded data
      * 
      * @param string $Data
-     * @param BitWire_Crypto_Curve $Curve (optional)
+     * @param BitWire_Crypto_Curve $onCurve (optional)
      * 
      * @access public
      * @return BitWire_Crypto_PrivateKey
      **/
-    public static function fromDER ($Data, BitWire_Crypto_Curve $Curve = null) : ?BitWire_Crypto_PrivateKey {
+    public static function fromDER ($Data, BitWire_Crypto_Curve $onCurve = null) : ?BitWire_Crypto_PrivateKey {
       // Read the whole sequence from DER
       $Offset = $Type = 0;
       $Sequence = self::asn1read ($Data, $Offset, $Type);
@@ -126,17 +156,17 @@
           $nCurve = new BitWire_Crypto_Curve (gmp_import ($CurveP), gmp_import ($CurveA), gmp_import ($CurveB));
           $nCurve->m = gmp_import ($CurveM);
           $nCurve->n = gmp_import ($CurveN);
-          $nCurve->G = BitWire_Crypto_Curve_Point::fromPublicKey ($nCurve, $CurveG, $Curve->n);
+          $nCurve->G = BitWire_Crypto_Curve_Point::fromPublicKey ($nCurve, $CurveG, $onCurve->n);
           
-          if ($Curve) {
-            if (($Curve->p <> $nCurve->p) ||
-                ($Curve->a <> $nCurve->a) ||
-                ($Curve->b <> $nCurve->b) ||
-                ($Curve->m <> $nCurve->m) ||
-                ($Curve->n <> $nCurve->n))
+          if ($onCurve) {
+            if (($onCurve->p <> $nCurve->p) ||
+                ($onCurve->a <> $nCurve->a) ||
+                ($onCurve->b <> $nCurve->b) ||
+                ($onCurve->m <> $nCurve->m) ||
+                ($onCurve->n <> $nCurve->n))
               trigger_error ('Specified curve does not match', E_USER_WARNING);
           } else
-            $Curve = $nCurve;
+            $onCurve = $nCurve;
           
           // Check if there is a public key as well
           $Data = self::asn1read ($Sequence, $Offset, $Type);
@@ -148,7 +178,7 @@
           $Compressed = (strlen ($Data) < 37);
       }
       
-      if (!$Curve) {
+      if (!$onCurve) {
         trigger_error ('Missing curve for import');
         
         return null;
@@ -162,9 +192,9 @@
       // Create the result
       $Instance = new static ();
       $Instance->keyVersion = $keyVersion;
-      $Instance->Key = $Key;
-      $Instance->Compressed = $Compressed;
-      $Instance->Point = $Curve->G->mul ($Key);
+      $Instance->gmpKey = $Key;
+      $Instance->isCompressed = $Compressed;
+      $Instance->curvePoint = $onCurve->G->mul ($Key);
       
       return $Instance;
     }
@@ -224,17 +254,17 @@
     /**
      * Create a new private key
      * 
-     * @param BitWire_Crypto_Curve $Curve (optional)
+     * @param BitWire_Crypto_Curve $onCurve (optional)
      * @param bool $Compressed (optional)
      * @param int $keyVersion (optional)
      * 
      * @access public
      * @return BitWire_Crypto_PrivateKey
      **/
-    public static function newKey (BitWire_Crypto_Curve $Curve = null, $Compressed = true, $keyVersion = null) : BitWire_Crypto_PrivateKey {
+    public static function newKey (BitWire_Crypto_Curve $onCurve = null, $Compressed = true, $keyVersion = null) : BitWire_Crypto_PrivateKey {
       // Make sure we have a curve
-      if (!$Curve)
-        $Curve = BitWire_Crypto_Curve_secp256k1::singleton ();
+      if (!$onCurve)
+        $onCurve = BitWire_Crypto_Curve_secp256k1::singleton ();
       
       // Create a new key
       $Instance = new static ();
@@ -242,9 +272,9 @@
       if ($keyVersion !== null)
         $Instance->keyVersion = (int)$keyVersion;
       
-      $Instance->Key = gmp_random_range ($Curve->m, $Curve->n);
-      $Instance->Compressed = $Compressed;
-      $Instance->Point = $Curve->G->mul ($Instance->Key);
+      $Instance->gmpKey = gmp_random_range ($onCurve->m, $onCurve->n);
+      $Instance->isCompressed = $Compressed;
+      $Instance->curvePoint = $onCurve->G->mul ($Instance->gmpKey);
       
       // Return the key
       return $Instance;
@@ -284,14 +314,14 @@
          return false;
       
       // Sign with nonce
-      $G = $this->Point->Curve->G;
+      $G = $this->curvePoint->Curve->G;
       $P = $G->mul ($Nonce);
       $r = $P->x % $G->getOrder ();
       
       if ($r == 0)
         return false;
       
-      $edr = gmp_import ($Digest) + ($this->Key * $r);
+      $edr = gmp_import ($Digest) + ($this->gmpKey * $r);
       $invk = gmp_invert ($Nonce, $G->getOrder ());
       $kedr = $invk * $edr;
       
@@ -299,7 +329,7 @@
       
       // Create recoverable signature
       $Overflow = ($r > $G->getOrder () ? 2 : 0);
-      $Compressed = (($Compressed === true) || (($Compressed === null) && $this->Compressed) ? 4 : 0);
+      $Compressed = (($Compressed === true) || (($Compressed === null) && $this->isCompressed) ? 4 : 0);
       $Odd = ($P->y % 2 == 1 ? 1 : 0);
       
       return
@@ -321,7 +351,7 @@
      **/
     private function getNonce ($Digest, $Size = 32) : ?GMP {
       // Have our key as octet-string available
-      $K = gmp_export ($this->Key);
+      $K = gmp_export ($this->gmpKey);
       
       // RFC6979 3.2.b.
       $v = str_repeat ("\x01", 32);
@@ -357,7 +387,7 @@
         $K = gmp_import (substr ($Result, 0, $Size));
         
         // Check if the result is valid
-        if ((gmp_cmp ($K, $Zero) > 0) && (gmp_cmp ($K, $this->Point->Curve->p) < 0))
+        if ((gmp_cmp ($K, $Zero) > 0) && (gmp_cmp ($K, $this->curvePoint->Curve->p) < 0))
           return $K;
       }
       
@@ -376,8 +406,8 @@
     public function toString () {
       $Binary =
         chr ($this->keyVersion) .
-        str_pad (gmp_export ($this->Key), 32, "\x00", STR_PAD_LEFT) .
-        ($this->Compressed ? "\x01" : '');
+        str_pad (gmp_export ($this->gmpKey), 32, "\x00", STR_PAD_LEFT) .
+        ($this->isCompressed ? "\x01" : '');
       
       return BitWire_Transaction_Script::base58Encode (
         $Binary .
