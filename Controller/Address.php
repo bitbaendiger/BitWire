@@ -2,7 +2,7 @@
 
   /**
    * BitWire - Bitcoin Controller Address
-   * Copyright (C) 2017 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2017-2020 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,9 @@
    **/
   
   require_once ('qcEvents/Hookable.php');
+  require_once ('qcEvents/Socket.php');
+  
+  require_once ('BitWire/Peer.php');
   
   class BitWire_Controller_Address extends qcEvents_Hookable {
     /* IPv6-Address of node (may be mapped IPv4) */
@@ -34,10 +37,13 @@
     private $Timestamp = null;
     
     /* Peer-Instance assigned to this address */
-    private $Peer = null;
+    private $connectedPeer = null;
+    
+    /* Time of last connection to peer */
+    private $lastConnectionTime = null;
     
     /* Connection-state */
-    private $Socket = null;
+    private $networkSocket = null;
     
     // {{{ __construct
     /**
@@ -134,7 +140,19 @@
      * @return bool
      **/
     public function hasConnection () {
-      return ($this->Socket !== null) || ($this->Peer !== null) || ($this->Timestamp > time () - 600);
+      return ($this->networkSocket !== null) || ($this->connectedPeer !== null);
+    }
+    // }}}
+    
+    // {{{ hadConnection
+    /**
+     * Check if this peer was recently connected
+     * 
+     * @access public
+     * @return bool
+     **/
+   public function hadConnection () {
+     return (time () - $this->lastConnectionTime < 600);
     }
     // }}}
     
@@ -146,7 +164,7 @@
      * @return bool
      **/
     public function hasPeer () {
-      return ($this->Peer !== null);
+      return ($this->connectedPeer !== null);
     }
     // }}}
     
@@ -160,8 +178,25 @@
      * @return void
      **/
     public function setPeer (BitWire_Peer $Peer) {
-      $this->Peer = $Peer;
-      $this->Timestamp = time ();
+      $this->connectedPeer = $Peer;
+      $this->lastConnectionTime = time ();
+    }
+    // }}}
+    
+    // {{{ removePeer
+    /**
+     * Remove a peer-instance from this address
+     * 
+     * @param BitWire_Peer $removePeer
+     * @access public
+     * @return void
+     **/
+    public function removePeer (BitWire_Peer $removePeer) {
+      if ($this->connectedPeer !== $removePeer)
+        return;
+      
+      $this->connectedPeer = null;
+      $this->lastConnectionTime = time ();
     }
     // }}}
     
@@ -169,58 +204,63 @@
     /**
      * Try to connect to this address
      * 
-     * @param qcEvents_Base $Base Event-Base for client-socket
-     * @param BitWire_Controller $Controller (optional) Use this controller for the new peer
-     * @param callable $Callback A callback to forward the new peer to
-     * @param mixed $Private (optional) Any private data to pass to the callback
-     * 
-     * The callback will be raised in the form of
-     * 
-     *   function (BitWire_Controller_Address $Self, BitWire_Peer $Peer = null, mixed $Private) { }
+     * @param qcEvents_Base $eventBase Event-Base for client-socket
+     * @param BitWire_Controller $bitWireController (optional) Use this controller for the new peer
      * 
      * @access public
-     * @return void
+     * @return qcEvents_Promise
      **/
-    public function connect (qcEvents_Base $Base, BitWire_Controller $Controller = null, callable $Callback, $Private = null) {
+    public function connect (qcEvents_Base $eventBase, BitWire_Controller $bitWireController = null) : qcEvents_Promise {
       // Create a new socket
-      $this->Socket = new qcEvents_Socket ($Base);
-      $this->Timestamp = time ();
+      $this->networkSocket = new qcEvents_Socket ($eventBase);
+      $this->lastConnectionTime = time ();
       
       // Try to connect to peer
-      return $this->Socket->connect (
+      return $this->networkSocket->connect (
         $this->ipAddress,
         $this->ipPort,
-        $this->Socket::TYPE_TCP,
-        false,
-        function (qcEvents_Socket $Socket, $Status) use ($Controller, $Callback, $Private) {
-          // Check if the connection was successfull
-          if (!$Status) {
-            $this->Socket = null;
-            
-            // Forward the callback
-            return $this->___raiseCallback ($Callback, null, $Private);
-          }
+        $this->networkSocket::TYPE_TCP,
+      )->then (
+        function () use ($bitWireController) {
+          // Sanity-Check if we still have a network-stream
+          if (!$this->networkSocket)
+            throw new exception ('Race-condition: Network-socket vanished');
+          
+          if ($bitWireController)
+            return $bitWireController->newPeer ($this->networkSocket)->then (
+              function (BitWire_Peer $newPeer) {
+                $this->connectedPeer = $newPeer;
+                
+                return $newPeer;
+              }
+            );
           
           // Create a new peer
-          $Peer = new BitWire_Peer ($Controller, null, ($Controller ? $Controller->getUserAgent () : null));
+          $newPeer = new BitWire_Peer ();
           
-          return $Socket->pipeStream (
-            $Peer,
-            true,
-            function (qcEvents_Socket $Socket, $Status) use ($Peer, $Callback, $Private) {
-              if ($Status) {
-                $this->Peer = $Peer;
-                
-                $this->Socket->addHook ('eventClosed', function () {
-                  $this->Socket = null;
-                  $this->Peer = null;
-                }, null, true);
-              } else
-                $this->Socket = null;
+          return $this->networkSocket->pipeStream (
+            $newPeer,
+            true
+          )->then (
+            function () use ($newPeer) {
+              $this->connectedPeer = $newPeer;
               
-              return $this->___raiseCallback ($Callback, ($Status ? $Peer : null), $Private);
+              if ($this->networkSocket)
+                $this->networkSocket->once ('eventClosed')->then (
+                  function () {
+                    $this->networkSocket = null;
+                    $this->connectedPeer = null;
+                  }
+                );
+                
+              return $newPeer;
             }
           );
+        }
+      )->finally (
+        function () {
+          // Release the socket
+          $this->Socket = null;
         }
       );
     }
