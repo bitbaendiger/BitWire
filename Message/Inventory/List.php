@@ -1,7 +1,26 @@
 <?PHP
 
+  /**
+   * BitWire - List of Inventory-Items
+   * Copyright (C) 2017-2020 Bernd Holzmueller <bernd@quarxconnect.de>
+   * 
+   * This program is free software: you can redistribute it and/or modify
+   * it under the terms of the GNU General Public License as published by
+   * the Free Software Foundation, either version 3 of the License, or
+   * (at your option) any later version.
+   * 
+   * This program is distributed in the hope that it will be useful,
+   * but WITHOUT ANY WARRANTY; without even the implied warranty of
+   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   * GNU General Public License for more details.
+   * 
+   * You should have received a copy of the GNU General Public License
+   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   **/
+  
   require_once ('BitWire/Message/Payload.php');
   require_once ('BitWire/Hash.php');
+  require_once ('BitWire/Message/Inventory/Item.php');
   
   abstract class BitWire_Message_Inventory_List extends BitWire_Message_Payload implements IteratorAggregate, Countable {
     /* Known inventory-types (see protocol.h) */
@@ -87,25 +106,49 @@
     /**
      * Set the inventory of this payload
      * 
-     * @param array $Inventory
+     * @param array $inventoryItems
      * 
      * @access public
      * @return void
      **/
-    public function setInventory (array $Inventory) {
+    public function setInventory (array $inventoryItems) {
       // Make sure the inventory contains hash-objects
-      foreach ($Inventory as $idx=>$Hash)
-        if ($Hash ['hash'] instanceof BitWire_Hash)
+      foreach ($inventoryItems as $inventoryIndex=>$inventoryItem) {
+        // Check if the item is already fine
+        if ($inventoryItem instanceof BitWire_Message_Inventory_Item)
           continue;
-        elseif (strlen ($Hash ['hash']) == 32)
-          $Inventory [$idx]['hash'] = BitWire_Hash::fromBinary ($Hash ['hash'], (isset ($Hash ['internal']) ? $Hash ['internal'] : true));
-        elseif (strlen ($Hash ['hash']) == 64)
-          $Inventory [$idx]['hash'] = BitWire_Hash::fromHex ($Hash ['hash'], (isset ($Hash ['internal']) ? $Hash ['internal'] : true));
-        else
-          unset ($Inventory [$idx]);
+        
+        // Sanatize the item
+        if (!is_array ($inventoryItem) ||
+            !isset ($inventoryItem ['hash']) ||
+            !isset ($inventoryItem ['type'])) {
+          trigger_error ('Dropping malformed inventory-item');
+          
+          unset ($inventoryItems [$inventoryIndex]);
+          
+          continue;
+        }
+        
+        // Make sure we have a valid hash
+        if (!($inventoryItem ['hash'] instanceof BitWire_Hash)) {
+          if (strlen ($inventoryItem ['hash']) == 32)
+            $inventoryItem ['hash'] = BitWire_Hash::fromBinary ($inventoryItem ['hash'], (isset ($inventoryItem ['internal']) ? $inventoryItem ['internal'] : true));
+          elseif (strlen ($inventoryItem ['hash']) == 64)
+            $inventoryItem ['hash'] = BitWire_Hash::fromHex ($inventoryItem ['hash'], (isset ($inventoryItem ['internal']) ? $inventoryItem ['internal'] : true));
+          else {
+            trigger_error ('Dropping inventory-item with invalid hash');
+            
+            unset ($inventoryItems [$inventoryIndex]);
+            
+            continue;
+          }
+        }
+        
+        $inventoryItems [$inventoryIndex] = new BitWire_Message_Inventory_Item ($inventoryItem ['type'], $inventoryItem ['hash']);
+      }
       
       // Store the new inventory
-      $this->Inventory = $Inventory;
+      $this->Inventory = $inventoryItems;
     }
     // }}}
     
@@ -133,16 +176,10 @@
       // Read addresses
       $this->Inventory = array ();
       
-      for ($i = 0; $i < $Count; $i++) {
-        // Try to unpack the data
-        if (!($Values = unpack ('Vtype/a32hash', substr ($Data, $Offset + ($i * 36), 36))))
-          return false;
-        
-        $Values ['hash'] = BitWire_Hash::fromBinary ($Values ['hash'], true);
-        
-        // Push to addresses
-        $this->Inventory [] = $Values;
-      }
+      for ($i = 0; $i < $Count; $i++)
+        // Try to unpack inventory-item
+        if ($inventoryItem = BitWire_Message_Inventory_Item::fromBinary ($Data, $Offset, $Length))
+          $this->Inventory [] = $inventoryItem;
       
       // Indicate success
       return true;
@@ -174,7 +211,7 @@
       
       // Output each entry
       foreach ($this->Inventory as $Inventory)
-        $Buffer .= pack ('Va32', $Inventory ['type'], $Inventory ['hash']->toBinary (true));
+        $Buffer .= $Inventory->toBinary ();
       
       // Return the result
       return $Buffer;
