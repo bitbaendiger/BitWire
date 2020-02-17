@@ -2,7 +2,7 @@
 
   /**
    * BitWire - Masternode Broadcast Message
-   * Copyright (C) 2019 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2019-2020 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -18,11 +18,11 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/Message/Payload.php');
+  require_once ('BitWire/Message/Payload/Hashable.php');
   require_once ('BitWire/Hash.php');
   require_once ('BitWire/Message/Masternode/Ping.php');
   
-  class BitWire_Message_Masternode_Broadcast extends BitWire_Message_Payload {
+  class BitWire_Message_Masternode_Broadcast extends BitWire_Message_Payload_Hashable {
     const PAYLOAD_COMMAND = 'mnb';
     
     /* UTXO of masternode */

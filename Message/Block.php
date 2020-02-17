@@ -1,9 +1,27 @@
 <?PHP
 
-  require_once ('BitWire/Block.php');
-  require_once ('BitWire/Message/Payload.php');
+  /**
+   * BitWire - Block Message
+   * Copyright (C) 2017-2020 Bernd Holzmueller <bernd@quarxconnect.de>
+   * 
+   * This program is free software: you can redistribute it and/or modify
+   * it under the terms of the GNU General Public License as published by
+   * the Free Software Foundation, either version 3 of the License, or
+   * (at your option) any later version.
+   * 
+   * This program is distributed in the hope that it will be useful,
+   * but WITHOUT ANY WARRANTY; without even the implied warranty of
+   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   * GNU General Public License for more details.
+   * 
+   * You should have received a copy of the GNU General Public License
+   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   **/
   
-  class BitWire_Message_Block extends BitWire_Message_Payload {
+  require_once ('BitWire/Block.php');
+  require_once ('BitWire/Message/Payload/Hashable.php');
+  
+  class BitWire_Message_Block extends BitWire_Message_Payload_Hashable {
     const PAYLOAD_COMMAND = 'block';
     
     /* Block stored on this message */
@@ -32,6 +50,21 @@
       return array (
         'block' => $this->Block,
       );
+    }
+    // }}}
+    
+    // {{{ getHash
+    /**
+     * Retrive the hash for this payload
+     * 
+     * @access public
+     * @return BitWire_Hash
+     **/
+    public function getHash () : BitWire_Hash {
+      if ($this->Block)
+        return $this->Block->getHash ();
+
+      return new BitWire_Hash;
     }
     // }}}
     
