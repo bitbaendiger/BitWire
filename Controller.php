@@ -20,10 +20,11 @@
   
   require_once ('qcEvents/Socket.php');
   require_once ('qcEvents/Hookable.php');
-  require_once ('qcEvents/Promise.php';
+  require_once ('qcEvents/Promise.php');
   
   require_once ('BitWire/Peer.php');
   require_once ('BitWire/Controller/Address.php');
+  require_once ('BitWire/Controller/Inventory.php');
   require_once ('BitWire/Message/GetAddresses.php');
   
   class BitWire_Controller extends qcEvents_Hookable {
@@ -74,25 +75,6 @@
     }
     // }}}
     
-    // {{{ setMaxPeers
-    /**
-     * Set maximum number of peer-connections
-     * 
-     * @param int $maxPeers
-     * 
-     * @access public
-     * @return bool
-     **/
-    public function setMaxPeers ($maxPeers) {
-      if ($maxPeers < 1)
-        $this->connectedPeersMax = null;
-      else
-        $this->connectedPeersMax = (int)$maxPeers;
-      
-      return true;
-    }
-    // }}}
-    
     // {{{ getProtocolVersion
     /**
      * Retrive the default protocol-version to use on this controller
@@ -126,6 +108,37 @@
      **/
     public function getUserAgent () {
       return $this->userAgent;
+    }
+    // }}}
+    
+    // {{{ setMaxPeers
+    /**
+     * Set maximum number of peer-connections
+     * 
+     * @param int $maxPeers
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function setMaxPeers ($maxPeers) {
+      if ($maxPeers < 1)
+        $this->connectedPeersMax = null;
+      else
+        $this->connectedPeersMax = (int)$maxPeers;
+      
+      return true;
+    }
+    // }}}
+
+    // {{{ getPeerCount
+    /**
+     * Retrive the number of connected peers
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getPeerCount ($Backlog = false) {
+      return count ($this->connectedPeers) + ($Backlog ? count ($this->pendingPeers) : 0);
     }
     // }}}
     
@@ -235,6 +248,18 @@
           // Learn new addresses from this peer
           if ($receivedPayload instanceof BitWire_Message_Addresses)
             return $this->learnAddresses ($receivedPayload->getAddresses (), $receivingPeer);
+          
+          // Learn new inventory items
+          elseif ($receivedPayload instanceof BitWire_Message_Inventory)
+            return $this->learnInventory ($receivedPayload->getInventory (), $receivingPeer);
+          
+          // Check if the class is known by any inventory
+          foreach ($this->typeInventory as $typeInventory)
+            if ($typeInventory->checkInstance ($receivedPayload)) {
+              $typeInventory->addInstance ($receivedPayload);
+              
+              $this->___callback ('bitWireInventoryAdded', $receivedPayload);
+            }
         }
       );
       
@@ -261,18 +286,6 @@
       
       // Fire callbacks
       $this->___callback ('bitWirePeerAdded', $newPeer);
-    }
-    // }}}
-    
-    // {{{ getPeerCount
-    /**
-     * Retrive the number of connected peers
-     * 
-     * @access public
-     * @return int
-     **/
-    public function getPeerCount ($Backlog = false) {
-      return count ($this->connectedPeers) + ($Backlog ? count ($this->pendingPeers) : 0);
     }
     // }}}
     
@@ -311,6 +324,46 @@
       // Try to connect to newly learned peers
       if (count ($newAddresses) > 0)
         $this->checkPeerConnections ();
+    }
+    // }}}
+    
+    // {{{ learnInventory
+    /**
+     * Learn new inventory-items from a peer
+     * 
+     * @param array $inventoryItems
+     * @param BitWire_Peer $fromPeer
+     * 
+     * @access private
+     * @return void
+     **/
+    private function learnInventory (array $inventoryItems, BitWire_Peer $fromPeer) {
+      // Check which items to request from inventory
+      $requestItems = array ();
+      
+      foreach ($inventoryItems as $inventoryItem) {
+        // Check if the inventory-item is of interest
+        $inventoryType = $inventoryItem->getType ();
+        
+        if (!isset ($this->typeInventory [$inventoryType]))
+          continue;
+        
+        // Push the inventory
+        $inventoryInstance = $this->typeInventory [$inventoryType]->addInventory ($inventoryItem, $fromPeer);
+        
+        if ($inventoryInstance->shouldRequest () &&
+            ($this->___callback ('bitWireInventoryLearned', $inventoryInstance) !== false)) {
+          $inventoryInstance->setRequested ($fromPeer);
+          $requestItems [] = $inventoryItem;
+        }
+      }
+      
+      // Check if there is anything to request
+      if (count ($requestItems) == 0)
+        return;
+      
+      // Push the request back to the originating peer
+      $fromPeer->requestInventory ($requestItems);
     }
     // }}}
     
@@ -381,7 +434,24 @@
     }
     // }}}
     
+    // {{{ registerInventory
+    /**
+     * Register an inventory-type to manage on this controller
+     * 
+     * @param int $inventoryType Number to identify this inventory-type
+     * @param string $inventoryClassname Classname of object as which the inventory will appear on the wire
+     * 
+     * @access public
+     * @return void
+     **/
+    public function registerInventory ($inventoryType, $inventoryClassname) {
+      // Make sure we are watching this inventory-type
+      if (!isset ($this->typeInventory [$inventoryType]))
+        $this->typeInventory [$inventoryType] = new BitWire_Controller_Inventory ($inventoryType, $inventoryClassname);
+    }
+    // }}}
     
+        
     // {{{ bitWirePeerAddressLearned
     /**
      * A new peer-address was learned
@@ -441,6 +511,30 @@
      * @return bool
      **/
     protected function bitWirePayloadReceived (BitWire_Message_Payload $receivedPayload, BitWire_Peer $receivingPeer) { }
+    // }}}
+    
+    // {{{ bitWireInventoryLearned
+    /**
+     * Callback: A new inventory-item was learned
+     * 
+     * @param BitWire_Controller_Inventory_Item $inventoryItem
+     * 
+     * @access protected
+     * @return bool
+     **/
+    protected function bitWireInventoryLearned (BitWire_Controller_Inventory_Item $inventoryItem) { }
+    // }}}
+    
+    // {{{ bitWireInventoryAdded
+    /**
+     * Callback: An item was added to inventory
+     * 
+     * @param BitWire_Message_Payload $inventoryAdded
+     * 
+     * @access protected
+     * @return void
+     **/
+    protected function bitWireInventoryAdded (BitWire_Message_Payload $inventoryAdded) { }
     // }}}
   }
 
