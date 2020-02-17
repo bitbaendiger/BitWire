@@ -19,8 +19,9 @@
    **/
   
   require_once ('BitWire/Message/Payload.php');
+  require_once ('BitWire/Interface/Hashable.php');
   
-  abstract class BitWire_Message_Payload_Hashable extends BitWire_Message_Payload {
+  abstract class BitWire_Message_Payload_Hashable extends BitWire_Message_Payload implements BitWire_Interface_Hashable {
     // {{{ getHash
     /**
      * Retrive the hash for this payload

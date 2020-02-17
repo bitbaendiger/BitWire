@@ -86,6 +86,18 @@
     }
     // }}}
     
+    // {{{ getHash
+    /**
+     * Retrive the hash of this inventory-item
+     * 
+     * @access public
+     * @return BitWire_Hash
+     **/
+    public function getHash () : BitWire_Hash {
+      return $this->inventoryHash;
+    }
+    // }}}
+    
     // {{{ toBinary
     /**
      * Convert this payload into binary
