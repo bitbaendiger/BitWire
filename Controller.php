@@ -268,6 +268,12 @@
           elseif ($receivedPayload instanceof BitWire_Message_GetData)
             return $this->sendInventory ($receivedPayload->getInventory (), $receivingPeer);
           
+          elseif ($receivedPayload instanceof BitWire_Message_NotFound)
+            foreach ($receivedPayload as $inventoryItem)
+              if (isset ($this->typeInventory [$inventoryItem->getType ()]) &&
+                  isset ($this->typeInventory [$inventoryItem->getType ()][strval ($inventoryItem->getHash ())]))
+                $this->typeInventory [$inventoryItem->getType ()][strval ($inventoryItem->getHash ())]->removePeer ($receivingPeer);
+          
           // Check if the class is known by any inventory
           foreach ($this->typeInventory as $typeInventory)
             if ($typeInventory->checkInstance ($receivedPayload)) {
