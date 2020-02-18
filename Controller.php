@@ -258,7 +258,7 @@
             if ($typeInventory->checkInstance ($receivedPayload)) {
               $typeInventory->addInstance ($receivedPayload);
               
-              $this->___callback ('bitWireInventoryAdded', $receivedPayload);
+              $this->___callback ('bitWireInventoryAdded', $typeInventory, $receivedPayload);
             }
         }
       );
@@ -543,12 +543,13 @@
     /**
      * Callback: An item was added to inventory
      * 
+     * @param BitWire_Controller_Inventory $typeInventory
      * @param BitWire_Message_Payload $inventoryAdded
      * 
      * @access protected
      * @return void
      **/
-    protected function bitWireInventoryAdded (BitWire_Message_Payload $inventoryAdded) { }
+    protected function bitWireInventoryAdded (BitWire_Controller_Inventory $typeInventory, BitWire_Message_Payload $inventoryAdded) { }
     // }}}
   }
 
