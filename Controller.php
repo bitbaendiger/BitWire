@@ -477,6 +477,25 @@
     }
     // }}}
     
+    // {{{ sendPayload
+    /**
+     * Write out payload to all peers
+     * 
+     * @param BitWire_Message_Payload $sendPayload
+     * 
+     * @access public
+     * @return qcEvents_Promise
+     **/
+    public function sendPayload (BitWire_Message_Payload $sendPayload) : qcEvents_Promise {
+      $peerPromises = array ();
+      
+      foreach ($this->connectedPeers as $connectedPeer)
+        $peerPromises [] = $connectedPeer->sendPayload ($sendPayload);
+      
+      return qcEvents_Promise::all ($peerPromises);
+    }
+    // }}}
+    
         
     // {{{ bitWirePeerAddressLearned
     /**
