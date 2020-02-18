@@ -231,6 +231,54 @@
       $this->inventoryItems [$inventoryKey]->setItem ($payloadInstance);
     }
     // }}}
+    
+    // {{{ getInstance
+    /**
+     * Retrive an instance from this inventory
+     * 
+     * @param BitWire_Hash $hashNeedle
+     * 
+     * @access public
+     * @return BitWire_Message_Payload_Hashable
+     **/
+    public function getInstance (BitWire_Hash $hashNeedle) : ?BitWire_Message_Payload_Hashable {
+      $hashNeedle = strval ($hashNeedle);
+      
+      return (isset ($this->inventoryItems [$hashNeedle]) ? $this->inventoryItems [$hashNeedle]->getItem () : null);
+    }
+    // }}}
+    
+    // {{{ removeInstance
+    /**
+     * Remove an instance from this inventory
+     * 
+     * @param BitWire_Hash $hashNeedle
+     * 
+     * @access public
+     * @return void
+     **/
+    public function removeInstance (BitWire_Hash $hashNeedle) {
+      unset ($this->inventoryItems [strval ($hashNeedle)]);
+    }
+    // }}}
+    
+    // {{{ contains
+    /**
+     * Check if an instance with a given hash is present on this inventory
+     * 
+     * @param BitWire_Hash $hashNeedle
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function contains (BitWire_Hash $hashNeedle) {
+      $hashNeedle = strval ($hashNeedle);
+      
+      return
+        isset ($this->inventoryItems [$hashNeedle]) &&
+        $this->inventoryItems [strval ($hashNeedle)]->isReady ();
+    }
+    // }}}
   }
 
 ?>
