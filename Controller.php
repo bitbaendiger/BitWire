@@ -261,9 +261,12 @@
           if ($receivedPayload instanceof BitWire_Message_Addresses)
             return $this->learnAddresses ($receivedPayload->getAddresses (), $receivingPeer);
           
-          // Learn new inventory items
+          // Do Inventory-Stuff
           elseif ($receivedPayload instanceof BitWire_Message_Inventory)
             return $this->learnInventory ($receivedPayload->getInventory (), $receivingPeer);
+          
+          elseif ($receivedPayload instanceof BitWire_Message_GetData)
+            return $this->sendInventory ($receivedPayload->getInventory (), $receivingPeer);
           
           // Check if the class is known by any inventory
           foreach ($this->typeInventory as $typeInventory)
@@ -376,6 +379,48 @@
       
       // Push the request back to the originating peer
       $fromPeer->requestInventory ($requestItems);
+    }
+    // }}}
+    
+    // {{{ sendInventory
+    /**
+     * Send requested inventories to remote peer
+     * 
+     * @access private
+     * @return void
+     **/
+    private function sendInventory (array $inventoryItems, BitWire_Peer $toPeer) {
+      // Try to push all items
+      $notFound = array ();
+      
+      foreach ($inventoryItems as $inventoryItem) {
+        // Sanity-Check the inventory-item
+        if (!($inventoryItem instanceof BitWire_Message_Inventory_Item))
+          continue;
+        
+        // Check the type of that inventory-item
+        $inventoryType = $inventoryItem->getType ();
+        
+        if (!isset ($this->typeInventory [$inventoryType])) {
+          $notFound [] = $inventoryItem;
+          
+          continue;
+        }
+        
+        // Check if we have that instance on inventory
+        if (!($inventoryInstance = $this->typeInventory [$inventoryType]->getInstance ($inventoryItem->getHash ()))) {
+          $notFound [] = $inventoryItem;
+          
+          continue;
+        }
+        
+        // Push to peer
+        $toPeer->sendPayload ($inventoryInstance);
+      }
+      
+      // Tell the peer about inventories not found
+      if (count ($notFound) > 0)
+        $toPeer->sendPayload (new BitWire_Message_NotFound ($notFound));
     }
     // }}}
     
