@@ -451,6 +451,20 @@
     }
     // }}}
     
+    // {{{ getInventory
+    /**
+     * Retrive an inventory-collection by it's type
+     * 
+     * @param int $inventoryType
+     * 
+     * @access public
+     * @return BitWire_Controller_Inventory
+     **/
+    public function getInventory ($inventoryType) : ?BitWire_Controller_Inventory {
+      return $this->typeInventory [$inventoryType] ?? null;
+    }
+    // }}}
+    
         
     // {{{ bitWirePeerAddressLearned
     /**
