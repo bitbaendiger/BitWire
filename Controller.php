@@ -111,6 +111,18 @@
     }
     // }}}
     
+    // {{{ getEventBase
+    /**
+     * Retrive the event-base assigned to this controller
+     * 
+     * @access public
+     * @return qcEvents_Base
+     **/
+    public function getEventBase () : qcEvents_Base {
+      return $this->eventBase;
+    }
+    // }}}
+    
     // {{{ setMaxPeers
     /**
      * Set maximum number of peer-connections
