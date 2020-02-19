@@ -168,7 +168,7 @@
       
       foreach ($this->inventoryRequests as $inventoryIndex=>$inventoryRequest)
         if (($inventoryRequest ['peer'] === $fromPeer) ||
-            ($Now - $inveotoryRequest ['timestamp'] > 60))
+            ($Now - $inventoryRequest ['timestamp'] > 60))
           unset ($this->inventoryRequests [$inventoryIndex]);
       
       // Check wheter to add new entry
