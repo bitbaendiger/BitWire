@@ -87,6 +87,20 @@
     }
     // }}}
     
+    // {{{ setProtocolVersion
+    /**
+     * Change the protocol-version for new peers
+     * 
+     * @param int $protocolVersion
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setProtocolVersion ($protocolVersion) {
+      $this->protocolVersion = (int)$protocolVersion;
+    }
+    // }}}
+    
     // {{{ getMessageMagic
     /**
      * Retrive magic number/bytes for messages on the network
@@ -99,6 +113,20 @@
     }
     // }}}
     
+    // {{{ setMessageMagic
+    /**
+     * Change the magic number/bytes for messages on the network
+     * 
+     * @param int $messageMagic
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setMessageMagic ($messageMagic) {
+      $this->messageMagic = (int)$messageMagic;
+    }
+    // }}}
+    
     // {{{ getUserAgent
     /**
      * Retrive the user-agent for this controller
@@ -108,6 +136,20 @@
      **/
     public function getUserAgent () {
       return $this->userAgent;
+    }
+    // }}}
+    
+    // {{{ setUserAgent
+    /**
+     * Change the user-agent of this controller
+     * 
+     * @param string $userAgent
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setUserAgent ($userAgent) {
+      $this->userAgent = strval ($userAgent);
     }
     // }}}
     
