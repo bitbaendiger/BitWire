@@ -184,6 +184,20 @@
     }
     // }}}
     
+    // {{{ getInventory
+    /**
+     * Retrive an inventory-item by hash from this collection
+     * 
+     * @param BitWire_Hash $hashNeedle
+     * 
+     * @access public
+     * @return BitWire_Controller_Inventory_Item
+     **/
+    public function getInventory (BitWire_Hash $hashNeedle) : ?BitWire_Controller_Inventory_Item {
+      return $this->inventoryItems [strval ($hashNeedle)] ?? null;
+    }
+    // }}}
+    
     // {{{ checkInstance
     /**
      * Check if a given payload-instance matches a class of this inventory
@@ -212,10 +226,10 @@
      * @param BitWire_Message_Payload_Hashable $payloadInstance
      * 
      * @access public
-     * @return void
+     * @return BitWire_Controller_Inventory_Item
      * @throws TypeError
      **/
-    public function addInstance (BitWire_Message_Payload_Hashable $payloadInstance) {
+    public function addInstance (BitWire_Message_Payload_Hashable $payloadInstance) : BitWire_Controller_Inventory_Item {
       // Sanity-Check first
       if (!$this->checkInstance ($payloadInstance))
         throw new TypeError ('Invalid payload-instance');
@@ -229,6 +243,8 @@
         $this->inventoryItems [$inventoryKey] = new BitWire_Controller_Inventory_Item ($this->inventoryType, $inventoryHash);
       
       $this->inventoryItems [$inventoryKey]->setItem ($payloadInstance);
+      
+      return $this->inventoryItems [$inventoryKey];
     }
     // }}}
     
