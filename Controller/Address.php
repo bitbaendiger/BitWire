@@ -219,7 +219,7 @@
       return $this->networkSocket->connect (
         $this->ipAddress,
         $this->ipPort,
-        $this->networkSocket::TYPE_TCP,
+        $this->networkSocket::TYPE_TCP
       )->then (
         function () use ($bitWireController) {
           // Sanity-Check if we still have a network-stream
