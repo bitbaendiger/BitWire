@@ -28,6 +28,41 @@
     /* Port of service on peer */
     private $Port = 8333;
     
+    // {{{ fromString
+    /**
+     * Parse an address from string
+     * 
+     * @param string $nodeAddress
+     * 
+     * @access public
+     * @return BitWire_Peer_Address
+     **/
+    public static function fromString ($nodeAddress) : BitWire_Peer_Address {
+      // Retrive the length of the address
+      if (($addressLength = strlen ($nodeAddress)) == 0)
+        return new static ();
+      
+      $nodePort = 8333;
+      
+      // Check for IPv6
+      if ($nodeAddress [0] == '[') {
+        if (($p = strpos ($nodeAddress, ']', 1)) === false)
+          throw new exception ('Invalid IPv6');
+        
+        $nodeIP = substr ($nodeAddress, 1, $p - 1);
+        
+        if (($p < $addressLength - 1) && ($nodeAddress [$p + 1] == ':'))
+          $nodePort = (int)substr ($nodeAddress, $p + 2);
+      } elseif (($p = strpos ($nodeAddress, ':')) !== false) {
+        $nodeIP = substr ($nodeAddress, 0, $p);
+        $nodePort = (int)substr ($nodeAddress, $p + 1);
+      } else
+        $nodeIP = $nodeAddress;
+      
+      return new static ($nodeIP, $nodePort);
+    }
+    // }}}
+    
     // {{{ __construct
     /**
      * Create a new controller-address
