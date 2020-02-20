@@ -351,17 +351,18 @@
      * @param BitWire_Crypto_PrivateKey $PrivateKey
      * @param int $Timestamp (optional)
      * @param string $Magic (optional)
+     * @param bool $useOldSignature (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function sign (BitWire_Crypto_PrivateKey $PrivateKey, $Timestamp = null, $Magic = null) {
+    public function sign (BitWire_Crypto_PrivateKey $PrivateKey, $Timestamp = null, $Magic = null, $useOldSignature = false) {
       // Update the timestamp
       $oTimestamp = $this->signatureTime;
       $this->signatureTime = ($Timestamp !== null ? $Timestamp : time ());
       
       // Try to generate signature
-      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($Magic))) === false) {
+      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($Magic, $useOldSignature))) === false) {
         // Restore the old timestamp
         $this->signatureTime = $oTimestamp;
         
