@@ -606,15 +606,8 @@
      * @return bool
      **/
     public function parse ($Data) {
-      if (strlen ($Data) > 0) {
-        trigger_error ('Unparsed data on payload for ' . get_class ($this) . '/' . $this->Command);
-        
-        if (function_exists ('dump'))
-          dump ($Data);
-        
-        if ($this::PAYLOAD_HAS_DATA === false)
-          return false;
-      }
+      if ((strlen ($Data) > 0) && ($this::PAYLOAD_HAS_DATA === false))
+        return false;
       
       $this->Data = $Data;
       
