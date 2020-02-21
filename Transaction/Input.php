@@ -215,13 +215,17 @@
     /** 
      * Convert this input to a string like bitcore would do
      * 
+     * @param bool $shortHash (optional) Short hash of outpoint
+     * 
      * @access public
      * @return string
      **/
-    public function toString () {
+    public function toString ($shortHash = false) {
+      $outpointHash = strval ($this->Hash);
+      
       return
         'CTxIn(' .
-          'COutPoint(' . strval ($this->Hash) . ', ' . $this->Index . ')' .
+          'COutPoint(' . ($shortHash ? substr ($outpointHash, 0, 10) : $outpointHash) . ', ' . $this->Index . ')' .
           # TODO: Missing support for zerocoin
           ($this->isCoinbase () ? ', coinbase ' . bin2hex ($this->Script->toBinary ()) : ', scriptSig=' . substr (strval ($this->Script), 0, 24)) .
           ($this->Sequence != 0xffffffff ? ', nSequence=' . $this->Sequence : '') .

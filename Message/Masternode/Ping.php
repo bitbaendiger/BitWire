@@ -233,19 +233,20 @@
     /**
      * Prepare the message for our signature
      * 
-     * @param string $Magic (optional)
+     * @param string $magicString (optional)
+     * @param bool $shortHash (optional)
      * 
      * @access private
      * @return string
      **/
-    private function getMessageForSignature ($Magic = null) {
-      if ($Magic === null)
-        $Magic = "DarkNet Signed Message:\n";
+    private function getMessageForSignature ($magicString = null, $shortHash = false) {
+      if ($magicString === null)
+        $magicString = "DarkNet Signed Message:\n";
       
       return
-        self::writeCompactString ($Magic) .
+        self::writeCompactString ($magicString) .
         self::writeCompactString (
-          $this->txIn->toString () .
+          $this->txIn->toString ($shortHash) .
           strval ($this->Hash) .
           $this->signatureTime
         );
