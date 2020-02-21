@@ -67,7 +67,7 @@
       $Broadcast->Address = $darkSendEntry->getAddress ();
       $Broadcast->publicKeyCollateral = $darkSendEntry->getCollateralPublicKey ();
       $Broadcast->publicKeyMasternode = $darkSendEntry->getMasternodePublicKey ();
-      $Broadcast->signatureTime = $darkSendEntry->getSigantureTime ();
+      $Broadcast->signatureTime = $darkSendEntry->getSignatureTime ();
       $Broadcast->protocolVersion = $darkSendEntry->getProtocolVersion ();
       
       return $Broadcast;
