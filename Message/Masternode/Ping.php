@@ -189,18 +189,19 @@
      * Create a signature for this message
      * 
      * @param BitWire_Crypto_PrivateKey $PrivateKey
-     * @param string $Magic (optional)
+     * @param string $magicString (optional)
+     * @param bool $useShortHash (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function sign (BitWire_Crypto_PrivateKey $PrivateKey, $Magic = null) {
+    public function sign (BitWire_Crypto_PrivateKey $PrivateKey, $magicString = null, $useShortHash = false) {
       // Update the timestamp
       $oTimestamp = $this->signatureTime;
       $this->signatureTime = time ();
       
       // Try to generate signature
-      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($Magic))) === false) {
+      if (($Signature = $PrivateKey->signCompact ($this->getMessageForSignature ($magicString, $useShortHash))) === false) {
         // Restore the old timestamp
         $this->signatureTime = $oTimestamp;
         
@@ -219,13 +220,14 @@
      * Verify this ping
      * 
      * @param BitWire_Crypto_PublicKey $PublicKey
-     * @param string $Magic (optional)
+     * @param string $magicString (optional)
+     * @param bool $useShortHash (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function verify (BitWire_Crypto_PublicKey $PublicKey, $Magic = null) {
-      return $PublicKey->verifyCompact ($this->getMessageForSignature ($Magic), $this->Signature);
+    public function verify (BitWire_Crypto_PublicKey $PublicKey, $magicString = null, $useShortHash = false) {
+      return $PublicKey->verifyCompact ($this->getMessageForSignature ($magicString, $useShortHash), $this->Signature);
     }
     // }}}
     
