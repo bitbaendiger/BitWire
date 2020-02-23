@@ -22,7 +22,7 @@
     private $lockTime = 0;
     
     /* Inputs of transaction */
-    private $Inputs = array ();
+    private $transactionInputs = array ();
     
     /* Outputs of transaction */
     private $Outputs = array ();
@@ -57,7 +57,7 @@
      * @return bool
      **/
     public function isCoinbase () {
-      return ((count ($this->Inputs) == 1) && $this->Inputs [0]->isCoinbase ());
+      return ((count ($this->transactionInputs) == 1) && $this->transactionInputs [0]->isCoinbase ());
     }
     // }}}
     
@@ -131,7 +131,21 @@
      * @return array
      **/
     public function getInputs () {
-      return $this->Inputs;
+      return $this->transactionInputs;
+    }
+    // }}}
+    
+    // {{{ addInput
+    /**
+     * Add another input to this transaction
+     * 
+     * @param BitWire_Transaction_Input $transactionInput
+     * 
+     * @access public
+     * @return void
+     **/
+    public function addInput (BitWire_Transaction_Input $transactionInput) {
+      $this->transactionInputs [] = $transactionInput;
     }
     // }}}
     
@@ -139,13 +153,19 @@
     /**
      * Set all inputs for this transaction
      * 
-     * @param array $Inputs
+     * @param array $transactionInputs
      * 
      * @access public
      * @return bool
      **/
-    public function setInputs (array $Inputs) {
-      $this->Inputs = $Inputs;
+    public function setInputs (array $transactionInputs) {
+      // Sanatize the inputs
+      foreach ($transactionInputs as $transactionInput)
+        if (!($transactionInput instanceof BitWire_Transaction_Input))
+          return false;
+      
+      // Assign the inputs
+      $this->transactionInputs = $transactionInputs;
       
       return true;
     }
@@ -259,7 +279,7 @@
       $this->Time = $Time;
       $this->lockTime = $lockTime;
       $this->Comment = $Comment;
-      $this->Inputs = $Inputs;
+      $this->transactionInputs = $Inputs;
       $this->Outputs = $Outputs;
       
       $Offset = $tOffset;
@@ -278,12 +298,12 @@
     public function toBinary () {
       // Generate start of transaction
       if ($this->Type == $this::TYPE_POS)
-        $Buffer = pack ('VV', $this->Version, $this->Time) . BitWire_Message_Payload::toCompactSize (count ($this->Inputs));
+        $Buffer = pack ('VV', $this->Version, $this->Time) . BitWire_Message_Payload::toCompactSize (count ($this->transactionInputs));
       else
-        $Buffer = pack ('V', $this->Version) . BitWire_Message_Payload::toCompactSize (count ($this->Inputs));
+        $Buffer = pack ('V', $this->Version) . BitWire_Message_Payload::toCompactSize (count ($this->transactionInputs));
       
       // Append Inputs
-      foreach ($this->Inputs as $Input)
+      foreach ($this->transactionInputs as $Input)
         $Buffer .= $Input->toBinary ();
       
       // Append Outputs
