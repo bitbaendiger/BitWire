@@ -281,6 +281,18 @@
     }
     // }}}
     
+    // {{{ getVersion
+    /**
+     * Retrive the version of this private key
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getVersion () {
+      return $this->keyVersion;
+    }
+    // }}}
+    
     // {{{ setVersion
     /**
      * Set the version of this private key
