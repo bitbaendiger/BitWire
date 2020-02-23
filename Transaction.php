@@ -202,6 +202,20 @@
     }
     // }}}
     
+    // {{{ addOutput
+    /**
+     * Add another output to this transaction
+     * 
+     * @param BitWire_Transaction_Output $transactionOutput
+     * 
+     * @access public
+     * @return void
+     **/
+    public function addOutput (BitWire_Transaction_Output $transactionOutput) {
+      $this->transactionOutputs [] = $transactionOutput;
+    }
+    // }}}
+    
     // {{{ setOutputs
     /**
      * Set all outputs for this transaction
