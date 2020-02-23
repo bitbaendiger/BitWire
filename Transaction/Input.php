@@ -2,7 +2,7 @@
 
   /**
    * BitWire - Transaction Input
-   * Copyright (C) 2017 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2017-2020 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -24,13 +24,13 @@
   
   class BitWire_Transaction_Input {
     /* Transaction containing this input */
-    private $Transaction = null;
+    private $parentTransaction = null;
     
     /* Hash of UTXO assigned to this input */
-    private $Hash = null;
+    private $transactionHash = null;
     
     /* Index of UTXO assigned to this input */
-    private $Index = 0xffffffff;
+    private $transactionIndex = 0xffffffff;
     
     /* Signature-Script */
     private $Script = null;
@@ -42,17 +42,17 @@
     /**
      * Check if a given hash and index might represent a coinbase
      * 
-     * @param BitWire_Hash $Hash
-     * @param int $Index
+     * @param BitWire_Hash $transactionHash
+     * @param int $transactionIndex
      * 
      * @access private
      * @return bool
      **/
-    private static function checkCoinbase (BitWire_Hash $Hash, $Index) {
-      if ($Index != 0xFFFFFFFF)
+    private static function checkCoinbase (BitWire_Hash $transactionHash, $transactionIndex) {
+      if ($transactionIndex != 0xFFFFFFFF)
         return false;
       
-      return (strcmp ($Hash->toBinary (), "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00") == 0);
+      return (strcmp ($transactionHash->toBinary (), "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00") == 0);
     }
     // }}}
     
@@ -60,12 +60,24 @@
     /**
      * Create a new transaction-input
      * 
+     * @param BitWire_Transaction $parentTransaction (optional)
+     * @param BitWire_Hash $transactionHash (optional)
+     * @param int $transactionIndex (optional)
+     * 
      * @access friendly
      * @return void
      **/
-    function __construct (BitWire_Transaction $Transaction = null) {
-      $this->Transaction = $Transaction;
-      $this->Hash = new BitWire_Hash;
+    function __construct (BitWire_Transaction $parentTransaction = null, BitWire_Hash $transactionHash = null, $transactionIndex = null) {
+      $this->parentTransaction = $parentTransaction;
+      
+      if ($transactionHash)
+        $this->transactionHash = $transactionHash;
+      else
+        $this->transactionHash = new BitWire_Hash;
+      
+      if ($transactionIndex !== null)
+        $this->transactionIndex = $transactionIndex;
+      
       $this->Script = new BitWire_Transaction_Script ($this);
     }
     // }}}
@@ -78,7 +90,7 @@
      * @return string
      **/
     function __toString () {
-      return strval ($this->Hash) . ':' . $this->Index;
+      return strval ($this->transactionHash) . ':' . $this->transactionIndex;
     }
     // }}}
     
@@ -91,8 +103,8 @@
      **/
     function __debugInfo () {
       return array (
-        'hash' => strval ($this->Hash),
-        'index' => $this->Index,
+        'hash' => strval ($this->transactionHash),
+        'index' => $this->transactionIndex,
         'sequence' => $this->Sequence,
         'script' => strval ($this->Script),
       );
@@ -107,7 +119,7 @@
      * @return bool
      **/
     public function isCoinbase () {
-      return self::checkCoinbase ($this->Hash, $this->Index);
+      return self::checkCoinbase ($this->transactionHash, $this->transactionIndex);
     }
     // }}}
     
@@ -119,7 +131,7 @@
      * @return BitWire_Transaction
      **/
     public function getTransaction () : ?BitWire_Transaction {
-      return $this->Transaction;
+      return $this->parentTransaction;
     }
     // }}}
     
@@ -131,7 +143,7 @@
      * @return int
      **/
     public function getIndex () {
-      return $this->Index;
+      return $this->transactionIndex;
     }
     // }}}
     
@@ -144,8 +156,8 @@
      * @access public
      * @return void
      **/
-    public function setIndex ($Index) {
-      $this->Index = (int)$Index;
+    public function setIndex ($transactionIndex) {
+      $this->transactionIndex = (int)$transactionIndex;
     }
     // }}}
     
@@ -169,7 +181,7 @@
      * @return BitWire_Hash
      **/
     public function getHash () : BitWire_Hash {
-      return $this->Hash;
+      return $this->transactionHash;
     }
     // }}}
     
@@ -177,13 +189,13 @@
     /**
      * Store the hash if the previous output
      * 
-     * @param BitWire_Hash $Hash
+     * @param BitWire_Hash $transactionHash
      * 
      * @access public
      * @return void
      **/
-    public function setHash (BitWire_Hash $Hash) {
-      $this->Hash = $Hash;
+    public function setHash (BitWire_Hash $transactionHash) {
+      $this->transactionHash = $transactionHash;
     }
     // }}}
     
@@ -221,11 +233,11 @@
      * @return string
      **/
     public function toString ($shortHash = false) {
-      $outpointHash = strval ($this->Hash);
+      $outpointHash = strval ($this->transactionHash);
       
       return
         'CTxIn(' .
-          'COutPoint(' . ($shortHash ? substr ($outpointHash, 0, 10) : $outpointHash) . ', ' . $this->Index . ')' .
+          'COutPoint(' . ($shortHash ? substr ($outpointHash, 0, 10) : $outpointHash) . ', ' . $this->transactionIndex . ')' .
           # TODO: Missing support for zerocoin
           ($this->isCoinbase () ? ', coinbase ' . bin2hex ($this->Script->toBinary ()) : ', scriptSig=' . substr (strval ($this->Script), 0, 24)) .
           ($this->Sequence != 0xffffffff ? ', nSequence=' . $this->Sequence : '') .
@@ -250,8 +262,8 @@
         $Length = strlen ($Data);
       
       // Try to read everything into our memory
-      if ((($Hash = BitWire_Message_Payload::readHash ($Data, $Offset, $Length)) === null) ||
-          (($Index = BitWire_Message_Payload::readUInt32 ($Data, $Offset, $Length)) === null) ||
+      if ((($transactionHash = BitWire_Message_Payload::readHash ($Data, $Offset, $Length)) === null) ||
+          (($transactionIndex = BitWire_Message_Payload::readUInt32 ($Data, $Offset, $Length)) === null) ||
           (($Script = BitWire_Message_Payload::readCompactString ($Data, $Offset, $Length)) === null) ||
           (($Sequence = BitWire_Message_Payload::readUInt32 ($Data, $Offset, $Length)) === null))
         return false;
@@ -259,7 +271,7 @@
       // Check size-constraints for script
       $scriptSize = strlen ($Script);
       
-      if (self::checkCoinbase ($Hash, $Index)) {
+      if (self::checkCoinbase ($transactionHash, $transactionIndex)) {
         if ($scriptSize > 101)
           return false;
         
@@ -268,8 +280,8 @@
         return false;
       
       // Store the results on this instance
-      $this->Hash = $Hash;
-      $this->Index = $Index;
+      $this->transactionHash = $transactionHash;
+      $this->transactionIndex = $transactionIndex;
       $this->Script = new BitWire_Transaction_Script ($this, $Script);
       $this->Sequence = $Sequence;
       
@@ -286,8 +298,8 @@
      **/
     public function toBinary () {
       return
-        BitWire_Message_Payload::writeHash ($this->Hash) .
-        BitWire_Message_Payload::writeUInt32 ($this->Index) .
+        BitWire_Message_Payload::writeHash ($this->transactionHash) .
+        BitWire_Message_Payload::writeUInt32 ($this->transactionIndex) .
         BitWire_Message_Payload::writeCompactString ($this->Script->toBinary ()) .
         BitWire_Message_Payload::writeUInt32 ($this->Sequence);
     }
