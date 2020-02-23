@@ -91,11 +91,8 @@
       self::OP_NOP1          => 'OP_NOP1',
     );
     
-    /* Binary data from script */
-    private $Data = '';
-    
     /* Parsed stack of script */
-    private $Stack = null;
+    private $scriptOps = array ();
     
     // {{{ base58Encode
     /**
@@ -197,8 +194,8 @@
      * @return void
      **/
     function __construct ($Data = '') {
-      $this->Data = $Data;
-      $this->Stack = null;
+      if (!$this->parse ($Data))
+        throw new exception ('Failed to parse script');
     }
     // }}}
     
@@ -225,13 +222,10 @@
      * @return string
      **/
     function __toString () {
-      // Retrive our stack
-      $Stack = $this->getStack ();
-      
       // Generate a human readable string
       $Result = '';
       
-      foreach ($Stack as $Op)
+      foreach ($this->scriptOps as $Op)
         if (($Op [0] > 0) && ($Op [0] < $this::OP_PUSHDATA_8))
           $Result .= bin2hex ($Op [1]) . ' ';
         elseif (isset ($this::$opcodeNames [$Op [0]]))
@@ -252,29 +246,26 @@
      * @return string
      **/
     public function getAddresses ($forceNet = null) {
-      // Find the address and prefix with type
-      $Stack = $this->getStack ();
-      
       if ($this->isSignatureInput ())
         return null;
       
       if ($this->isPublicKeyHashInput ())
-        $Addresses = [[ 0, hash ('ripemd160', hash ('sha256', $Stack [1][1], true), true) ]];
+        $Addresses = [[ 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [1][1], true), true) ]];
       elseif ($this->isScriptHashInput ())
-        $Addresses = [[ 5, hash ('ripemd160', hash ('sha256', $Stack [1][1], true), true) ]];
+        $Addresses = [[ 5, hash ('ripemd160', hash ('sha256', $this->scriptOps [1][1], true), true) ]];
       elseif ($this->isMultiSignatureScriptInput ())
-        $Addresses = [[ 5, hash ('ripemd160', hash ('sha256', $Stack [count ($Stack) - 1][1], true), true) ]];
+        $Addresses = [[ 5, hash ('ripemd160', hash ('sha256', $this->scriptOps [count ($this->scriptOps) - 1][1], true), true) ]];
       elseif ($this->isPublicKeyOutput ())
-        $Addresses = [[ 0, hash ('ripemd160', hash ('sha256', $Stack [0][1], true), true) ]];
+        $Addresses = [[ 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [0][1], true), true) ]];
       elseif ($this->isPublicKeyHashOutput ())
-        $Addresses = [[ 0, $Stack [2][1] ]];
+        $Addresses = [[ 0, $this->scriptOps [2][1] ]];
       elseif ($this->isScriptHashOutput ())
-        $Addresses = [[ 5, $Stack [1][1] ]];
+        $Addresses = [[ 5, $this->scriptOps [1][1] ]];
       elseif ($this->isMultiSignatureOutput ()) {
         $Addresses = [ ];
         
-        for ($i = 1; $i < count ($Stack) - 2; $i++)
-          $Addresses [] = [ 0, hash ('ripemd160', hash ('sha256', $Stack [$i][1], true), true) ];
+        for ($i = 1; $i < count ($this->scriptOps) - 2; $i++)
+          $Addresses [] = [ 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [$i][1], true), true) ];
       } else
         return null;
       
@@ -293,12 +284,10 @@
      * @return bool
      **/
     public function isSignatureInput () {
-      $Stack = $this->getStack ();
-      
-      if ((count ($Stack) != 1) || !isset ($Stack [0][1]))
+      if ((count ($this->scriptOps) != 1) || !isset ($this->scriptOps [0][1]))
         return false;
       
-      return $this->isSignature ($Stack [0][1]);
+      return $this->isSignature ($this->scriptOps [0][1]);
     }
     // }}}
     
@@ -311,27 +300,26 @@
      **/
     public function isPublicKeyHashInput () {
       // Retrive the stack
-      $Stack = $this->getStack ();
-      $Length = count ($Stack);
+      $Length = count ($this->scriptOps);
       
       if ($Length != 2)
         return false;
       
       // Make sure first frame is DER-encoded signature
-      if (!isset ($Stack [0][1]))
+      if (!isset ($this->scriptOps [0][1]))
         return false;
       
-      if (!$this->isSignature ($Stack [0][1]))
+      if (!$this->isSignature ($this->scriptOps [0][1]))
         return false;
       
       // Make sure second frame is public key
-      if (!isset ($Stack [1][1]))
+      if (!isset ($this->scriptOps [1][1]))
         return false;
       
-      if (($Length = strlen ($Stack [1][1])) < 1)
+      if (($Length = strlen ($this->scriptOps [1][1])) < 1)
         return false;
       
-      $Version = ord ($Stack [1][1][0]);
+      $Version = ord ($this->scriptOps [1][1][0]);
       
       if ($Version < 2)
         return false;
@@ -353,25 +341,23 @@
      **/
     public function isScriptHashInput () {
       // Retrive the stack
-      $Stack = $this->getStack ();
-      $Length = count ($Stack);
+      $Length = count ($this->scriptOps);
       
       if ($Length != 2)
         return false;
       
       // Make sure first frame is DER-encoded signature
-      if (!isset ($Stack [0][1]))
+      if (!isset ($this->scriptOps [0][1]))
         return false;
       
-      if (!$this->isSignature ($Stack [0][1]))
+      if (!$this->isSignature ($this->scriptOps [0][1]))
         return false;
       
       // Make sure second frame is a script
-      $Script = new $this ($this->Transaction, $Stack [1][1]);
-      $Stack = $Script->getStack ();
+      $Script = new $this ($this->scriptOps [1][1]);
       
-      if ((count ($Stack) != 2) ||
-          ($Stack [1][0] != $this::OP_CHECKSIG))
+      if ((count ($Script->scriptOps) != 2) ||
+          ($Script->scriptOps [1][0] != $this::OP_CHECKSIG))
         return false;
       
       // Succeed if we get here
@@ -388,41 +374,39 @@
      **/
     public function isMultiSignatureScriptInput () {
       // Retrive the stack
-      $Stack = $this->getStack ();
-      $Length = count ($Stack);
+      $Length = count ($this->scriptOps);
       
       // Check length and opcode of first frame
-      if (($Length < 2) || ($Stack [0][0] != 0x00))
+      if (($Length < 2) || ($this->scriptOps [0][0] != 0x00))
         return false;
       
       for ($i = 1; $i < $Length - 1; $i++) {
         // Make sure there is data available
-        if (!isset ($Stack [$i][1])) {
+        if (!isset ($this->scriptOps [$i][1])) {
           trigger_error ('No buffer on op');
           
           return false;
         }
         
         // Check if this is a DER-encoded Signature 
-        if (!$this->isSignature ($Stack [$i][1]))
+        if (!$this->isSignature ($this->scriptOps [$i][1]))
           return false;
       }
       
       // Create an own script from last Stack
-      $Script = new $this ($Stack [$Length - 1][1]);
-      $sStack = $Script->getStack ();
+      $Script = new $this ($this->scriptOps [$Length - 1][1]);
       
       // Check the script
-      if (($sLength = count ($sStack)) < 4)
+      if (($sLength = count ($Script->scriptOps)) < 4)
         return false;
       
-      if ($sStack [$sLength - 1][0] != $this::OP_CHECKMULTISIG)
+      if ($Script->scriptOps [$sLength - 1][0] != $this::OP_CHECKMULTISIG)
         return false;
       
-      if ($sLength != $sStack [$sLength - 2][0] - 77)
+      if ($sLength != $Script->scriptOps [$sLength - 2][0] - 77)
         return false;
       
-      if ($sStack [0][0] != 80 + $Length - 2)
+      if ($Script->scriptOps [0][0] != 80 + $Length - 2)
         return false;
       
       // Succeed if we get here
@@ -438,21 +422,19 @@
      * @return bool
      **/
     public function isPublicKeyOutput () {
-      $Stack = $this->getStack ();
-      
-      if (count ($Stack) != 2)
+      if (count ($this->scriptOps) != 2)
         return false;
       
-      if ($Stack [1][0] != $this::OP_CHECKSIG)
+      if ($this->scriptOps [1][0] != $this::OP_CHECKSIG)
         return false;
       
-      if (!isset ($Stack [0][1]))
+      if (!isset ($this->scriptOps [0][1]))
         return false;
       
-      if (($Length = strlen ($Stack [0][1])) < 1)
+      if (($Length = strlen ($this->scriptOps [0][1])) < 1)
         return false;
       
-      $Version = ord ($Stack [0][1][0]);
+      $Version = ord ($this->scriptOps [0][1][0]);
       
       if ($Version < 2)
         return false;
@@ -476,25 +458,24 @@
      * @return bool
      **/
     public function isPublicKeyHashOutput () {
-      $Stack = $this->getStack ();
-      $Length = count ($Stack);
+      $Length = count ($this->scriptOps);
       
       // Work around very buggy transaction
       // See: e411dbebd2f7d64dafeef9b14b5c59ec60c36779d43f850e5e347abee1e1a455
       // See: 5492a05f1edfbd29c525a3dbf45f654d0fc45a805ccd620d0a4dff47de63f90b
       // See: f003f0c1193019db2497a675fd05d9f2edddf9b67c59e677c48d3dbd4ed5f00b
-      if (($Length > 5) && ($Stack [4][0] == $this::OP_CHECKSIG))
+      if (($Length > 5) && ($this->scriptOps [4][0] == $this::OP_CHECKSIG))
         for ($i = 5; $i < $Length; $i++)
-          if (($Stack [$i][0] != $this::OP_CHECKSIG) && ($Stack [$i][0] != $this::OP_NOP) && ($Stack [$i][0] != $this::OP_NOP1))
+          if (($this->scriptOps [$i][0] != $this::OP_CHECKSIG) && ($this->scriptOps [$i][0] != $this::OP_NOP) && ($this->scriptOps [$i][0] != $this::OP_NOP1))
             return false;
       
       return
         ($Length >= 5) &&
-        ($Stack [0][0] == $this::OP_DUP) &&
-        ($Stack [1][0] == $this::OP_HASH160) &&
-        (isset ($Stack [2][1]) && (strlen ($Stack [2][1]) == 20)) &&
-        ($Stack [3][0] == $this::OP_EQUALVERIFY) &&
-        ($Stack [4][0] == $this::OP_CHECKSIG);
+        ($this->scriptOps [0][0] == $this::OP_DUP) &&
+        ($this->scriptOps [1][0] == $this::OP_HASH160) &&
+        (isset ($this->scriptOps [2][1]) && (strlen ($this->scriptOps [2][1]) == 20)) &&
+        ($this->scriptOps [3][0] == $this::OP_EQUALVERIFY) &&
+        ($this->scriptOps [4][0] == $this::OP_CHECKSIG);
     }
     // }}}
     
@@ -506,13 +487,11 @@
      * @return bool
      **/
     public function isScriptHashOutput () {
-      $Stack = $this->getStack ();
-      
       return
-        (count ($Stack) == 3) &&
-        ($Stack [0][0] == $this::OP_HASH160) &&
-        (isset ($Stack [1][1]) && (strlen ($Stack [1][1]) == 20)) &&
-        ($Stack [2][0] == $this::OP_EQUAL);
+        (count ($this->scriptOps) == 3) &&
+        ($this->scriptOps [0][0] == $this::OP_HASH160) &&
+        (isset ($this->scriptOps [1][1]) && (strlen ($this->scriptOps [1][1]) == 20)) &&
+        ($this->scriptOps [2][0] == $this::OP_EQUAL);
     }
     // }}}
     
@@ -524,19 +503,16 @@
      * @return bool
      **/
     public function isMultiSignatureOutput () {
-      // Retrive the stack
-      $Stack = $this->getStack ();
-      
       // Check size of stack
-      $Length = count ($Stack);
+      $Length = count ($this->scriptOps);
       
       if ($Length < 4)
         return false;
       
-      if ($Stack [$Length - 2][0] != 77 + $Length)
+      if ($this->scriptOps [$Length - 2][0] != 77 + $Length)
         return false;
       
-      if ($Stack [$Length - 1][0] != $this::OP_CHECKMULTISIG)
+      if ($this->scriptOps [$Length - 1][0] != $this::OP_CHECKMULTISIG)
         return false;
       
       return true;
@@ -604,48 +580,60 @@
     // }}}
     
     
-    // {{{ getStack
+    // {{{ parse
     /**
-     * Retrive stack for this script
+     * Parse script-ops from binary
+     * 
+     * @param string $binaryData
      * 
      * @access public
-     * @return array
+     * @return boolean
      **/
-    public function getStack () {
-      // Check for a cached stack
-      if ($this->Stack !== null)
-        return $this->Stack;
-      
+    public function parse ($binaryData) {
       // Prepare to generate stack
-      $this->Stack = array ();
-      $Length = strlen ($this->Data);
-      $Offset = 0;
+      $scriptOps = array ();
       
-      while ($Offset < $Length) {
+      $dataLength = strlen ($binaryData);
+      $dataOffset = 0;
+      
+      while ($dataOffset < $dataLength) {
         // Get next opcode
-        $Opcode = ord ($this->Data [$Offset++]);
+        $scriptOpcode = ord ($binaryData [$dataOffset++]);
         
-        if (($Opcode > 0) && ($Opcode < $this::OP_PUSHDATA_8)) {
-          $this->Stack [] = array ($Opcode, substr ($this->Data, $Offset, $Opcode));
-          $Offset += $Opcode;
-        } elseif (($Opcode == $this::OP_PUSHDATA_8) ||
-                  ($Opcode == $this::OP_PUSHDATA_16) ||
-                  ($Opcode == $this::OP_PUSHDATA_32)) {
-          if ($Opcode == $this::OP_PUSHDATA_32)
-            $oLength = ord ($this->Data [$Offset++]) | (ord ($this->Data [$Offset++]) >> 8) | (ord ($this->Data [$Offset++]) >> 16) | (ord ($this->Data [$Offset++]) >> 24);
-          elseif ($Opcode == $this::OP_PUSHDATA_16)
-            $oLength = ord ($this->Data [$Offset++]) | (ord ($this->Data [$Offset++]) >> 8);
+        // Push plain data to script-ops
+        if (($scriptOpcode > 0) && ($scriptOpcode < $this::OP_PUSHDATA_8)) {
+          $scriptOps [] = array ($scriptOpcode, substr ($binaryData, $dataOffset, $scriptOpcode));
+          $dataOffset += $scriptOpcode;
+        
+        // Push length-prefixed data to script-ops
+        } elseif (($scriptOpcode == $this::OP_PUSHDATA_8) ||
+                  ($scriptOpcode == $this::OP_PUSHDATA_16) ||
+                  ($scriptOpcode == $this::OP_PUSHDATA_32)) {
+          // Retrive the length of data to push
+          if ($scriptOpcode == $this::OP_PUSHDATA_32)
+            $oLength = (ord ($binaryData [$dataOffset++])) |
+                       (ord ($binaryData [$dataOffset++]) << 8) |
+                       (ord ($binaryData [$dataOffset++]) << 16) |
+                       (ord ($binaryData [$dataOffset++]) << 24);
+          elseif ($scriptOpcode == $this::OP_PUSHDATA_16)
+            $oLength = (ord ($binaryData [$dataOffset++])) |
+                       (ord ($binaryData [$dataOffset++]) << 8);
           else
-            $oLength = ord ($this->Data [$Offset++]);
+            $oLength =  ord ($binaryData [$dataOffset++]);
           
-          $this->Stack [] = array ($Opcode, substr ($this->Data, $Offset, $oLength));
-          $Offset += $oLength;
+          // Push to script-ops
+          $scriptOps [] = array ($scriptOpcode, substr ($binaryData, $dataOffset, $oLength));
+          $dataOffset += $oLength;
+        
+        // Push only one opcode
         } else
-          $this->Stack [] = array ($Opcode);
+          $scriptOps [] = array ($scriptOpcode);
       }
       
-      // Return the stack
-      return $this->Stack;
+      // Store the result
+      $this->scriptOps = $scriptOps;
+      
+      return true;
     }
     // }}}
     
@@ -657,7 +645,27 @@
      * @return string
      **/
     public function toBinary () {
-      return $this->Data;
+      $outputScript = '';
+      
+      foreach ($this->scriptOps as $scriptOp) {
+        $outputScript .= chr ($scriptOp [0]);
+        
+        if (!isset ($scriptOp [1]))
+          continue;
+        
+        $dataLength = strlen ($scriptOp [1]);
+        
+        if ($scriptOp [0] == $this::OP_PUSHDATA_8)
+          $outputScript .= chr ($dataLength &= 0xFF);
+        elseif ($scriptOp [0] == $this::OP_PUSHDATA_16)
+          $outputScript .= pack ('v', $dataLength &= 0xFFFF);
+        elseif ($scriptOp [0] == $this::OP_PUSHDATA_32)
+          $outputScript .= pack ('V', $dataLength &= 0xFFFF);
+        
+        $outputScript .= substr ($scriptOp [1], 0, $dataLength);
+      }
+      
+      return $outputScript;
     }
     // }}}
   }
