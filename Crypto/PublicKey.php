@@ -156,12 +156,13 @@
      * Retrive the address for this public key
      * 
      * @param bool $Compressed (optional)
+     * @param int $addressType (optional)
      * 
      * @access public
      * @return BitWire_Address
      **/
-    public function getAddress ($Compressed = null) : BitWire_Address {
-      return new BitWire_Address (0x00, hash ('ripemd160', hash ('sha256', $this->toBinary ($Compressed), true), true));
+    public function getAddress ($Compressed = null, $addressType = 0x00) : BitWire_Address {
+      return new BitWire_Address ($addressType, hash ('ripemd160', hash ('sha256', $this->toBinary ($Compressed), true), true));
     }
     // }}}
     
