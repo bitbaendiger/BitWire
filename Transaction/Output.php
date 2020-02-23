@@ -32,13 +32,19 @@
     /**
      * Create a new transaction-input
      * 
-     * @param BitWire_Transaction $parentTransaction (optional)
+     * @param float $outputAmount (optional)
+     * @param BitWire_Transaction_Script $outputScript (optional)
      * 
      * @access friendly
      * @return void
      **/
-    function __construct (BitWire_Transaction $parentTransaction = null) {
-      $this->outputScript = new BitWire_Transaction_Script;
+    function __construct ($outputAmount = 0.0, BitWire_Transaction_Script $outputScript = null) {
+      $this->outputAmount = (float)$outputAmount;
+      
+      if ($outputScript)
+        $this->outputScript = $outputScript;
+      else
+        $this->outputScript = new BitWire_Transaction_Script;
     }
     // }}}
     
@@ -122,7 +128,7 @@
         return false;
         
       // Store the results on this instance
-      $this->outputAmount = $outputAmount;
+      $this->outputAmount = $outputAmount / 100000000;
       $this->outputScript = new BitWire_Transaction_Script ($outputScript);
       $dataOffset = $myOffset;
       
@@ -139,7 +145,7 @@
      **/
     public function toBinary () {
       return
-        pack ('P', $this->outputAmount) .
+        pack ('P', $this->outputAmount * 100000000) .
         BitWire_Message_Payload::toCompactString ($this->outputScript->toBinary ());
     }
     // }}}

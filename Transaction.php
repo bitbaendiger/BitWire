@@ -273,7 +273,7 @@
       $transactionOutputs = array ();
       
       for ($i = 0; $i < $Count; $i++) {
-        $transactionOutputs [] = $transactionOutput = new BitWire_Transaction_Output ($this);
+        $transactionOutputs [] = $transactionOutput = new BitWire_Transaction_Output;
         
         if (!$transactionOutput->parse ($Data, $tOffset, $Length))
           return false;
