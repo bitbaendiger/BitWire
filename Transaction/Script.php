@@ -97,9 +97,6 @@
     /* Parsed stack of script */
     private $Stack = null;
     
-    /* Instance of transaction we are on */
-    private $Parent = null;
-    
     // {{{ base58Encode
     /**
      * Generate base58-string from a binary string
@@ -194,20 +191,12 @@
     /**
      * Create a new transaction-script
      * 
-     * @param mixed $Parent
      * @param string $Data (optional) Binary encoded transaction-script
      * 
      * @access friendly
      * @return void
      **/
-    function __construct ($Parent, $Data = '') {
-      if (($Parent instanceof BitWire_Transaction) ||
-          ($Parent instanceof BitWire_Transaction_Input) ||
-          ($Parent instanceof BitWire_Transaction_Output))
-        $this->Parent = $Parent;
-      else
-        throw new Exception ('Transaction or input required');
-      
+    function __construct ($Data = '') {
       $this->Data = $Data;
       $this->Stack = null;
     }
@@ -420,7 +409,7 @@
       }
       
       // Create an own script from last Stack
-      $Script = new $this ($this->Parent, $Stack [$Length - 1][1]);
+      $Script = new $this ($Stack [$Length - 1][1]);
       $sStack = $Script->getStack ();
       
       // Check the script

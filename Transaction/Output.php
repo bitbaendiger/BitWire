@@ -38,7 +38,7 @@
      * @return void
      **/
     function __construct (BitWire_Transaction $parentTransaction = null) {
-      $this->outputScript = new BitWire_Transaction_Script ($this);
+      $this->outputScript = new BitWire_Transaction_Script;
     }
     // }}}
     
@@ -123,7 +123,7 @@
         
       // Store the results on this instance
       $this->outputAmount = $outputAmount;
-      $this->outputScript = new BitWire_Transaction_Script ($this, $outputScript);
+      $this->outputScript = new BitWire_Transaction_Script ($outputScript);
       $dataOffset = $myOffset;
       
       return true;

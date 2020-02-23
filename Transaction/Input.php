@@ -78,7 +78,7 @@
       if ($transactionIndex !== null)
         $this->transactionIndex = $transactionIndex;
       
-      $this->Script = new BitWire_Transaction_Script ($this);
+      $this->Script = new BitWire_Transaction_Script;
     }
     // }}}
     
@@ -282,7 +282,7 @@
       // Store the results on this instance
       $this->transactionHash = $transactionHash;
       $this->transactionIndex = $transactionIndex;
-      $this->Script = new BitWire_Transaction_Script ($this, $Script);
+      $this->Script = new BitWire_Transaction_Script ($Script);
       $this->Sequence = $Sequence;
       
       return true;
