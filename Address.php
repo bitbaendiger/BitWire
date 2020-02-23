@@ -26,7 +26,7 @@
     const TYPE_LITECOIN_P2PKH = 0x30;
     const TYPE_PEERCOIN_P2PKH = 0x37;
     
-    private $Type = 0x00;
+    private $addressType = 0x00;
     
     /* RIPEMD160/SHA256 for this address */
     private $Hash = '';
@@ -73,7 +73,7 @@
      * @return void
      **/
     function __construct ($Type, $Hash) {
-      $this->Type = $Type;
+      $this->addressType = $Type;
       $this->Hash = $Hash;
     }
     // }}}
@@ -86,7 +86,7 @@
      * @return string
      **/
     function __toString () {
-      $Address = chr ($this->Type) . $this->Hash;
+      $Address = chr ($this->addressType) . $this->Hash;
       $Checksum = hash ('sha256', hash ('sha256', $Address, true), true);
       
       return BitWire_Transaction_Script::base58Encode ($Address . substr ($Checksum, 0, 4));
@@ -103,6 +103,8 @@
     function __debugInfo () {
       return [
         'address' => strval ($this),
+        'type' => $this->addressType,
+        'hash' => bin2hex ($this->Hash),
       ];
     }
     // }}}
@@ -115,7 +117,7 @@
      * @return enum
      **/
     public function getType () {
-      return $this->Type;
+      return $this->addressType;
     }
     // }}}
     
@@ -129,7 +131,7 @@
      * @return void
      **/
     public function setType ($Type) {
-      $this->Type = (int)$Type;
+      $this->addressType = (int)$Type;
     }
     // }}}
     
@@ -142,6 +144,25 @@
      **/
     public function getHash () {
       return $this->Hash;
+    }
+    // }}}
+    
+    // {{{ getPublicKeyScript
+    /**
+     * Retrive script to pay to public-key-address
+     * 
+     * @access public
+     * @return BitWire_Transaction_Script
+     **/
+    public function getPublicKeyScript () : BitWire_Transaction_Script {
+      return new BitWire_Transaction_Script (
+        chr (BitWire_Transaction_Script::OP_DUP) .
+        chr (BitWire_Transaction_Script::OP_HASH160) .
+        chr (strlen ($this->Hash)) .
+        $this->Hash .
+        chr (BitWire_Transaction_Script::OP_EQUALVERIFY) .
+        chr (BitWire_Transaction_Script::OP_CHECKSIG)
+      );
     }
     // }}}
   }
