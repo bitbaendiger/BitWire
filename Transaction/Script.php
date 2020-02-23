@@ -2,7 +2,7 @@
 
   /**
    * BitWire - Transaction Script
-   * Copyright (C) 2017 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2017-2020 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -201,7 +201,9 @@
      * @return void
      **/
     function __construct ($Parent, $Data = '') {
-      if (($Parent instanceof BitWire_Transaction) || ($Parent instanceof BitWire_Transaction_Input))
+      if (($Parent instanceof BitWire_Transaction) ||
+          ($Parent instanceof BitWire_Transaction_Input) ||
+          ($Parent instanceof BitWire_Transaction_Output))
         $this->Parent = $Parent;
       else
         throw new Exception ('Transaction or input required');

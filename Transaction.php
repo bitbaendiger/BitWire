@@ -1,8 +1,27 @@
 <?PHP
 
+  /**
+   * BitWire - Transaction
+   * Copyright (C) 2017-2020 Bernd Holzmueller <bernd@quarxconnect.de>
+   * 
+   * This program is free software: you can redistribute it and/or modify
+   * it under the terms of the GNU General Public License as published by
+   * the Free Software Foundation, either version 3 of the License, or
+   * (at your option) any later version.
+   * 
+   * This program is distributed in the hope that it will be useful,
+   * but WITHOUT ANY WARRANTY; without even the implied warranty of
+   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   * GNU General Public License for more details.
+   * 
+   * You should have received a copy of the GNU General Public License
+   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   **/
+  
   require_once ('BitWire/Hashable.php');
   require_once ('BitWire/Message/Payload.php');
   require_once ('BitWire/Transaction/Input.php');
+  require_once ('BitWire/Transaction/Output.php');
   require_once ('BitWire/Transaction/Script.php');
   
   class BitWire_Transaction extends BitWire_Hashable {
@@ -25,7 +44,7 @@
     private $transactionInputs = array ();
     
     /* Outputs of transaction */
-    private $Outputs = array ();
+    private $transactionOutputs = array ();
     
     /* Comment of this transaction */
     private $hasComment = false;
@@ -178,8 +197,8 @@
      * @access public
      * @return array
      **/
-    public function getOutputs () {
-      return $this->Outputs;
+    public function getOutputs () : array {
+      return $this->transactionOutputs;
     }
     // }}}
     
@@ -187,13 +206,17 @@
     /**
      * Set all outputs for this transaction
      * 
-     * @param array $Outputs
+     * @param array $transactionOutputs
      * 
      * @access public
      * @return bool
      **/
-    public function setOutputs (array $Outputs) {
-      $this->Outputs = $Outputs;
+    public function setOutputs (array $transactionOutputs) {
+      foreach ($transactionOutputs as $transactionOutput)
+        if (!($transactionOutput instanceof BitWire_Transaction_Output))
+          return false;
+      
+      $this->transactionOutputs = $transactionOutputs;
       
       return true;
     }
@@ -247,22 +270,13 @@
         return false;
       
       // Try to read all outputs
-      $Outputs = array ();
+      $transactionOutputs = array ();
       
       for ($i = 0; $i < $Count; $i++) {
-        // Read values of the output
-        if ((($Amount = BitWire_Message_Payload::readUInt64 ($Data, $tOffset, $Length)) === null) ||
-            (($Script = BitWire_Message_Payload::readCompactString ($Data, $tOffset, $Length)) === null))
-          return false;
+        $transactionOutputs [] = $transactionOutput = new BitWire_Transaction_Output ($this);
         
-        // Check size-constraints for script
-        if (strlen ($Script) > 10003)
+        if (!$transactionOutput->parse ($Data, $tOffset, $Length))
           return false;
-        
-        $Outputs [] = array (
-          'amount' => $Amount,
-          'script' => new BitWire_Transaction_Script ($this, $Script),
-        );
       }
       
       // Try to read lock-time
@@ -280,7 +294,7 @@
       $this->lockTime = $lockTime;
       $this->Comment = $Comment;
       $this->transactionInputs = $Inputs;
-      $this->Outputs = $Outputs;
+      $this->transactionOutputs = $transactionOutputs;
       
       $Offset = $tOffset;
       
@@ -307,12 +321,10 @@
         $Buffer .= $Input->toBinary ();
       
       // Append Outputs
-      $Buffer .= BitWire_Message_Payload::toCompactSize (count ($this->Outputs));
+      $Buffer .= BitWire_Message_Payload::toCompactSize (count ($this->transactionOutputs));
       
-      foreach ($this->Outputs as $Output)
-        $Buffer .=
-          pack ('P', $Output ['amount']) .
-          BitWire_Message_Payload::toCompactString ($Output ['script']->toBinary ());
+      foreach ($this->transactionOutputs as $Output)
+        $Buffer .= $Output->toBinary ();
       
       // Append Locktime
       $Buffer .= pack ('V', $this->lockTime);
