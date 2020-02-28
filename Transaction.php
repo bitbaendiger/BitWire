@@ -80,6 +80,28 @@
     }
     // }}}
     
+    // {{{ isCoinStake
+    /**
+     * Check if this transaction is a coin-stake
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function isCoinStake () {
+      // Check number of in- and outputs
+      if ((count ($this->transactionInputs) < 1) ||
+          (count ($this->transactionOutputs) < 2))
+        return false;
+      
+      // Make sure the input is not empty
+      if ($this->transactionInputs [0]->getHash ()->isEmpty ())
+        return false;
+      
+      // Coin-Stake has first output empty
+      return $this->transactionOutputs [0]->getScript ()->isEmpty ();
+    }
+    // }}}
+    
     // {{{ getVersion
     /**
      * Retrive the version of this transaction
@@ -247,7 +269,7 @@
      * @access public
      * @return bool
      **/
-    public function parse (&$Data, &$Offset, $Length = null) {
+    public function parse (&$Data, &$Offset = 0, $Length = null) {
       // Make sure we know the length of our input
       if ($Length === null)
         $Length = strlen ($Data);

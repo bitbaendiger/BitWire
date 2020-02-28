@@ -276,6 +276,18 @@
     }
     // }}}
     
+    // {{{ isEmpty
+    /**
+     * Check for an empty script
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function isEmpty () {
+      return (count ($this->scriptOps) == 0);
+    }
+    // }}}
+    
     // {{{ isSignatureInput
     /**
      * Check if the script is a signature-input

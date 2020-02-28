@@ -52,7 +52,7 @@
       if ($transactionIndex != 0xFFFFFFFF)
         return false;
       
-      return (strcmp ($transactionHash->toBinary (), "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00") == 0);
+      return $transactionHash->isEmpty ();
     }
     // }}}
     

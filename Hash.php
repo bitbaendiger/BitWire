@@ -84,6 +84,18 @@
     }
     // }}}
     
+    // {{{ isEmpty
+    /**
+     * Check for an empty hash
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function isEmpty () {
+      return (strcmp ($this->Data, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00") == 0);
+    }
+    // }}}
+    
     // {{{ toBinary
     /** 
      * Convert this hash to binary representation
