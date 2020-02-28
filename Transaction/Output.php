@@ -75,6 +75,18 @@
     }
     // }}}
     
+    // {{{ getAmount
+    /**
+     * Retrive the amount of this output
+     * 
+     * @access public
+     * @return float
+     **/
+    public function getAmount () {
+      return $this->outputAmount;
+    }
+    // }}}
+    
     // {{{ getScript
     /**
      * Retrive the script of this input
