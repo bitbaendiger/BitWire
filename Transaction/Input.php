@@ -223,6 +223,18 @@
     }
     // }}}
     
+    // {{{ getStakeUniqueness
+    /**
+     * Retrive uniqueness for proof-of-stake
+     * 
+     * @access public
+     * @return string
+     **/
+    public function getStakeUniqueness () {
+      return pack ('Va32', $this->transactionIndex, $this->transactionHash->toBinary (true));
+    }
+    // }}}
+    
     // {{{ toString
     /** 
      * Convert this input to a string like bitcore would do
