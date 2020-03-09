@@ -18,6 +18,7 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
+  require_once ('BitWire/Numeric.php');
   require_once ('BitWire/Hash.php');
   require_once ('BitWire/Transaction.php');
   require_once ('BitWire/Message/Payload.php');
@@ -484,14 +485,14 @@
       # TODO: Check the time in some other way too?!
       
       // Compare hash and threshold
-      if (extension_loaded ('gmp')) {
-        $Max = gmp_mul (gmp_init ($this->TargetThreshold & 0xFFFFFF), gmp_pow (gmp_init (256), ((($this->TargetThreshold >> 24) & 0xFF) - 3)));
-        $Act = gmp_init (strval ($this->getHash ()), 16);
+      if (class_exists ('BitWire_Numeric', false)) {
+        $workTarget = BitWire_Numeric::fromCompact ($this->TargetThreshold);
+        $workActual = BitWire_Numeric::fromHash ($this->getHash ());
         
-        if (gmp_cmp ($Act, $Max) > 0)
+        if ($workActual > $workTarget)
           return false;
       } else
-        trigger_error ('GMP required to validate threshold');
+        trigger_error ('Numeric functions (GMP) required to validate threshold');
       
       // Compare merkle-root
       return $this->getMerkleRootHash ()->compare ($this->getMerkleRootHash (true));
