@@ -50,6 +50,40 @@
     private $hasComment = false;
     private $Comment = null;
     
+    // {{{ fromHex
+    /**
+     * Try to parse a transaction from hex-data
+     * 
+     * @param string $hexData
+     * 
+     * @access public
+     * @return BitWire_Transaction
+     **/
+    public static function fromHex ($hexData) : ?BitWire_Transaction {
+      return static::fromBinary (hex2bin ($hexData));
+    }
+    // }}}
+    
+    // {{{ fromBinary
+    /**
+     * Try to parse a transaction from binary data
+     *
+     * @param string $binaryData
+     * 
+     * @access public
+     * @return BitWire_Transaction
+     **/
+    public static function fromBinary ($binaryData) : ?BitWire_Transaction {
+      $newTransaction = new static;
+      
+      if (!$newTransaction->parse ($binaryData))
+        return null;
+      
+      return $newTransaction;
+    }
+    // }}}
+    
+    
     // {{{ __construct
     /**
      * Create a new transaction
