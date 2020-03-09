@@ -9,14 +9,14 @@
      * Create a hash from its binary representation
      * 
      * @param string $Data
-     * @param bool $Internal (optional)
+     * @param bool $networkByteOrder (optional)
      * 
      * @access public
      * @return BitWire_Hash
      **/
-    public static function fromBinary ($Data, $Internal = false) {
+    public static function fromBinary ($Data, $networkByteOrder = false) {
       $Instance = new static;
-      $Instance->Data = ($Internal ? strrev ($Data) : $Data);
+      $Instance->Data = ($networkByteOrder ? strrev ($Data) : $Data);
       
       return $Instance;
     }
@@ -27,13 +27,13 @@
      * Create a hash from its hex represenation
      * 
      * @param string $Data
-     * @param bool $Internal (optional)
+     * @param bool $networkByteOrder (optional)
      * 
      * @access public
      * @return BitWire_Hash
      **/
-    public static function fromHex ($Data, $Internal = false) {
-      return static::fromBinary (hex2bin ($Data), $Internal);
+    public static function fromHex ($Data, $networkByteOrder = false) {
+      return static::fromBinary (hex2bin ($Data), $networkByteOrder);
     }
     // }}}
     
@@ -42,18 +42,18 @@
      * Create a new Hash
      * 
      * @param string $Data (optional) Generate hash from this data
-     * @param bool $Internal (optional)
+     * @param bool $networkByteOrder (optional)
      * 
      * @access friendly
      * @return void
      **/
-    function __construct ($Data = null, $Internal = true) {
+    function __construct ($Data = null, $networkByteOrder = true) {
       if ($Data === null)
         return;
       
       $this->Data = hash ('sha256', hash ('sha256', $Data, true), true);
       
-      if ($Internal)
+      if ($networkByteOrder)
         $this->Data = strrev ($this->Data);
     }
     // }}}
@@ -103,8 +103,8 @@
      * @access public
      * @return string
      **/
-    public function toBinary ($Internal = false) {
-      return ($Internal ? strrev ($this->Data) : $this->Data);
+    public function toBinary ($networkByteOrder = false) {
+      return ($networkByteOrder ? strrev ($this->Data) : $this->Data);
     }
     // }}}
     
