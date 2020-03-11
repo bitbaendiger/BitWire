@@ -18,6 +18,13 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
+  // Make sure GMP is available
+  if (!extension_loaded ('gmp') && (!function_exists ('dl') || !dl ('gmp.so'))) {
+    trigger_error ('Missing required GMP-Extension');
+  
+    return;
+  }
+  
   require_once ('BitWire/Hash.php');
   require_once ('BitWire/Address.php');
   require_once ('BitWire/Crypto/Curve.php');

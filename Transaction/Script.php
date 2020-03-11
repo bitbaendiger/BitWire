@@ -107,7 +107,7 @@
       static $Alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
       
       // Make sure GMP is available
-      if (!extension_loaded ('gmp')) {
+      if (!extension_loaded ('gmp') && (!function_exists ('dl') || !dl ('gmp.so'))) {
         trigger_error ('Missing GMP-Extension for base58-encoding');
         
         return false;
@@ -152,7 +152,7 @@
       static $Alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
       
       // Make sure GMP is available
-      if (!extension_loaded ('gmp')) {
+      if (!extension_loaded ('gmp') && (!function_exists ('dl') || !dl ('gmp.so'))) {
         trigger_error ('Missing GMP-Extension for base58-encoding');
       
         return false;
