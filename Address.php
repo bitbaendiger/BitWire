@@ -86,10 +86,10 @@
      * @return string
      **/
     function __toString () {
-      $Address = chr ($this->addressType) . $this->Hash;
-      $Checksum = hash ('sha256', hash ('sha256', $Address, true), true);
+      $addressData = ltrim (pack ('N', $this->addressType), "\x00") . $this->Hash;
+      $addressChecksum = hash ('sha256', hash ('sha256', $addressData, true), true);
       
-      return BitWire_Transaction_Script::base58Encode ($Address . substr ($Checksum, 0, 4));
+      return BitWire_Transaction_Script::base58Encode ($addressData . substr ($addressChecksum, 0, 4));
     }
     // }}}
     
