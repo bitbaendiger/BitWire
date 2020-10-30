@@ -29,8 +29,8 @@
     /* Height of block */
     private $blockHeight = null;
     
-    /* Address of winning masternode */
-    private $winningAddress = '';
+    /* Address-Script of winning masternode */
+    private $winningScript = null;
     
     /* The signature itself */
     private $signatureData = '';
@@ -64,7 +64,7 @@
       return array (
         'masternode-collateral' => (string)$this->txIn,
         'block-height' => $this->blockHeight,
-        'winning-address' => (string)$this->winningAddress,
+        'winning-script' => (string)$this->getWinningScript (),
       );
     }
     // }}}
@@ -78,7 +78,7 @@
      **/
     public function getHash () : BitWire_Hash {
       return new BitWire_Hash (
-        self::writeCompactString ($this->winningAddress->toBinary ()) .
+        self::writeCompactString ($this->getWinningScript ()->toBinary ()) .
         self::writeUInt32 ($this->blockHeight) .
         self::writeCTxIn ($this->txIn)
       );
@@ -111,6 +111,33 @@
     }
     // }}}
     
+    // {{{ getBlockHeight
+    /** 
+     * Retrive the block-height for this vote
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getBlockHeight () {
+      return $this->blockHeight;
+    }
+    // }}}
+    
+    // {{{ getWinningScript
+    /**
+     * Retrive script for winning masternode
+     * 
+     * @access public
+     * @return BitWire_Transaction_Script
+     **/
+    public function getWinningScript () : BitWire_Transaction_Script {
+      if (!$this->winningScript)
+        return new BitWire_Transaction_Script ('');
+      
+      return $this->winningScript;
+    }
+    // }}}
+    
     // {{{ parse
     /**
      * Parse data for this payload
@@ -129,14 +156,14 @@
       
       if ((($txIn = self::readCTxIn ($Data, $tOffset, $Length)) === null) ||
           (($blockHeight = self::readUInt32 ($Data, $tOffset, $Length)) === null) ||
-          (($winningAddress = self::readCompactString ($Data, $tOffset, $Length)) === null) ||
+          (($winningScript = self::readCompactString ($Data, $tOffset, $Length)) === null) ||
           (($signatureData = self::readCompactString ($Data, $tOffset, $Length)) === null))
         return false;
       
       // Commit to this instance
       $this->txIn = $txIn;
       $this->blockHeight = $blockHeight;
-      $this->winningAddress = new BitWire_Transaction_Script ($winningAddress);
+      $this->winningScript = new BitWire_Transaction_Script ($winningScript);
       $this->signatureData = $signatureData;
       $Offset = $tOffset;
       
@@ -155,7 +182,7 @@
       return
         self::writeCTxIn ($this->txIn) .
         self::writeUInt32 ($this->blockHeight) .
-        self::writeCompactString ($this->winningAddress->toBinary ()) .
+        self::writeCompactString ($this->getWinningScript ()->toBinary ()) .
         self::writeCompactString ($this->signatureData);
     }
     // }}}
@@ -217,7 +244,7 @@
         self::writeCompactString (
           $this->txIn->toString (true) .
           (string)$this->blockHeight .
-          (string)$this->winningAddress
+          (string)$this->getWinningScript ()
         );
     }
     // }}}
