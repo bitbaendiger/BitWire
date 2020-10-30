@@ -292,6 +292,15 @@
     }
     // }}}
     
+    // {{{ shuffleOutputs
+    /**
+     * 
+     **/
+    public function shuffleOutputs () {
+      shuffle ($this->transactionOutputs);
+    }
+    // }}}
+    
     // {{{ parse
     /**
      * Try to parse an transaction from an input-buffer
