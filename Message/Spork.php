@@ -56,7 +56,7 @@
      * @return bool
      **/
     public function isActive () {
-      return $this->sporkValue < time ();
+      return (($this->sporkValue < time ()) && ($this->sporkValue != -1));
     }
     // }}}
     
