@@ -318,7 +318,7 @@
           
           // Check if the class is known by any inventory
           foreach ($this->typeInventory as $typeInventory)
-            if ($typeInventory->checkInstance ($receivedPayload)) {
+            if ($typeInventory->checkInstance ($receivedPayload) && !$typeInventory->hasInstance ($receivedPayload)) {
               $typeInventory->addInstance ($receivedPayload);
               
               $this->___callback ('bitWireInventoryAdded', $typeInventory, $receivedPayload);

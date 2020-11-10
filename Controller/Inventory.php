@@ -51,6 +51,18 @@
     }
     // }}}
     
+    // {{{ getType
+    /**
+     * Retrive the type-number of items stored on this inventory
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getType () {
+      return $this->inventoryType;
+    }
+    // }}}
+    
     // {{{ count
     /**
      * Count the number of items on this inventory
@@ -216,6 +228,27 @@
           return true;
       
       return false;
+    }
+    // }}}
+    
+    // {{{ hasInstance
+    /**
+     * Check if a payload-instance is present on this inventory
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function hasInstance (BitWire_Message_Payload_Hashable $payloadInstance) {
+      // Sanity-Check first
+      if (!$this->checkInstance ($payloadInstance))
+        throw new TypeError ('Invalid payload-instance');
+      
+      // Retrive the hash of that instance
+      $inventoryHash = $payloadInstance->getHash ();
+      $inventoryKey = strval ($inventoryHash);
+      
+      // Check if that instance is known and ready
+      return (isset ($this->inventoryItems [$inventoryKey]) && $this->inventoryItems [$inventoryKey]->isReady ());
     }
     // }}}
     
