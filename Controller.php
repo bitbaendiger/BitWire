@@ -318,7 +318,9 @@
           
           // Check if the class is known by any inventory
           foreach ($this->typeInventory as $typeInventory)
-            if ($typeInventory->checkInstance ($receivedPayload) && !$typeInventory->hasInstance ($receivedPayload)) {
+            if ($typeInventory->checkInstance ($receivedPayload) &&
+                !$typeInventory->hasInstance ($receivedPayload) &&
+                ($this->___callback ('bitWireInventoryCheck', $typeInventory, $receivedPayload) !== false)) {
               $typeInventory->addInstance ($receivedPayload);
               
               $this->___callback ('bitWireInventoryAdded', $typeInventory, $receivedPayload);
@@ -661,6 +663,19 @@
      * @return bool
      **/
     protected function bitWireInventoryLearned (BitWire_Controller_Inventory_Item $inventoryItem) { }
+    // }}}
+    
+    // {{{ bitWireInventoryCheck
+    /** 
+     * Callback: An item should be added to an inventory
+     * 
+     * @param BitWire_Controller_Inventory $typeInventory
+     * @param BitWire_Message_Payload $inventoryAdded
+     * 
+     * @access protected
+     * @return bool If non-FALSE it will be added to the inventory
+     **/
+    protected function bitWireInventoryCheck (BitWire_Controller_Inventory $typeInventory, BitWire_Message_Payload $inventoryAdded) { }
     // }}}
     
     // {{{ bitWireInventoryAdded
