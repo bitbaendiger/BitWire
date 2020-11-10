@@ -262,9 +262,9 @@
         } elseif ($Payload instanceof BitWire_Message_Version_Acknowledgement) {
           $this->peerInit = true;
         
-        // Anything else is unwanted here
-        } else
-          trigger_error ('Invalid message during negotiation (' . get_class ($Payload) . ')');
+        // Anything else is unwanted here (except "getsporks" which is a known bug on PIVX-based coins)
+        } elseif ($Payload->getCommand () != 'getsporks')
+          trigger_error ('Invalid message during negotiation (' . get_class ($Payload) . '/' . $Payload->getCommand () . ')');
         
         // Check wheter to run callbacks
         if ($this->peerInit && ($this->peerVersion !== null)) {
