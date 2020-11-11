@@ -516,20 +516,15 @@
         $this->pendingPeers [$addressKey] = $peerAddress->connect (
           $this->eventBase,
           $this
-        )->then (
+        )->finally (
           function () use ($addressKey) {
             // Remove from pending peers
             unset ($this->pendingPeers [$addressKey]);
-          },
-          function () use ($addressKey) {
-            // Remove from pending peers
-            unset ($this->pendingPeers [$addressKey]);
-            
+          }
+        )->catch (
+          function () {
             // Try to connect to other peers pn failure
             $this->checkPeerConnections ();
-            
-            // Forward the failure
-            throw new qcEvents_Promise_Solution (func_get_args ());
           }
         );
         
