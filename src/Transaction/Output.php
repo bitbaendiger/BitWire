@@ -109,7 +109,7 @@
      * @return array
      **/
     public function getAddresses () : array {
-      return $this->Script->getAddresses ();
+      return $this->outputScript->getAddresses ();
     }
     // }}}
     
