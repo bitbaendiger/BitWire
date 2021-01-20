@@ -1,8 +1,10 @@
 <?PHP
 
+  namespace BitBaendiger\BitWire\Transaction;
+  
   /**
    * BitWire - Transaction Script
-   * Copyright (C) 2017-2020 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -18,9 +20,9 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/Address.php');
+  require_once ('BitWire/src/Address.php');
   
-  class BitWire_Transaction_Script {
+  class Script {
     /* Well-known Opcodes */
     const OP_PUSHDATA_8  = 76;
     const OP_PUSHDATA_16 = 77;
@@ -243,9 +245,9 @@
      * Try to read addresses of this script
      * 
      * @access public
-     * @return string
+     * @return array
      **/
-    public function getAddresses ($forceNet = null) {
+    public function getAddresses ($forceNet = null) : ?array {
       if ($this->isSignatureInput ())
         return null;
       
@@ -270,7 +272,7 @@
         return null;
       
       foreach ($Addresses as $i=>$v)
-        $Addresses [$i] = new BitWire_Address ($v [0], $v [1]);
+        $Addresses [$i] = new \BitBaendiger\BitWire\Address ($v [0], $v [1]);
       
       return $Addresses;
     }

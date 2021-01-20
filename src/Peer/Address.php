@@ -1,8 +1,10 @@
 <?PHP
 
+  namespace BitBaendiger\BitWire\Peer;
+  
   /**
    * BitWire - Peer Address (a.k.a. CAddress)
-   * Copyright (C) 2019 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2019-2021 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -19,9 +21,9 @@
    **/
   
   require_once ('qcEvents/Socket.php');
-  require_once ('BitWire/Message/Payload.php');
+  require_once ('BitWire/src/Message/Payload.php');
   
-  class BitWire_Peer_Address {
+  class Address {
     /* IP-Address of this peer */
     private $Address = '::';
     
@@ -35,9 +37,9 @@
      * @param string $nodeAddress
      * 
      * @access public
-     * @return BitWire_Peer_Address
+     * @return Address
      **/
-    public static function fromString ($nodeAddress) : BitWire_Peer_Address {
+    public static function fromString ($nodeAddress) : Address {
       // Retrive the length of the address
       if (($addressLength = strlen ($nodeAddress)) == 0)
         return new static ();
@@ -105,7 +107,7 @@
         return '[' . $this->Address . ']';
       
       // Convert address to binary
-      $Binary = unpack ('n8', qcEvents_Socket::ip6toBinary ($this->Address));
+      $Binary = unpack ('n8', \qcEvents_Socket::ip6toBinary ($this->Address));
       
       // Check for IPv4
       if (($Binary [1] == $Binary [2]) && ($Binary [1] == $Binary [3]) && ($Binary [1] == $Binary [4]) && ($Binary [1] == $Binary [5]) && ($Binary [1] == 0) && ($Binary [6] == 0xffff))
@@ -161,9 +163,9 @@
         return null;
       
       // Get the relevant data from the input-buffer
-      $this->Address = qcEvents_Socket::ip6fromBinary (substr ($Data, $Offset, 16));
+      $this->Address = \qcEvents_Socket::ip6fromBinary (substr ($Data, $Offset, 16));
       $Offset += 16;
-      $this->Port = BitWire_Message_Payload::readUInt16 ($Data, $Offset, $Length);
+      $this->Port = \BitBaendiger\BitWire\Message\Payload::readUInt16 ($Data, $Offset, $Length);
       
       return true;
     }
@@ -178,8 +180,10 @@
      **/
     public function toBinary () {
       return
-        qcEvents_Socket::ip6toBinary ($this->Address) .
-        BitWire_Message_Payload::writeUInt16 ($this->Port);
+        \qcEvents_Socket::ip6toBinary ($this->Address) .
+        \BitBaendiger\BitWire\Message\Payload::writeUInt16 ($this->Port);
     }
     // }}}
   }
+
+?>

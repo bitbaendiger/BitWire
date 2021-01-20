@@ -1,8 +1,10 @@
 <?PHP
 
+  namespace BitBaendiger\BitWire\Message;
+  
   /**
    * BitWire - Message Payload
-   * Copyright (C) 2019 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2019-2021 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -18,11 +20,11 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/Transaction/Input.php');
-  require_once ('BitWire/Peer/Address.php');
-  require_once ('BitWire/Hash.php');
+  require_once ('BitWire/src/Transaction/Input.php');
+  require_once ('BitWire/src/Peer/Address.php');
+  require_once ('BitWire/src/Hash.php');
   
-  class BitWire_Message_Payload {
+  class Payload {
     const PAYLOAD_COMMAND = null;
     const PAYLOAD_HAS_DATA = null;
     
@@ -62,12 +64,12 @@
      * 
      * @param string $Command
      * @param string $Data
-     * @param BitWire_Message $Message (optional)
+     * @param \BitWire_Message $Message (optional)
      * 
      * @access public
-     * @return BitWire_Message_Payload
+     * @return Payload
      **/
-    public static function fromString ($Command, $Data, BitWire_Message $Message = null) : ?BitWire_Message_Payload {
+    public static function fromString ($Command, $Data, \BitWire_Message $Message = null) : ?Payload {
       if (isset (self::$Commands [$Command]))
         $Class = self::$Commands [$Command];
       else
@@ -407,15 +409,15 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return Bitwire_Hash
+     * @return \BitBaendiger\Bitwire\Hash
      **/
-    public static function readHash (&$Data, &$Offset, $Length = null) : ?Bitwire_Hash {
+    public static function readHash (&$Data, &$Offset, $Length = null) : ?\BitBaendiger\Bitwire\Hash {
       // Try to read the input
       if (($Hash = self::readChar ($Data, $Offset, 32, $Length)) === null)
         return null;
       
       // Create Hash-Instance
-      return BitWire_Hash::fromBinary ($Hash, true);
+      return\BitBaendiger\Bitwire\Hash::fromBinary ($Hash, true);
     }
     // }}}
     
@@ -423,12 +425,12 @@
     /**
      * Convert a hash to binary
      * 
-     * @param BitWire_Hash $Hash (optional)
+     * @param \BitBaendiger\Bitwire\Hash $Hash (optional)
      * 
      * @access public
      * @return string
      **/
-    public static function writeHash (BitWire_Hash $Hash = null) {
+    public static function writeHash (\BitBaendiger\Bitwire\Hash $Hash = null) {
       if ($Hash)
         return $Hash->toBinary (true);
       
@@ -446,10 +448,10 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return BitWire_Transaction_Input
+     * @return \BitBaendiger\BitWire\Transaction\Input
      **/
-    public static function readCTxIn (&$Data, &$Offset, $Length = null) : ?BitWire_Transaction_Input {
-      $Input = new BitWire_Transaction_Input;
+    public static function readCTxIn (&$Data, &$Offset, $Length = null) : ?\BitBaendiger\BitWire\Transaction\Input {
+      $Input = new \BitBaendiger\BitWire\Transaction\Input;
       
       if (!$Input->parse ($Data, $Offset, $Length))
         return null;
@@ -462,12 +464,12 @@
     /**
      * Write a transaction-input to binary
      * 
-     * @param BitWire_Transaction_Input $Input (optional)
+     * @param \BitBaendiger\BitWire\Transaction\Input $Input (optional)
      * 
      * @access public
      * @return string
      **/
-    public static function writeCTxIn (BitWire_Transaction_Input $Input = null) {
+    public static function writeCTxIn (\BitBaendiger\BitWire\Transaction\Input $Input = null) {
       if ($Input)
         return $Input->toBinary ();
       
@@ -485,10 +487,10 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return BitWire_Peer_Address
+     * @return \BitBaendiger\BitWire\Peer\Address
      **/
-    public static function readCAddress (&$Data, &$Offset, $Length = null) : ?BitWire_Peer_Address {
-      $Address = new BitWire_Peer_Address;
+    public static function readCAddress (&$Data, &$Offset, $Length = null) : ?\BitBaendiger\BitWire\Peer\Address {
+      $Address = new \BitBaendiger\BitWire\Peer\Address;
       
       if (!$Address->parse ($Data, $Offset, $Length))
         return null;
@@ -501,12 +503,12 @@
     /**
      * Write a CAddress-Structure to binary
      * 
-     * @param BitWire_Peer_Address $Address
+     * @param \BitBaendiger\BitWire\Peer\Address $Address
      * 
      * @access public
      * @return string
      **/
-    public static function writeCAddress (BitWire_Peer_Address $Address) {
+    public static function writeCAddress (\BitBaendiger\BitWire\Peer\Address $Address) {
       return $Address->toBinary ();
     }
     // }}}
@@ -520,15 +522,15 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return BitWire_Crypto_PublicKey
+     * @return \BitWire_Crypto_PublicKey
      **/
-    public static function readCPublicKey (&$Data, &$Offset, $Length = null) : ?BitWire_Crypto_PublicKey {
+    public static function readCPublicKey (&$Data, &$Offset, $Length = null) : ?\BitWire_Crypto_PublicKey {
       $tOffset = $Offset;
       
       if (($PublicKey = self::readCompactString ($Data, $tOffset, $Length)) === null)
         return null;
       
-      if (($PublicKey = BitWire_Crypto_PublicKey::fromBinary ($PublicKey)) === null)
+      if (($PublicKey = \BitWire_Crypto_PublicKey::fromBinary ($PublicKey)) === null)
         return null;
       
       $Offset = $tOffset;
@@ -541,12 +543,12 @@
     /**
      * Write a public key binary
      * 
-     * @param BitWire_Crypto_PublicKey $PublicKey (optional)
+     * @param \BitWire_Crypto_PublicKey $PublicKey (optional)
      * 
      * @access public
      * @return string
      **/
-    public static function writeCPublicKey (BitWire_Crypto_PublicKey $PublicKey = null) {
+    public static function writeCPublicKey (\BitWire_Crypto_PublicKey $PublicKey = null) {
       if ($PublicKey)
         return self::writeCompactString ($PublicKey->toBinary ());
       
@@ -586,12 +588,12 @@
     /**
      * Assign the message this payload is for
      * 
-     * @param BitWire_Message $Message
+     * @param \BitWire_Message $Message
      * 
      * @access public
      * @return void
      **/
-    public function setMessage (BitWire_Message $Message) {
+    public function setMessage (\BitWire_Message $Message) {
       $this->Message = $Message;
     }
     // }}}

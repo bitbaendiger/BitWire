@@ -1,6 +1,26 @@
 <?PHP
 
-  class BitWire_Hash {
+  namespace BitBaendiger\BitWire;
+  
+  /**
+   * BitWire - Hash
+   * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
+   * 
+   * This program is free software: you can redistribute it and/or modify
+   * it under the terms of the GNU General Public License as published by
+   * the Free Software Foundation, either version 3 of the License, or
+   * (at your option) any later version.
+   * 
+   * This program is distributed in the hope that it will be useful,
+   * but WITHOUT ANY WARRANTY; without even the implied warranty of
+   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   * GNU General Public License for more details.
+   * 
+   * You should have received a copy of the GNU General Public License
+   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   **/
+  
+  class Hash {
     /* Internally stored hash */
     private $Data = '';
     
@@ -12,9 +32,9 @@
      * @param bool $networkByteOrder (optional)
      * 
      * @access public
-     * @return BitWire_Hash
+     * @return Hash
      **/
-    public static function fromBinary ($Data, $networkByteOrder = false) {
+    public static function fromBinary ($Data, $networkByteOrder = false) : Hash {
       $Instance = new static;
       $Instance->Data = ($networkByteOrder ? strrev ($Data) : $Data);
       
@@ -30,9 +50,9 @@
      * @param bool $networkByteOrder (optional)
      * 
      * @access public
-     * @return BitWire_Hash
+     * @return Hash
      **/
-    public static function fromHex ($Data, $networkByteOrder = false) {
+    public static function fromHex ($Data, $networkByteOrder = false) : Hash {
       return static::fromBinary (hex2bin ($Data), $networkByteOrder);
     }
     // }}}

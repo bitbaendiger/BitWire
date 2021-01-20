@@ -1,8 +1,10 @@
 <?PHP
 
+  namespace BitBaendiger\BitWire\Transaction;
+  
   /**
    * BitWire - Transaction Output
-   * Copyright (C) 2017-2020 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -18,10 +20,10 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/Message/Payload.php');
-  require_once ('BitWire/Transaction/Script.php');
+  require_once ('BitWire/src/Message/Payload.php');
+  require_once ('BitWire/src/Transaction/Script.php');
   
-  class BitWire_Transaction_Output {
+  class Output {
     /* Amount of coins on this output */
     private $outputAmount = 0.00;
     
@@ -33,18 +35,18 @@
      * Create a new transaction-input
      * 
      * @param float $outputAmount (optional)
-     * @param BitWire_Transaction_Script $outputScript (optional)
+     * @param Script $outputScript (optional)
      * 
      * @access friendly
      * @return void
      **/
-    function __construct ($outputAmount = 0.0, BitWire_Transaction_Script $outputScript = null) {
+    function __construct ($outputAmount = 0.0, Script $outputScript = null) {
       $this->outputAmount = (float)$outputAmount;
       
       if ($outputScript)
         $this->outputScript = $outputScript;
       else
-        $this->outputScript = new BitWire_Transaction_Script;
+        $this->outputScript = new Script;
     }
     // }}}
     
@@ -92,9 +94,9 @@
      * Retrive the script of this input
      * 
      * @access public
-     * @return BitWire_Transaction_Script
+     * @return Script
      **/
-    public function getScript () : BitWire_Transaction_Script {
+    public function getScript () : Script {
       return $this->outputScript;
     }
     // }}}
@@ -106,7 +108,7 @@
      * @access public
      * @return array
      **/
-    public function getAddresses () {
+    public function getAddresses () : array {
       return $this->Script->getAddresses ();
     }
     // }}}
@@ -131,8 +133,8 @@
       $myOffset = $dataOffset;
       
       // Try to read everything into our memory
-      if ((($outputAmount = BitWire_Message_Payload::readUInt64 ($inputData, $myOffset, $dataLength)) === null) ||
-          (($outputScript = BitWire_Message_Payload::readCompactString ($inputData, $myOffset, $dataLength)) === null))
+      if ((($outputAmount = \BitBaendiger\BitWire\Message\Payload::readUInt64 ($inputData, $myOffset, $dataLength)) === null) ||
+          (($outputScript = \BitBaendiger\BitWire\Message\Payload::readCompactString ($inputData, $myOffset, $dataLength)) === null))
           return false;
       
       // Check size-constraints for script
@@ -141,7 +143,7 @@
         
       // Store the results on this instance
       $this->outputAmount = $outputAmount / 100000000;
-      $this->outputScript = new BitWire_Transaction_Script ($outputScript);
+      $this->outputScript = new Script ($outputScript);
       $dataOffset = $myOffset;
       
       return true;
@@ -158,7 +160,7 @@
     public function toBinary () {
       return
         pack ('P', $this->outputAmount * 100000000) .
-        BitWire_Message_Payload::toCompactString ($this->outputScript->toBinary ());
+        \BitBaendiger\BitWire\Message\Payload::toCompactString ($this->outputScript->toBinary ());
     }
     // }}}
   }

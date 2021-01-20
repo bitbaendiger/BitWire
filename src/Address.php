@@ -1,8 +1,10 @@
 <?PHP
 
+  namespace BitBaendiger\BitWire;
+  
   /**
    * BitWire - Bitcoin Address
-   * Copyright (C) 2017 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -18,9 +20,9 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/Transaction/Script.php'); // Needed for Base58
+  require_once ('BitWire/src/Transaction/Script.php'); // Needed for Base58
   
-  class BitWire_Address {
+  class Address {
     /* Type of this address */
     const TYPE_BITCOIN_P2PKH = 0x00;
     const TYPE_LITECOIN_P2PKH = 0x30;
@@ -42,7 +44,7 @@
      **/
     public static function fromString ($Address) {
       // Try to decode the address
-      if (strlen ($Address = BitWire_Transaction_Script::base58Decode ($Address)) != 25) {
+      if (strlen ($Address = \BitBaendiger\BitWire\Transaction\Script::base58Decode ($Address)) != 25) {
         trigger_error ('Invalid address - input size mismatch');
         
         return;
@@ -89,7 +91,7 @@
       $addressData = ltrim (pack ('N', $this->addressType), "\x00") . $this->Hash;
       $addressChecksum = hash ('sha256', hash ('sha256', $addressData, true), true);
       
-      return BitWire_Transaction_Script::base58Encode ($addressData . substr ($addressChecksum, 0, 4));
+      return \BitBaendiger\BitWire\Transaction\Script::base58Encode ($addressData . substr ($addressChecksum, 0, 4));
     }
     // }}}
     
@@ -152,10 +154,10 @@
      * Retrive script to pay to public-key-address
      * 
      * @access public
-     * @return BitWire_Transaction_Script
+     * @return \BitBaendiger\BitWire\Transaction\Script
      **/
-    public function getPublicKeyScript () : BitWire_Transaction_Script {
-      return new BitWire_Transaction_Script (
+    public function getPublicKeyScript () : \BitBaendiger\BitWire\Transaction\Script {
+      return new \BitBaendiger\BitWire\Transaction\Script (
         chr (BitWire_Transaction_Script::OP_DUP) .
         chr (BitWire_Transaction_Script::OP_HASH160) .
         chr (strlen ($this->Hash)) .
