@@ -250,10 +250,12 @@
     /**
      * Try to read addresses of this script
      * 
+     * @param array $addressTypeMap (optional)
+     * 
      * @access public
      * @return array
      **/
-    public function getAddresses () : array {
+    public function getAddresses (array $addressTypeMap = array ()) : array {
       if ($this->isEmpty ())
         return array ();
       
@@ -261,22 +263,22 @@
         throw new \exception ('Script is not an output');
       
       if ($this->isPublicKeyHashInput ())
-        $Addresses = [[ 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [1][1], true), true) ]];
+        $Addresses = [[ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_PUBKEY] ?? 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [1][1], true), true) ]];
       elseif ($this->isScriptHashInput ())
-        $Addresses = [[ 5, hash ('ripemd160', hash ('sha256', $this->scriptOps [1][1], true), true) ]];
+        $Addresses = [[ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_SCRIPT] ?? 5, hash ('ripemd160', hash ('sha256', $this->scriptOps [1][1], true), true) ]];
       elseif ($this->isMultiSignatureScriptInput ())
-        $Addresses = [[ 5, hash ('ripemd160', hash ('sha256', $this->scriptOps [count ($this->scriptOps) - 1][1], true), true) ]];
+        $Addresses = [[ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_SCRIPT] ?? 5, hash ('ripemd160', hash ('sha256', $this->scriptOps [count ($this->scriptOps) - 1][1], true), true) ]];
       elseif ($this->isPublicKeyOutput ())
-        $Addresses = [[ 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [0][1], true), true) ]];
+        $Addresses = [[ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_PUBKEY] ?? 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [0][1], true), true) ]];
       elseif ($this->isPublicKeyHashOutput ())
-        $Addresses = [[ 0, $this->scriptOps [2][1] ]];
+        $Addresses = [[ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_PUBKEY] ?? 0, $this->scriptOps [2][1] ]];
       elseif ($this->isScriptHashOutput ())
-        $Addresses = [[ 5, $this->scriptOps [1][1] ]];
+        $Addresses = [[ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_SCRIPT] ?? 5, $this->scriptOps [1][1] ]];
       elseif ($this->isMultiSignatureOutput ()) {
         $Addresses = [ ];
         
         for ($i = 1; $i < count ($this->scriptOps) - 2; $i++)
-          $Addresses [] = [ 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [$i][1], true), true) ];
+          $Addresses [] = [ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_PUBKEY] ?? 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [$i][1], true), true) ];
       } else
         throw new \exception ('Unknown Script-Type');
       

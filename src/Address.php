@@ -23,8 +23,14 @@
   require_once ('BitWire/src/Transaction/Script.php'); // Needed for Base58
   
   class Address {
-    /* Type of this address */
-    const TYPE_BITCOIN_P2PKH = 0x00;
+    /* Generic address-types */
+    const TYPE_PUBKEY = 0x00;
+    const TYPE_SCRIPT = 0x01;
+    
+    /* Well known numbers */
+    const TYPE_BITCOIN_PUBKEY = 0x00;
+    const TYPE_BITCOIN_SCRIPT = 0x05;
+    
     const TYPE_LITECOIN_P2PKH = 0x30;
     const TYPE_PEERCOIN_P2PKH = 0x37;
     

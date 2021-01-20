@@ -105,11 +105,13 @@
     /**
      * Retrive addresses of this input
      * 
+     * @param array $addressTypeMap (optional)
+     * 
      * @access public
      * @return array
      **/
-    public function getAddresses () : array {
-      return $this->outputScript->getAddresses ();
+    public function getAddresses (array $addressTypeMap = array ()) : array {
+      return $this->outputScript->getAddresses ($addressTypeMap);
     }
     // }}}
     
