@@ -208,9 +208,15 @@
      * @access friendly
      * @return array
      **/
-    function __debugInfo () {
+    function __debugInfo () : array {
+      try {
+        $scriptAddresses = $this->getAddresses ();
+      } catch (\Throwable $error) {
+        $scriptAddresses = null;
+      }
+      
       return array (
-        'addresses' => $this->getAddresses (),
+        'addresses' => $scriptAddresses,
         'script' => $this->__toString (),
       );
     }
@@ -247,9 +253,12 @@
      * @access public
      * @return array
      **/
-    public function getAddresses ($forceNet = null) : ?array {
+    public function getAddresses () : array {
+      if ($this->isEmpty ())
+        return array ();
+      
       if ($this->isSignatureInput ())
-        return null;
+        throw new \exception ('Script is not an output');
       
       if ($this->isPublicKeyHashInput ())
         $Addresses = [[ 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [1][1], true), true) ]];
@@ -269,7 +278,7 @@
         for ($i = 1; $i < count ($this->scriptOps) - 2; $i++)
           $Addresses [] = [ 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [$i][1], true), true) ];
       } else
-        return null;
+        throw new \exception ('Unknown Script-Type');
       
       foreach ($Addresses as $i=>$v)
         $Addresses [$i] = new \BitBaendiger\BitWire\Address ($v [0], $v [1]);
