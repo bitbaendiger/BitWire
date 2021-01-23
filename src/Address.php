@@ -27,6 +27,16 @@
     const TYPE_PUBKEY = 0x00;
     const TYPE_SCRIPT = 0x01;
     
+    const OUTPUT_NONSTANDARD = 0x00;
+    const OUTPUT_PUBKEY = 0x01; /* Script::isPublicKeyOutput() */
+    const OUTPUT_PUBKEYHASH = 0x02; /* Script::isPublicKeyHashOutput() */
+    const OUTPUT_SCRIPTHASH = 0x03; /* Script::isScriptHashOutput() */
+    const OUTPUT_MULTISIG = 0x04; /* Script::isMultiSignatureOutput() */
+    const OUTPUT_NULL_DATA = 0x05; /* Script::isNullDataOutput() */
+    const OUTPUT_WITNESS_V0_KEYHASH = 0x06; /* Script::isWitnessProgramOutput() */
+    const OUTPUT_WITNESS_V0_SCRIPTHASH = 0x07; /* Script::isWitnessProgramOutput() */
+    const OUTPUT_WITNESS_UNKNOWN = 0x08; /* Script::isWitnessProgramOutput() */
+    
     /* Well known numbers */
     const TYPE_BITCOIN_PUBKEY = 0x00;
     const TYPE_BITCOIN_SCRIPT = 0x05;

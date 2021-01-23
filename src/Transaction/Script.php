@@ -280,7 +280,7 @@
         for ($i = 1; $i < count ($this->scriptOps) - 2; $i++)
           $Addresses [] = [ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_PUBKEY] ?? 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [$i][1], true), true) ];
       } else
-        throw new \exception ('Unknown Script-Type');
+        throw new \exception ('Unknown Script-Type: ' . (string)$this);
       
       foreach ($Addresses as $i=>$v)
         $Addresses [$i] = new \BitBaendiger\BitWire\Address ($v [0], $v [1]);
@@ -538,6 +538,52 @@
         return false;
       
       if ($this->scriptOps [$Length - 1][0] != $this::OP_CHECKMULTISIG)
+        return false;
+      
+      return true;
+    }
+    // }}}
+    
+    // {{{ isNullDataOutput
+    /**
+     * Check for an unspendable output
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function isNullDataOutput () {
+      if ($this->isEmpty ())
+        return false;
+      
+      if ($this->scriptOps [0][0] != $this::OP_RETURN)
+        return false;
+      
+      // Make sure the remaining script is push-only
+      for ($i = 1; $i < count ($this->scriptOps); $i++)
+        if ($this->scriptOps [$i][0] > $this::OP_16)
+          return false;
+      
+      return true;
+    }
+    // }}}
+    
+    // {{{ isWitnessProgram
+    /**
+     * Check if this is a witness-output
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function isWitnessProgramOutput () {
+      // Check size of script
+      if ((count ($this->scriptOps) < 4) || (count ($this->scriptOps) > 42))
+        return false;
+      
+      if (($this->scriptOps [0][0] != $this::OP_0) &&
+          (($this->scriptOps [0][0] < $this::OP_1) || ($this->scriptOps [0][0] > $this::OP_16)))
+        return false;
+      
+      if ($this->scriptOps [1][0] + 2 != count ($this->scriptOps))
         return false;
       
       return true;
