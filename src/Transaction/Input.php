@@ -213,6 +213,20 @@
     }
     // }}}
     
+    // {{{ setWitnessStack
+    /**
+     * Push witness-stack for this transaction-input
+     * 
+     * @param array $witnessStack
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setWitnessStack (array $witnessStack) {
+      # Unimplemented
+    }
+    // }}}
+    
     // {{{ getAddresses
     /**
      * Retrive addresses of this input

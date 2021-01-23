@@ -335,33 +335,56 @@
       elseif (($Time = \BitBaendiger\BitWire\Message\Payload::readUInt32 ($Data, $tOffset, $Length)) === null)
         return false;
       
-      // Read number of inputs on this transaction
-      if (($Count = \BitBaendiger\BitWire\Message\Payload::readCompactSize ($Data, $tOffset, $Length)) === null)
-        return false;
+      // Read number of transaction-inputs
+      $inputCount = \BitBaendiger\BitWire\Message\Payload::readCompactSize ($Data, $tOffset, $Length);
+      
+      // Check for Witness
+      if (($inputCount == 0) && !($Version & 0x00000004)) {
+        $transactionFlags = ord ($Data [$tOffset++]);
+        $inputCount = \BitBaendiger\BitWire\Message\Payload::readCompactSize ($Data, $tOffset, $Length);
+      } else
+        $transactionFlags = 0x00;
       
       // Try to read all inputs
-      $Inputs = array ();
+      $transactionInputs = array ();
       
-      for ($i = 0; $i < $Count; $i++) {
-        $Inputs [] = $Input = new \BitBaendiger\BitWire\Transaction\Input ($this);
+      for ($i = 0; $i < $inputCount; $i++) {
+        $transactionInputs [] = $Input = new \BitBaendiger\BitWire\Transaction\Input ($this);
         
         if (!$Input->parse ($Data, $tOffset, $Length))
           return false;
       }
       
       // Read number of outputs on this transaction
-      if (($Count = \BitBaendiger\BitWire\Message\Payload::readCompactSize ($Data, $tOffset, $Length)) === null)
-        return false;
+      $outputCount = \BitBaendiger\BitWire\Message\Payload::readCompactSize ($Data, $tOffset, $Length);
       
       // Try to read all outputs
       $transactionOutputs = array ();
       
-      for ($i = 0; $i < $Count; $i++) {
+      for ($i = 0; $i < $outputCount; $i++) {
         $transactionOutputs [] = $transactionOutput = new \BitBaendiger\BitWire\Transaction\Output;
         
         if (!$transactionOutput->parse ($Data, $tOffset, $Length))
           return false;
       }
+      
+      // Read witness-scripts
+      if ($transactionFlags & 1) {
+        for ($i = 0; $i < count ($transactionInputs); $i++) {
+          $stackSize = \BitBaendiger\BitWire\Message\Payload::readCompactSize ($Data, $tOffset, $Length);
+          $witnessStack = [ ];
+          
+          for ($j = 0; $j < $stackSize; $j++)
+            $witnessStack [] = \BitBaendiger\BitWire\Message\Payload::readCompactString ($Data, $tOffset, $Length);
+          
+          $transactionInputs [$i]->setWitnessStack ($witnessStack);
+        }
+        
+        $transactionFlags ^= 1;
+      }
+      
+      if ($transactionFlags)
+        throw new \ValueError ('Unknown transaction-flags');
       
       // Try to read lock-time
       if (($lockTime = \BitBaendiger\BitWire\Message\Payload::readUInt32 ($Data, $tOffset, $Length)) === null)
@@ -369,15 +392,15 @@
       
       if (!$this->hasComment)
         $Comment = null;
-      elseif (($Comment = \BitBaendiger\BitWire\Message\Payload::readCompactString ($Data, $tOffset, $Length)) === null)
-        return false;
+      else
+        $Comment = \BitBaendiger\BitWire\Message\Payload::readCompactString ($Data, $tOffset, $Length);
       
       // Commit changes to this instance
       $this->Version = $Version;
       $this->Time = $Time;
       $this->lockTime = $lockTime;
       $this->Comment = $Comment;
-      $this->transactionInputs = $Inputs;
+      $this->transactionInputs = $transactionInputs;
       $this->transactionOutputs = $transactionOutputs;
       
       $Offset = $tOffset;
