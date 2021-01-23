@@ -106,7 +106,7 @@
       
       // Make sure there is something to read
       if ($Length <= $Offset)
-        return null;
+        throw new \ValueError ('Empty input');
       
       // Try to read type of interger
       $Byte = ord ($Data [$Offset]);
@@ -131,7 +131,7 @@
       
       // Make sure we have enough bytes to read
       if ($Length < $Offset + $rLength + 1)
-        return null;
+        throw new \ValueError ('Short read');
       
       // Extract the value
       $Value = unpack ($Mod . 'value', substr ($Data, $Offset + 1, $Length - 1));
@@ -159,13 +159,10 @@
       
       // Read the size of the string
       $tOffset = $Offset;
-      
-      if (($Size = self::readCompactSize ($Data, $tOffset, $Length)) === null)
-        return null;
+      $Size = self::readCompactSize ($Data, $tOffset, $Length);
       
       // Read the value
-      if (($Value = self::readChar ($Data, $tOffset, $Size, $Length)) === null)
-        return null;
+      $Value = self::readChar ($Data, $tOffset, $Size, $Length);
       
       // Patch back offset
       $Offset = $tOffset;
@@ -244,7 +241,7 @@
       
       // Check if there is enough data to read
       if ($Length < $Offset + $Size)
-        return null;
+        throw new \ValueError ('Short read');
       
       // Generate the result
       $Result = substr ($Data, $Offset, $Size);
