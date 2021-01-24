@@ -53,12 +53,13 @@
      * 
      * @param string $hexData
      * @param bool $hasTimestamp (optional)
+     * @param bool $hasComment (optional)
      * 
      * @access public
      * @return Transaction
      **/
-    public static function fromHex ($hexData, $hasTimestamp = null) : ?Transaction {
-      return static::fromBinary (hex2bin ($hexData), $hasTimestamp);
+    public static function fromHex ($hexData, $hasTimestamp = null, $hasComment = null) : ?Transaction {
+      return static::fromBinary (hex2bin ($hexData), $hasTimestamp, $hasComment);
     }
     // }}}
     
@@ -68,12 +69,13 @@
      *
      * @param string $binaryData
      * @param bool $hasTimestamp (optional)
+     * @param bool $hasComment (optional)
      * 
      * @access public
      * @return Transaction
      **/
-    public static function fromBinary ($binaryData, $hasTimestamp = null) : ?Transaction {
-      $newTransaction = new static ($hasTimestamp);
+    public static function fromBinary ($binaryData, $hasTimestamp = null, $hasComment = null) : ?Transaction {
+      $newTransaction = new static ($hasTimestamp, $hasComment);
       
       if (!$newTransaction->parse ($binaryData))
         return null;
