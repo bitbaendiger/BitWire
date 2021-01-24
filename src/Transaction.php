@@ -27,16 +27,11 @@
   require_once ('BitWire/src/Transaction/Script.php');
   
   class Transaction extends Hashable {
-    /* Type of transaction */
-    const TYPE_POW = 0;
-    const TYPE_POS = 1;
-    
-    private $Type = Transaction::TYPE_POW;
-    
     /* Version of transaction */
     private $Version = 1;
     
-    /* Time of transaction (for PoS-Transactions) */
+    /* Time of transaction */
+    private $hasTimestamp = false;
     private $Time = 0;
         
     /* Locktime of transaction */
@@ -57,12 +52,13 @@
      * Try to parse a transaction from hex-data
      * 
      * @param string $hexData
+     * @param bool $hasTimestamp (optional)
      * 
      * @access public
      * @return Transaction
      **/
-    public static function fromHex ($hexData) : ?Transaction {
-      return static::fromBinary (hex2bin ($hexData));
+    public static function fromHex ($hexData, $hasTimestamp = null) : ?Transaction {
+      return static::fromBinary (hex2bin ($hexData), $hasTimestamp);
     }
     // }}}
     
@@ -71,12 +67,13 @@
      * Try to parse a transaction from binary data
      *
      * @param string $binaryData
+     * @param bool $hasTimestamp (optional)
      * 
      * @access public
      * @return Transaction
      **/
-    public static function fromBinary ($binaryData) : ?Transaction {
-      $newTransaction = new static;
+    public static function fromBinary ($binaryData, $hasTimestamp = null) : ?Transaction {
+      $newTransaction = new static ($hasTimestamp);
       
       if (!$newTransaction->parse ($binaryData))
         return null;
@@ -90,14 +87,15 @@
     /**
      * Create a new transaction
      * 
-     * @param enum $Type (optional)
+     * @param bool $hasTimestamp (optional)
+     * @param bool $hasComment (optional)
      * 
      * @access friendly
      * @return void
      **/
-    function __construct ($Type = null, $hasComment = null) {
-      if ($Type !== null)
-        $this->Type = $Type;
+    function __construct ($hasTimestamp = null, $hasComment = null) {
+      if ($hasTimestamp !== null)
+        $this->hasTimestamp = $hasTimestamp;
       
       if ($hasComment !== null)
         $this->hasComment = $hasComment;
@@ -330,7 +328,7 @@
         return false;
       
       // Read timestamp on PoS-Transaction
-      if ($this->Type != $this::TYPE_POS)
+      if (!$this->hasTimestamp)
         $Time = null;
       elseif (($Time = \BitBaendiger\BitWire\Message\Payload::readUInt32 ($Data, $tOffset, $Length)) === null)
         return false;
@@ -418,7 +416,7 @@
      **/
     public function toBinary () {
       // Generate start of transaction
-      if ($this->Type == $this::TYPE_POS)
+      if ($this->hasTimestamp)
         $Buffer = pack ('VV', $this->Version, $this->Time) . \BitBaendiger\BitWire\Message\Payload::toCompactSize (count ($this->transactionInputs));
       else
         $Buffer = pack ('V', $this->Version) . \BitBaendiger\BitWire\Message\Payload::toCompactSize (count ($this->transactionInputs));
