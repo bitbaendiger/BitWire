@@ -24,73 +24,109 @@
   
   class Script {
     /* Well-known Opcodes */
-    const OP_PUSHDATA_8  = 76;
-    const OP_PUSHDATA_16 = 77;
-    const OP_PUSHDATA_32 = 78;
-    const OP_1 = 81;
-    const OP_2 = 82;
-    const OP_3 = 83;
-    const OP_4 = 84;
-    const OP_5 = 85;
-    const OP_6 = 86;
-    const OP_7 = 87;
-    const OP_8 = 88;
-    const OP_9 = 89;
-    const OP_10 = 90;
-    const OP_11 = 91;
-    const OP_12 = 92;
-    const OP_13 = 93;
-    const OP_14 = 94;
-    const OP_15 = 95;
-    const OP_16 = 96;
-    const OP_NOP = 97;
-    const OP_RETURN = 106;
-    const OP_DUP = 118;
-    const OP_LEFT = 128;
-    const OP_INVERT = 131;
-    const OP_OR = 133;
-    const OP_EQUAL = 135;
-    const OP_EQUALVERIFY = 136;
-    const OP_NOT = 145;
-    const OP_HASH160 = 169;
-    const OP_CHECKSIG = 172;
-    const OP_CHECKMULTISIG = 174;
-    const OP_NOP1 = 176;
+    const OP_0 = 0x00;
+    const OP_FALSE = 0x00;
+    const OP_TRUE = 0x51;
+    const OP_PUSHDATA_8  = 0x4C;
+    const OP_PUSHDATA_16 = 0x4D;
+    const OP_PUSHDATA_32 = 0x4E;
+    const OP_1 = 0x51;
+    const OP_2 = 0x52;
+    const OP_3 = 0x53;
+    const OP_4 = 0x54;
+    const OP_5 = 0x55;
+    const OP_6 = 0x56;
+    const OP_7 = 0x57;
+    const OP_8 = 0x58;
+    const OP_9 = 0x59;
+    const OP_10 = 0x5A;
+    const OP_11 = 0x5B;
+    const OP_12 = 0x5C;
+    const OP_13 = 0x5D;
+    const OP_14 = 0x5E;
+    const OP_15 = 0x5F;
+    const OP_16 = 0x60;
+    const OP_NOP = 0x61;
+    const OP_IF = 0x63;
+    const OP_VERNOTIF = 0x66;
+    const OP_ELSE = 0x67;
+    const OP_VERIFY = 0x69;
+    const OP_RETURN = 0x6A;
+    const OP_2DROP = 0x6D;
+    const OP_2ROT = 0x71;
+    const OP_DUP = 0x76;
+    const OP_PICK = 0x79;
+    const OP_LEFT = 0x80;
+    const OP_INVERT = 0x83;
+    const OP_OR = 0x85;
+    const OP_EQUAL = 0x87;
+    const OP_EQUALVERIFY = 0x88;
+    const OP_1SUB = 0x8C;
+    const OP_NOT = 0x91;
+    const OP_ADD = 0x93;
+    const OP_MOD = 0x97;
+    const OP_BOOLOR = 0x9B;
+    const OP_LESSTHAN = 0x9F;
+    const OP_SHA1 = 0xA7;
+    const OP_HASH160 = 0xA9;
+    const OP_CHECKSIG = 0xAC;
+    const OP_CHECKSIGVERIFY = 0xAD;
+    const OP_CHECKMULTISIG = 0xAE;
+    const OP_NOP1 = 0xB0;
+    const OP_NOP6 = 0xB5;
+    const OP_NOP9 = 0xB8;
     
     /* Well-known Opcode-Names */
     private static $opcodeNames = array (
-      self::OP_PUSHDATA_8    => 'OP_PUSHDATA_8',
-      self::OP_PUSHDATA_16   => 'OP_PUSHDATA_16',
-      self::OP_PUSHDATA_32   => 'OP_PUSHDATA_32',
-      self::OP_1             => 'OP_1',
-      self::OP_2             => 'OP_2',
-      self::OP_3             => 'OP_3',
-      self::OP_4             => 'OP_4',
-      self::OP_5             => 'OP_5',
-      self::OP_6             => 'OP_6',
-      self::OP_7             => 'OP_7',
-      self::OP_8             => 'OP_8',
-      self::OP_9             => 'OP_9',
-      self::OP_10            => 'OP_10',
-      self::OP_11            => 'OP_11',
-      self::OP_12            => 'OP_12',
-      self::OP_13            => 'OP_13',
-      self::OP_14            => 'OP_14',
-      self::OP_15            => 'OP_15',
-      self::OP_16            => 'OP_16',
-      self::OP_NOP           => 'OP_NOP',
-      self::OP_RETURN        => 'OP_RETURN',
-      self::OP_DUP           => 'OP_DUP',
-      self::OP_LEFT          => 'OP_LEFT',
-      self::OP_INVERT        => 'OP_INVERT',
-      self::OP_OR            => 'OP_OR',
-      self::OP_EQUAL         => 'OP_EQUAL',
-      self::OP_EQUALVERIFY   => 'OP_EQUALVERIFY',
-      self::OP_NOT           => 'OP_NOT',
-      self::OP_HASH160       => 'OP_HASH160',
-      self::OP_CHECKSIG      => 'OP_CHECKSIG',
-      self::OP_CHECKMULTISIG => 'OP_CHECKMULTISIG',
-      self::OP_NOP1          => 'OP_NOP1',
+      self::OP_0              => 'OP_0',
+      self::OP_PUSHDATA_8     => 'OP_PUSHDATA_8',
+      self::OP_PUSHDATA_16    => 'OP_PUSHDATA_16',
+      self::OP_PUSHDATA_32    => 'OP_PUSHDATA_32',
+      self::OP_1              => 'OP_1',
+      self::OP_2              => 'OP_2',
+      self::OP_3              => 'OP_3',
+      self::OP_4              => 'OP_4',
+      self::OP_5              => 'OP_5',
+      self::OP_6              => 'OP_6',
+      self::OP_7              => 'OP_7',
+      self::OP_8              => 'OP_8',
+      self::OP_9              => 'OP_9',
+      self::OP_10             => 'OP_10',
+      self::OP_11             => 'OP_11',
+      self::OP_12             => 'OP_12',
+      self::OP_13             => 'OP_13',
+      self::OP_14             => 'OP_14',
+      self::OP_15             => 'OP_15',
+      self::OP_16             => 'OP_16',
+      self::OP_NOP            => 'OP_NOP',
+      self::OP_IF             => 'OP_IF',
+      self::OP_VERNOTIF       => 'OP_VERNOTIF',
+      self::OP_ELSE           => 'OP_ELSE',
+      self::OP_VERIFY         => 'OP_VERIFY',
+      self::OP_RETURN         => 'OP_RETURN',
+      self::OP_2DROP          => 'OP_2DROP',
+      self::OP_2ROT           => 'OP_2ROT',
+      self::OP_DUP            => 'OP_DUP',
+      self::OP_PICK           => 'OP_PICK',
+      self::OP_LEFT           => 'OP_LEFT',
+      self::OP_INVERT         => 'OP_INVERT',
+      self::OP_OR             => 'OP_OR',
+      self::OP_EQUAL          => 'OP_EQUAL',
+      self::OP_EQUALVERIFY    => 'OP_EQUALVERIFY',
+      self::OP_1SUB           => 'OP_1SUB',
+      self::OP_NOT            => 'OP_NOT',
+      self::OP_ADD            => 'OP_ADD',
+      self::OP_MOD            => 'OP_MOD',
+      self::OP_BOOLOR         => 'OP_BOOLOR',
+      self::OP_LESSTHAN       => 'OP_LESSTHAN',
+      self::OP_SHA1           => 'OP_SHA1',
+      self::OP_HASH160        => 'OP_HASH160',
+      self::OP_CHECKSIG       => 'OP_CHECKSIG',
+      self::OP_CHECKSIGVERIFY => 'OP_CHECKSIGVERIFY',
+      self::OP_CHECKMULTISIG  => 'OP_CHECKMULTISIG',
+      self::OP_NOP1           => 'OP_NOP1',
+      self::OP_NOP6           => 'OP_NOP6',
+      self::OP_NOP9           => 'OP_NOP9',
     );
     
     /* Parsed stack of script */
@@ -239,7 +275,7 @@
         elseif (isset ($this::$opcodeNames [$Op [0]]))
           $Result .= $this::$opcodeNames [$Op [0]] . ' ' . (isset ($Op [1]) ? bin2hex ($Op [1]) . ' ' : '');
         else
-          $Result .= 'OP_' . $Op [0] . ' ';
+          $Result .= sprintf ('OP_%d(0x%02X) ', $Op [0], $Op [0]);
       
       // Return the result
       return rtrim ($Result);
@@ -262,30 +298,54 @@
       if ($this->isSignatureInput ())
         throw new \exception ('Script is not an output');
       
+      $typePubkey = $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_PUBKEY] ?? 0;
+      $typeScript = $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_SCRIPT] ?? 5;
+      
+      $encodeBase58 = \BitBaendiger\BitWire\Address::ENCODE_BASE58;
+      $encodeBech32 = \BitBaendiger\BitWire\Address::ENCODE_BECH32;
+      
       if ($this->isPublicKeyHashInput ())
-        $Addresses = [[ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_PUBKEY] ?? 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [1][1], true), true) ]];
+        $outputAddresses = [[ $typePubkey, hash ('ripemd160', hash ('sha256', $this->scriptOps [1][1], true), true), $encodeBase58 ]];
       elseif ($this->isScriptHashInput ())
-        $Addresses = [[ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_SCRIPT] ?? 5, hash ('ripemd160', hash ('sha256', $this->scriptOps [1][1], true), true) ]];
+        $outputAddresses = [[ $typeScript, hash ('ripemd160', hash ('sha256', $this->scriptOps [1][1], true), true), $encodeBase58 ]];
       elseif ($this->isMultiSignatureScriptInput ())
-        $Addresses = [[ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_SCRIPT] ?? 5, hash ('ripemd160', hash ('sha256', $this->scriptOps [count ($this->scriptOps) - 1][1], true), true) ]];
+        $outputAddresses = [[ $typeScript, hash ('ripemd160', hash ('sha256', $this->scriptOps [count ($this->scriptOps) - 1][1], true), true), $encodeBase58 ]];
       elseif ($this->isPublicKeyOutput ())
-        $Addresses = [[ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_PUBKEY] ?? 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [0][1], true), true) ]];
+        $outputAddresses = [[ $typePubkey, hash ('ripemd160', hash ('sha256', $this->scriptOps [0][1], true), true), $encodeBase58 ]];
       elseif ($this->isPublicKeyHashOutput ())
-        $Addresses = [[ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_PUBKEY] ?? 0, $this->scriptOps [2][1] ]];
+        $outputAddresses = [[ $typePubkey, $this->scriptOps [2][1], $encodeBase58 ]];
       elseif ($this->isScriptHashOutput ())
-        $Addresses = [[ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_SCRIPT] ?? 5, $this->scriptOps [1][1] ]];
-      elseif ($this->isMultiSignatureOutput ()) {
-        $Addresses = [ ];
+        $outputAddresses = [[ $typeScript, $this->scriptOps [1][1], $encodeBase58 ]];
+      elseif ($this->isWitnessProgramOutput ()) {
+        // Extract witness-version
+        if ($this->scriptOps [0][0] != $this::OP_0)
+          $witnessVersion = $this->scriptOps [0][0] - $this::OP_1 + 1;
+        else
+          $witnessVersion = 0;
+        
+        $witnessProgram = $this->scriptOps [1][1];
+        
+        if ($witnessVersion == 0) {
+          if (strlen ($witnessProgram) == 20)
+            $outputAddresses = [[ $witnessVersion, $witnessProgram, $encodeBech32 ]];
+          elseif (strlen ($witnessProgram) == 32)
+            $outputAddresses = [[ $witnessVersion, $witnessProgram, $encodeBech32 ]];
+          else // NON-STANDARD
+            return [ ];
+        } else
+          $outputAddresses = [[ $witnessVersion, $witnessProgram, $encodeBech32 ]];
+      } elseif ($this->isMultiSignatureOutput ()) {
+        $outputAddresses = [ ];
         
         for ($i = 1; $i < count ($this->scriptOps) - 2; $i++)
-          $Addresses [] = [ $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_PUBKEY] ?? 0, hash ('ripemd160', hash ('sha256', $this->scriptOps [$i][1], true), true) ];
+          $outputAddresses [] = [ $typePubkey, hash ('ripemd160', hash ('sha256', $this->scriptOps [$i][1], true), true), $encodeBase58 ];
       } else
         throw new \exception ('Unknown Script-Type: ' . (string)$this);
       
-      foreach ($Addresses as $i=>$v)
-        $Addresses [$i] = new \BitBaendiger\BitWire\Address ($v [0], $v [1]);
+      foreach ($outputAddresses as $addressIndex=>$addressData)
+        $outputAddresses [$addressIndex] = new \BitBaendiger\BitWire\Address ($addressData [0], $addressData [1], $addressData [2]);
       
-      return $Addresses;
+      return $outputAddresses;
     }
     // }}}
     
@@ -576,14 +636,13 @@
      **/
     public function isWitnessProgramOutput () {
       // Check size of script
-      if ((count ($this->scriptOps) < 4) || (count ($this->scriptOps) > 42))
+      if ((count ($this->scriptOps) != 2) ||
+          (strlen ($this->scriptOps [1][1]) < 2) ||
+          (strlen ($this->scriptOps [1][1]) > 40))
         return false;
       
       if (($this->scriptOps [0][0] != $this::OP_0) &&
           (($this->scriptOps [0][0] < $this::OP_1) || ($this->scriptOps [0][0] > $this::OP_16)))
-        return false;
-      
-      if ($this->scriptOps [1][0] + 2 != count ($this->scriptOps))
         return false;
       
       return true;

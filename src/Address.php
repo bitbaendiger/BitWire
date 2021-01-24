@@ -21,6 +21,7 @@
    **/
   
   require_once ('BitWire/src/Transaction/Script.php'); // Needed for Base58
+  require_once ('BitWire/src/Util/Bech32.php');
   
   class Address {
     /* Generic address-types */
@@ -37,6 +38,10 @@
     const OUTPUT_WITNESS_V0_SCRIPTHASH = 0x07; /* Script::isWitnessProgramOutput() */
     const OUTPUT_WITNESS_UNKNOWN = 0x08; /* Script::isWitnessProgramOutput() */
     
+    /* Encoding-types */
+    const ENCODE_BASE58 = 0x00;
+    const ENCODE_BECH32 = 0x01;
+    
     /* Well known numbers */
     const TYPE_BITCOIN_PUBKEY = 0x00;
     const TYPE_BITCOIN_SCRIPT = 0x05;
@@ -46,8 +51,11 @@
     
     private $addressType = 0x00;
     
+    /* Encoding-type for output */
+    private $encodingType = Address::ENCODE_BASE58;
+    
     /* RIPEMD160/SHA256 for this address */
-    private $Hash = '';
+    private $addressData = '';
     
     // {{{ fromString
     /**
@@ -84,15 +92,17 @@
     /**
      * Create a new Bitcoin-Address-Object
      * 
-     * @param enum $Type
-     * @param string $Hash
+     * @param enum $addressType
+     * @param string $addressData
+     * @param enum $encodingType (optional)
      * 
      * @access friendly
      * @return void
      **/
-    function __construct ($Type, $Hash) {
-      $this->addressType = $Type;
-      $this->Hash = $Hash;
+    function __construct ($addressType, $addressData, $encodingType = Address::ENCODE_BASE58) {
+      $this->addressType = $addressType;
+      $this->addressData = $addressData;
+      $this->encodingType = $encodingType;
     }
     // }}}
     
@@ -104,7 +114,10 @@
      * @return string
      **/
     function __toString () {
-      $addressData = ltrim (pack ('N', $this->addressType), "\x00") . $this->Hash;
+      if ($this->encodingType == $this::ENCODE_BECH32)
+        return Util\Bech32::encode ('bc', $this->addressData, array ($this->addressType));
+      
+      $addressData = ltrim (pack ('N', $this->addressType), "\x00") . $this->addressData;
       $addressChecksum = hash ('sha256', hash ('sha256', $addressData, true), true);
       
       return \BitBaendiger\BitWire\Transaction\Script::base58Encode ($addressData . substr ($addressChecksum, 0, 4));
@@ -122,7 +135,8 @@
       return [
         'address' => strval ($this),
         'type' => $this->addressType,
-        'hash' => bin2hex ($this->Hash),
+        'data' => bin2hex ($this->addressData),
+        'encoding' => $this->encodingType,
       ];
     }
     // }}}
@@ -161,7 +175,7 @@
      * @return string
      **/
     public function getHash () {
-      return $this->Hash;
+      return $this->addressData;
     }
     // }}}
     
@@ -176,8 +190,8 @@
       return new \BitBaendiger\BitWire\Transaction\Script (
         chr (BitWire_Transaction_Script::OP_DUP) .
         chr (BitWire_Transaction_Script::OP_HASH160) .
-        chr (strlen ($this->Hash)) .
-        $this->Hash .
+        chr (strlen ($this->addressData)) .
+        $this->addressData .
         chr (BitWire_Transaction_Script::OP_EQUALVERIFY) .
         chr (BitWire_Transaction_Script::OP_CHECKSIG)
       );
