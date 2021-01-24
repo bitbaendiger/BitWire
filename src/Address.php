@@ -20,7 +20,7 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/src/Transaction/Script.php'); // Needed for Base58
+  require_once ('BitWire/src/Util/Base58.php');
   require_once ('BitWire/src/Util/Bech32.php');
   
   class Address {
@@ -68,7 +68,7 @@
      **/
     public static function fromString ($Address) {
       // Try to decode the address
-      if (strlen ($Address = \BitBaendiger\BitWire\Transaction\Script::base58Decode ($Address)) != 25) {
+      if (strlen ($Address = Util\Base58::decode ($Address)) != 25) {
         trigger_error ('Invalid address - input size mismatch');
         
         return;
@@ -120,7 +120,7 @@
       $addressData = ltrim (pack ('N', $this->addressType), "\x00") . $this->addressData;
       $addressChecksum = hash ('sha256', hash ('sha256', $addressData, true), true);
       
-      return \BitBaendiger\BitWire\Transaction\Script::base58Encode ($addressData . substr ($addressChecksum, 0, 4));
+      return Util\Base58::encode ($addressData . substr ($addressChecksum, 0, 4));
     }
     // }}}
     
