@@ -24,8 +24,10 @@
   require_once ('BitWire/src/Transaction/Script.php');
   
   class Output {
+    const DIGITS = 8;
+    
     /* Amount of coins on this output */
-    private $outputAmount = 0.00;
+    private $outputAmount = 0;
     
     /* Script for this output */
     private $outputScript = null;
@@ -41,7 +43,7 @@
      * @return void
      **/
     function __construct ($outputAmount = 0.0, Script $outputScript = null) {
-      $this->outputAmount = (float)$outputAmount;
+      $this->outputAmount = (int)floor ($outputAmount * pow (10, $this::DIGITS));
       
       if ($outputScript)
         $this->outputScript = $outputScript;
@@ -58,7 +60,7 @@
      * @return string
      **/
     function __toString () {
-      return strval ($this->outputScript) . ': ' . $this->outputAmount;
+      return strval ($this->outputScript) . ': ' . $this->getAmount ();
     }
     // }}}
     
@@ -71,7 +73,7 @@
      **/
     function __debugInfo () {
       return array (
-        'amount' => $this->outputAmount,
+        'amount' => $this->getAmount (),
         'script' => strval ($this->outputScript),
       );
     }
@@ -85,7 +87,7 @@
      * @return float
      **/
     public function getAmount () {
-      return $this->outputAmount;
+      return $this->outputAmount / pow (10, $this::DIGITS);
     }
     // }}}
     
@@ -144,7 +146,7 @@
         return false;
         
       // Store the results on this instance
-      $this->outputAmount = $outputAmount / 100000000;
+      $this->outputAmount = $outputAmount;
       $this->outputScript = new Script ($outputScript);
       $dataOffset = $myOffset;
       
@@ -161,7 +163,7 @@
      **/
     public function toBinary () {
       return
-        pack ('P', $this->outputAmount * 100000000) .
+        pack ('P', $this->outputAmount) .
         \BitBaendiger\BitWire\Message\Payload::toCompactString ($this->outputScript->toBinary ());
     }
     // }}}
