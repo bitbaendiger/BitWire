@@ -262,6 +262,14 @@
         } elseif ($Payload instanceof BitWire_Message_Version_Acknowledgement) {
           $this->peerInit = true;
         
+        // Check if the peer rejected something
+        } elseif ($Payload instanceof BitWire_Message_Reject) {
+          // Check for a registered callback
+          if ($this->peerInitCallback) {
+            call_user_func ($this->peerInitCallback [1], 'Rejected: ' . $Payload->getReason ());
+            $this->peerInitCallback = null;
+          }
+        
         // Anything else is unwanted here (except "getsporks" which is a known bug on PIVX-based coins)
         } elseif ($Payload->getCommand () != 'getsporks')
           trigger_error ('Invalid message during negotiation (' . get_class ($Payload) . '/' . $Payload->getCommand () . ')');
