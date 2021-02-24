@@ -314,47 +314,86 @@
     }
     // }}}
     
-    // {{{ signCompact
+    // {{{ sign
     /**
-     * Create a compact signature for a given message
+     * Create a ASN.1-Signature for a given message
      * 
-     * @param string $Message
-     * @param bool $Compressed (optional)
+     * @param string $messageToSign
      * 
      * @access public
      * @return string
      **/
-    public function signCompact ($Message, $Compressed = null) {
-      // Create hash of the message
-      $Digest = hash ('sha256', hash ('sha256', $Message, true), true);
+    public function sign ($messageToSign) {
+      // Prepare the signature
+      $signatureData = $this->signInternal ($messageToSign);
       
-      // Generate Nonce
-      if (($Nonce = $this->getNonce ($Digest)) === null)
-         return false;
+      // Prepare ASN.1-Output
+      $binaryR = gmp_export ($signatureData ['r']);
+      $binaryS = gmp_export ($signatureData ['s']);
+      
+      $lenR = strlen ($binaryR);
+      $lenS = strlen ($binaryS);
+      
+      // Output ASN.1
+      return
+        "\x30" . chr ($lenR + $lenS + 4) .
+        "\x02" . chr ($lenR) . $binaryR .
+        "\x02" . chr ($lenS) . $binaryS;
+    }
+    // }}}
+    
+    // {{{ signCompact
+    /**
+     * Create a compact signature for a given message
+     * 
+     * @param string $messageToSign
+     * @param bool $forceCompressed (optional)
+     * 
+     * @access public
+     * @return string
+     **/
+    public function signCompact ($messageToSign, $forceCompressed = null) {
+      // Prepare the signature
+      $signatureData = $this->signInternal ($messageToSign);
+      
+      // Create recoverable signature
+      $Overflow = ($signatureData ['r'] > $this->curvePoint->Curve->G->getOrder () ? 2 : 0);
+      $forceCompressed = (($forceCompressed === true) || (($forceCompressed === null) && $this->isCompressed) ? 4 : 0);
+      $Odd = ($signatureData ['P']->y % 2 == 1 ? 1 : 0);
+      
+      return
+        chr (27 + $Odd + $Overflow + $forceCompressed) .
+        str_pad (gmp_export ($signatureData ['r']), 32, chr (0), STR_PAD_LEFT) .
+        str_pad (gmp_export ($signatureData ['s']), 32, chr (0), STR_PAD_LEFT);
+    }
+    // }}}
+    
+    // {{{ signInteral
+    /**
+     * Create a signature without packing it to any given output-format
+     * 
+     * @access private
+     * @return array
+     **/
+    private function signInternal ($messageToSign) : array {
+      // Create hash of the message
+      $messageDigest = hash ('sha256', hash ('sha256', $messageToSign, true), true);
+      
+      // Generate nonce
+      if (($signatureNonce = $this->getNonce ($messageDigest)) === null)
+        throw new exception ('Failed to generate nonce');
       
       // Sign with nonce
       $G = $this->curvePoint->Curve->G;
-      $P = $G->mul ($Nonce);
+      $P = $G->mul ($signatureNonce);
       $r = $P->x % $G->getOrder ();
       
       if ($r == 0)
-        return false;
+        throw new exception ('r cannot be zero');
       
-      $edr = gmp_import ($Digest) + ($this->gmpKey * $r);
-      $invk = gmp_invert ($Nonce, $G->getOrder ());
-      $kedr = $invk * $edr;
+      $s = ((gmp_import ($messageDigest) + ($this->gmpKey * $r)) * gmp_invert ($signatureNonce, $G->getOrder ())) % $G->getOrder ();
       
-      $s = $kedr % $G->getOrder ();
-      
-      // Create recoverable signature
-      $Overflow = ($r > $G->getOrder () ? 2 : 0);
-      $Compressed = (($Compressed === true) || (($Compressed === null) && $this->isCompressed) ? 4 : 0);
-      $Odd = ($P->y % 2 == 1 ? 1 : 0);
-      
-      return
-        chr (27 + $Odd + $Overflow + $Compressed) .
-        str_pad (gmp_export ($r), 32, chr (0), STR_PAD_LEFT) .
-        str_pad (gmp_export ($s), 32, chr (0), STR_PAD_LEFT);
+      return [ 'r' => $r , 's' => $s, 'P' => $P ];
     }
     // }}}
     
