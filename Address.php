@@ -90,7 +90,7 @@
       $addressType = $this->addressType;
       
       do {
-        $addressData = chr ($addressType & 0x80) . $addressData;
+        $addressData = chr ($addressType & 0xFF) . $addressData;
         $addressType >>= 8;
       } while ($addressType > 0);
       
