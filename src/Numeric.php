@@ -2,7 +2,7 @@
 
   /**
    * BitWire - Numeric
-   * Copyright (C) 2017-2020 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -18,14 +18,11 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  // Make sure GMP is available
-  if (!extension_loaded ('gmp') && (!function_exists ('dl') || !dl ('gmp.so'))) {
-    trigger_error ('Missing required GMP-Extension');
-    
-    return;
-  }
+  declare (strict_types=1);
+
+  namespace BitBaendiger\BitWire;
   
-  abstract class BitWire_Numeric {
+  abstract class Numeric {
     // {{{ BitWire_Numeric
     /**
      * Create a big number from compact representation
@@ -37,7 +34,7 @@
      * @access public
      * @return GMP
      **/
-    public static function fromCompact ($compactNumber, &$isNegative = false, &$isOverflow = false) : GMP {
+    public static function fromCompact (int $compactNumber, bool &$isNegative = false, bool &$isOverflow = false) : GMP {
       $nBytes = (((int)$compactNumber >> 24) & 0xFF);
       $nWord = (int)$compactNumber & 0x7FFFFF;
       $rBase = gmp_init ($nWord);
@@ -70,7 +67,7 @@
      * @access public
      * @return int
      **/
-    public static function toCompact (GMP $sourceNumber, $isNegative = false) {
+    public static function toCompact (GMP $sourceNumber, bool $isNegative = false) : int {
       $nBytes = (static::getSize ($sourceNumber) + 7) / 8;
       
       if ($nBytes <= 3)
@@ -96,12 +93,12 @@
     /**
      * Create a big number from hash
      * 
-     * @param BitWire_Hash $sourceHash
+     * @param Hash $sourceHash
      * 
      * @access public
      * @return GMP
      **/
-    public static function fromHash (BitWire_Hash $sourceHash) : GMP {
+    public static function fromHash (Hash $sourceHash) : GMP {
       return gmp_import ($sourceHash->toBinary ());
     }
     // }}}
@@ -115,7 +112,7 @@
      * @access public
      * @return int
      **/
-    public static function getSize (GMP $sourceNumber) {
+    public static function getSize (GMP $sourceNumber) : int {
       // Find the most significat bit
       $currentSize = 0;
       
@@ -127,5 +124,3 @@
     }
     // }}}
   }
-
-?>

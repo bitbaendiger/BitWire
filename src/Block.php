@@ -1,8 +1,8 @@
-<?PHP
+<?php
 
   /**
    * BitWire - Block
-   * Copyright (C) 2017-2020 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -18,18 +18,16 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/Numeric.php');
-  require_once ('BitWire/Hash.php');
-  require_once ('BitWire/Transaction.php');
-  require_once ('BitWire/Message/Payload.php');
-  require_once ('BitWire/Interface/Hashable.php');
+  declare (strict_types=1);
+
+  namespace BitBaendiger\BitWire;
   
-  class BitWire_Block implements BitWire_Interface_Hashable {
+  class Block implements ABI\Hashable {
     /* Type of this block */
-    const TYPE_POW = 0;
-    const TYPE_POS = 1;
+    public const TYPE_POW = 0;
+    public const TYPE_POS = 1;
     
-    private $Type = BitWire_Block::TYPE_POW;
+    private $Type = Block::TYPE_POW;
     
     /* Version of this block */
     private $Version = 0x00000000;
@@ -53,7 +51,7 @@
     private $Signature = '';
     
     /* Transactions stored on this block */
-    private $Transactions = array ();
+    private $Transactions = [ ];
     
     /* Do transactions have comments */
     private $hasTxComments = false;
@@ -68,9 +66,9 @@
      * @access friendly
      * @return void
      **/
-    function __construct ($Type = null, $hasTxComments = null) {
-      $this->PreviousHash = new BitWire_Hash;
-      $this->MerkleRootHash = new BitWire_Hash;
+    function __construct (int $Type = null, bool $hasTxComments = null) {
+      $this->PreviousHash = new Hash;
+      $this->MerkleRootHash = new Hash;
       
       if ($Type !== null)
         $this->Type = $Type;
@@ -88,7 +86,7 @@
      * @return array
      **/
     function __debugInfo () {
-      $Info = array (
+      $Info = [
         'version' => sprintf ('0x%08x', $this->Version),
         'timestamp' => date ('Y-m-d H:i:s', $this->Timestamp),
         'hash' => strval ($this->getHash ()),
@@ -97,7 +95,7 @@
         'threshold' => $this->TargetThreshold,
         'nonce' => $this->Nonce,
         '#txs' => count ($this->Transactions),
-      );
+      ];
       
       if ($this->Type == $this::TYPE_POS)
         $Info ['Signature'] = bin2hex ($this->Signature);
@@ -113,7 +111,7 @@
      * @access public
      * @return int
      **/
-    public function getVersion () {
+    public function getVersion () : int {
       return $this->Version;
     }
     // }}}
@@ -127,8 +125,8 @@
      * @access public
      * @return void
      **/
-    public function setVersion ($Version) {
-      $this->Version = (int)$Version;
+    public function setVersion (int $Version) : void {
+      $this->Version = $Version;
     }
     // }}}
     
@@ -137,9 +135,9 @@
      * Retrive the hash of the previous block
      * 
      * @access public
-     * @return BitWire_Hash
+     * @return Hash
      **/
-    public function getPreviousHash () {
+    public function getPreviousHash () : Hash {
       return $this->PreviousHash;
     }
     // }}}
@@ -148,12 +146,12 @@
     /**
      * Set hash of previous block
      * 
-     * @param BitWire_Hash $Hash
+     * @param Hash $Hash
      * 
      * @access public
      * @return void
      **/
-    public function setPreviousHash (BitWire_Hash $Hash) {
+    public function setPreviousHash (Hash $Hash) : void {
       $this->PreviousHash = $Hash;
     }
     // }}}
@@ -165,9 +163,9 @@
      * @param bool $Recalculate (optional) Recalculate the hash depending on stored transactions
      * 
      * @access public
-     * @return BitWire_Hash
+     * @return Hash
      **/
-    public function getMerkleRootHash ($Recalculate = false) {
+    public function getMerkleRootHash (bool $Recalculate = false) : Hash {
       // Check wheter to return stored hash
       if (!$Recalculate)
         return $this->MerkleRootHash;
@@ -184,7 +182,7 @@
         $Next = array ();
         
         for ($i = 0, $j = 1; $i < $Count; $i = ++$j, $j++)
-          $Next [] = new BitWire_Hash ($Transactions [$i]->toBinary (true) . $Transactions [($j < $Count ? $j : $i)]->toBinary (true));
+          $Next [] = new Hash ($Transactions [$i]->toBinary (true) . $Transactions [($j < $Count ? $j : $i)]->toBinary (true));
         
         $Transactions = $Next;
         $Count = ceil ($Count / 2);
@@ -199,12 +197,12 @@
     /**
      * Store a new merkle-root-hash
      * 
-     * @param BitWire_Hash $Hash
+     * @param Hash $Hash
      * 
      * @access public
      * @return void
      **/
-    public function setMerkleRootHash (BitWire_Hash $Hash) {
+    public function setMerkleRootHash (Hash $Hash) : void {
       $this->MerkleRootHash = $Hash;
     }
     // }}}
@@ -216,7 +214,7 @@
      * @access public
      * @return int
      **/
-    public function getTimestamp () {
+    public function getTimestamp () : int {
       return $this->Timestamp;
     }
     // }}}
@@ -230,8 +228,8 @@
      * @access public
      * @return void
      **/
-    public function setTimestamp ($Timestamp) {
-      $this->Timestamp = (int)$Timestamp;
+    public function setTimestamp (int $Timestamp) : void {
+      $this->Timestamp = $Timestamp;
     }
     // }}}
     
@@ -242,7 +240,7 @@
      * @access public
      * @return int
      **/
-    public function getThreshold () {
+    public function getThreshold () : int {
       return $this->TargetThreshold;
     }
     // }}}
@@ -256,8 +254,8 @@
      * @access public
      * @return void
      **/
-    public function setThreshold ($Threshold) {
-      $this->TargetThreshold = (int)$Threshold;
+    public function setThreshold (int $Threshold) : void {
+      $this->TargetThreshold = $Threshold;
     }
     // }}}
     
@@ -268,7 +266,7 @@
      * @access public
      * @return int
      **/
-    public function getNonce () {
+    public function getNonce () : int {
       return $this->Nonce;
     }
     // }}}
@@ -282,8 +280,8 @@
      * @access public
      * @return void
      **/
-    public function setNonce ($Nonce) {
-      $this->Nonce = (int)$Nonce;
+    public function setNonce (int $Nonce) : void {
+      $this->Nonce = $Nonce;
     }
     // }}}
     
@@ -294,7 +292,7 @@
      * @access public
      * @return array
      **/
-    public function getTransactions () {
+    public function getTransactions () : array {
       return $this->Transactions;
     }
     // }}}
@@ -308,7 +306,7 @@
      * @access public
      * @return void
      **/
-    public function addTransaction (BitWire_Transaction $Tx) {
+    public function addTransaction (BitWire_Transaction $Tx) : void {
       // Append to transactions
       $this->Transactions [] = $Tx;
       
@@ -322,10 +320,10 @@
      * Retrive a hash for this object
      * 
      * @access public
-     * @return BitWire_Hash
+     * @return Hash
      **/
-    public function getHash () : BitWire_Hash {
-      return new BitWire_Hash ($this->getHeader ());
+    public function getHash () : Hash {
+      return new Hash ($this->getHeader ());
     }
     // }}}
     
@@ -336,7 +334,7 @@
      * @access public
      * @return string
      **/
-    public function getHeader () {
+    public function getHeader () : string {
       return pack ('Va32a32VVV', $this->Version, $this->PreviousHash->toBinary (true), $this->MerkleRootHash->toBinary (true), $this->Timestamp, $this->TargetThreshold, $this->Nonce);
     }
     // }}}
@@ -350,9 +348,9 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return bool
+     * @return void
      **/
-    public function parse (&$Data, &$Offset, $Length = null) {
+    public function parse (string &$Data, int &$Offset, int $Length = null) : void {
       // Check the length of input
       if ($Length === null)
         $Length = strlen ($Data);
@@ -360,32 +358,27 @@
       // Parse the header
       $tOffset = $Offset;
       
-      if ((($Version = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null) ||
-          (($Hash = BitWire_Message_Payload::readHash ($Data, $tOffset, $Length)) === null) ||
-          (($MerkleRoot = BitWire_Message_Payload::readHash ($Data, $tOffset, $Length)) === null) ||
-          (($Timestamp = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null) ||
-          (($Threshold = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null) ||
-          (($Nonce = BitWire_Message_Payload::readUInt32 ($Data, $tOffset, $Length)) === null) ||
-          (($Count = BitWire_Message_Payload::readCompactSize ($Data, $tOffset, $Length)) === null))
-        return false;
+      $Version    = Message\Payload::readUInt32 ($Data, $tOffset, $Length);
+      $Hash       = Message\Payload::readHash ($Data, $tOffset, $Length);
+      $MerkleRoot = Message\Payload::readHash ($Data, $tOffset, $Length);
+      $Timestamp  = Message\Payload::readUInt32 ($Data, $tOffset, $Length);
+      $Threshold  = Message\Payload::readUInt32 ($Data, $tOffset, $Length);
+      $Nonce      = Message\Payload::readUInt32 ($Data, $tOffset, $Length);
+      $Count      = Message\Payload::readCompactSize ($Data, $tOffset, $Length);
       
       // Check if there is more than just the header
       if ($tOffset != $Length) {
         // Try to read all transactions
-        $Transactions = array ();
+        $Transactions = [ ];
         
         for ($i = 0; $i < $Count; $i++) {
           // Create a new transaction
-          $Transaction = new BitWire_Transaction ($this->Type, $this->hasTxComments);
+          $Transaction = new Transaction ($this->Type, $this->hasTxComments);
           
           // Try to parse the transaction
           $pOffset = $tOffset;
           
-          if (!$Transaction->parse ($Data, $tOffset, $Length)) {
-            trigger_error ('Failed to read transaction #' . $i);
-            
-            return false;
-          }
+          $Transaction->parse ($Data, $tOffset, $Length);
           
           // Double-check the transaction
           if (defined ('BITWIRE_DEBUG') && BITWIRE_DEBUG) {
@@ -419,11 +412,11 @@
         // Read Signature of PoS-Blocks
         if ($this->Type != $this::TYPE_POS)
           $Signature = null;
-        elseif (($Signature = BitWire_Message_Payload::readCompactString ($Data, $tOffset, $Length)) === null)
-          return false;
-        
+        else
+          $Signature = Message\Payload::readCompactString ($Data, $tOffset, $Length);
+      
       } else {
-        $Transactions = array ();
+        $Transactions = [ ];
         $Signature = null;
       }
       
@@ -439,9 +432,6 @@
       
       // Push back the offset
       $Offset = $tOffset;
-      
-      // Check if all data was consumed
-      return true;
     }
     // }}}
     
@@ -452,11 +442,11 @@
      * @access public
      * @return string
      **/
-    public function toBinary () {
+    public function toBinary () : string {
       // Generate the header
       $Buffer =
         $this->getHeader () .
-        BitWire_Message_Payload::toCompactSize (count ($this->Transactions));
+        Message\Payload::toCompactSize (count ($this->Transactions));
       
       // Write out transactions
       foreach ($this->Transactions as $Transaction)
@@ -464,7 +454,7 @@
       
       // Append signature
       if ($this->Type == $this::TYPE_POS)
-        $Buffer .= BitWire_Message_Payload::toCompactString ($this->Signature);
+        $Buffer .= Message\Payload::toCompactString ($this->Signature);
       
       return $Buffer;
     }
@@ -477,7 +467,7 @@
      * @access public
      * @return bool
      **/
-    public function validate () {
+    public function validate () : bool {
       // Make sure time is not too far in future
       if ($this->Timestamp > time () + 7200)
         return false;
@@ -485,19 +475,14 @@
       # TODO: Check the time in some other way too?!
       
       // Compare hash and threshold
-      if (class_exists ('BitWire_Numeric', false)) {
-        $workTarget = BitWire_Numeric::fromCompact ($this->TargetThreshold);
-        $workActual = BitWire_Numeric::fromHash ($this->getHash ());
-        
-        if ($workActual > $workTarget)
-          return false;
-      } else
-        trigger_error ('Numeric functions (GMP) required to validate threshold');
+      $workTarget = Numeric::fromCompact ($this->TargetThreshold);
+      $workActual = Numeric::fromHash ($this->getHash ());
+      
+      if ($workActual > $workTarget)
+        return false;
       
       // Compare merkle-root
       return $this->getMerkleRootHash ()->compare ($this->getMerkleRootHash (true));
     }
     // }}}
   }
-
-?>
