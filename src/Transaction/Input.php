@@ -116,7 +116,22 @@
      * @return bool
      **/
     public function isCoinbase () : bool {
-      return self::checkCoinbase ($this->transactionHash, $this->transactionIndex);
+      return !$this->isZerocoinSpend () && self::checkCoinbase ($this->transactionHash, $this->transactionIndex);
+    }
+    // }}}
+    
+    // {{{ isZerocoinSpend
+    /**
+     * Check if this is a zerocoin-spend
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function isZerocoinSpend () : bool {
+      if (!self::checkCoinbase ($this->transactionHash, $this->transactionIndex))
+        return false;
+      
+      return $this->Script->isZerocoinSpend ();
     }
     // }}}
     
@@ -292,14 +307,17 @@
       
       // Check size-constraints for script
       $scriptSize = strlen ($transactionScript);
+      $isZerocoin = (($scriptSize > 0) && (ord ($transactionScript [0]) == Script::OP_ZEROCOINSPEND));
       
-      if (self::checkCoinbase ($transactionHash, $transactionIndex)) {
+      if (self::checkCoinbase ($transactionHash, $transactionIndex) && !$isZerocoin) {
         if ($scriptSize > 101)
           throw new \LengthException ('Coinbase-Script too large');
         
         # TODO: Any further checks?
-      } elseif ($scriptSize > 10003)
+      } elseif (($scriptSize > 10003) && !$isZerocoin)
         throw new \LengthException ('Input-Script too large');
+      
+      # TODO: Enforce length-constraint on zerocoin-transactios?
       
       // Store the results on this instance
       $this->transactionHash = $transactionHash;

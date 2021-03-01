@@ -76,6 +76,7 @@
     public const OP_NOP1           = 0xB0;
     public const OP_NOP6           = 0xB5;
     public const OP_NOP9           = 0xB8;
+    public const OP_ZEROCOINSPEND  = 0xC2;
     
     /* Well-known Opcode-Names */
     private static $opcodeNames = [
@@ -128,6 +129,7 @@
       self::OP_NOP1           => 'OP_NOP1',
       self::OP_NOP6           => 'OP_NOP6',
       self::OP_NOP9           => 'OP_NOP9',
+      self::OP_ZEROCOINSPEND  => 'OP_ZEROCOINSPEND',
     ];
     
     /* Parsed stack of script */
@@ -616,6 +618,18 @@
         return false;
       
       return true;
+    }
+    // }}}
+    
+    // {{{ isZerocoinSpend
+    /**
+     * Check if this script is a zerocoin-spend
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function isZerocoinSpend () : bool {
+      return ((count ($this->scriptOps) > 0) && ($this->scriptOps [0][0] == self::OP_ZEROCOINSPEND));
     }
     // }}}
     
