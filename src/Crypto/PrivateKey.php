@@ -1,8 +1,8 @@
-<?PHP
+<?php
 
   /**
    * BitWire - ECDSA Private Key
-   * Copyright (C) 2020 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2020-2021 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -18,18 +18,12 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  // Make sure GMP is available
-  if (!extension_loaded ('gmp') && (!function_exists ('dl') || !dl ('gmp.so'))) {
-    trigger_error ('Missing required GMP-Extension');
+  declare (strict_types=1);
+
+  namespace BitBaendiger\BitWire\Crypto;
+  use \BitBaendiger\BitWire;
   
-    return;
-  }
-  
-  require_once ('BitWire/Crypto/Curve.php');
-  require_once ('BitWire/Crypto/PublicKey.php');
-  require_once ('BitWire/Transaction/Script.php');
-  
-  class BitWire_Crypto_PrivateKey extends BitWire_Crypto_PublicKey {
+  class PrivateKey extends PublicKey {
     /* Version-Byte (merely for export) */
     private $keyVersion = 0x00;
     
@@ -44,18 +38,18 @@
      * @param BitWire_Crypto_Curve $onCurve
      * 
      * @access public
-     * @return BitWire_Crypto_PrivateKey
+     * @return PrivateKey
      **/
-    public static function fromString ($String, BitWire_Crypto_Curve $onCurve = null) : ?BitWire_Crypto_PrivateKey {
+    public static function fromString (string $String, Curve $onCurve = null) : PrivateKey {
       // Remove Base58-Envelope
-      $String = BitWire_Transaction_Script::base58Decode ($String);
+      $String = BitWire\Util\Base58::decode ($String);
       
       if ((($Length = strlen ($String)) < 37) || ($Length > 38))
-        return null;
+        throw new \LengthException ('Invalid key-size');
       
       // Make sure we have a curve
       if (!$onCurve)
-        $onCurve = BitWire_Crypto_Curve_secp256k1::singleton ();
+        $onCurve = Curve\Secp256k1::singleton ();
       
       // Extract informations from the key
       $keyVersion = ord ($String [0]);
@@ -79,19 +73,19 @@
      * 
      * @param string $binaryData
      * @param bool $isCompressed
-     * @param BitWire_Crypto_Curve $onCurve (optional)
+     * @param Curve $onCurve (optional)
      * 
      * @access public
-     * @return BitWire_Crypto_PrivateKey
+     * @return PrivateKey
      **/
-    public static function fromBinaryNumber ($binaryData, $isCompressed, BitWire_Crypto_Curve $onCurve = null) : ?BitWire_Crypto_PrivateKey {
+    public static function fromBinaryNumber (string $binaryData, bool $isCompressed, Curve $onCurve = null) : PrivateKey {
       // Check size of the key
       if (strlen ($binaryData) != 32)
-        return null;
+        throw new \LengthException ('Number has to be 256-bit');
       
       // Make sure we have a curve
       if (!$onCurve)
-        $onCurve = BitWire_Crypto_Curve_secp256k1::singleton ();
+        $onCurve = Curve\Secp256k1::singleton ();
       
       // Create private key
       $Instance = new static ();
@@ -108,18 +102,18 @@
      * Read a private Key from DER-encoded data
      * 
      * @param string $Data
-     * @param BitWire_Crypto_Curve $onCurve (optional)
+     * @param Curve $onCurve (optional)
      * 
      * @access public
-     * @return BitWire_Crypto_PrivateKey
+     * @return PrivateKey
      **/
-    public static function fromDER ($Data, BitWire_Crypto_Curve $onCurve = null) : ?BitWire_Crypto_PrivateKey {
+    public static function fromDER (string $Data, Curve $onCurve = null) : PrivateKey {
       // Read the whole sequence from DER
       $Offset = $Type = 0;
       $Sequence = self::asn1read ($Data, $Offset, $Type);
       
       if ($Type != 0x30)
-        return null;
+        throw new \ValueError ('DER-structure has to be a sequence');
       
       // Check version
       $Offset = 0;
@@ -127,12 +121,12 @@
       if ((($keyVersion = self::asn1read ($Sequence, $Offset, $Type)) === null) ||
           ($Type != 0x02) ||
           (strcmp ($keyVersion, "\x01") != 0))
-        return null;
+        throw new \ValueError ('Invalid key-version');
       
       // Extract the key
       if ((($Key = self::asn1read ($Sequence, $Offset, $Type)) === null) ||
           ($Type != 0x04))
-        return null;
+        throw new \ValueError ('Failed to read key');
       
       // Check for additional data
       $Compressed = true;
@@ -160,10 +154,10 @@
           $CurveN = self::asn1read ($cSequence, $cOffset, $Type);
           $CurveM = self::asn1read ($cSequence, $cOffset, $Type);
           
-          $nCurve = new BitWire_Crypto_Curve (gmp_import ($CurveP), gmp_import ($CurveA), gmp_import ($CurveB));
+          $nCurve = new Curve (gmp_import ($CurveP), gmp_import ($CurveA), gmp_import ($CurveB));
           $nCurve->m = gmp_import ($CurveM);
           $nCurve->n = gmp_import ($CurveN);
-          $nCurve->G = BitWire_Crypto_Curve_Point::fromPublicKey ($nCurve, $CurveG, $onCurve->n);
+          $nCurve->G = Curve\Point::fromPublicKey ($nCurve, $CurveG, $onCurve->n);
           
           if ($onCurve) {
             if (($onCurve->p <> $nCurve->p) ||
@@ -185,11 +179,8 @@
           $Compressed = (strlen ($Data) < 37);
       }
       
-      if (!$onCurve) {
-        trigger_error ('Missing curve for import');
-        
-        return null;
-      }
+      if (!$onCurve)
+        throw new \Exception ('Missing curve for import');
       
       // Extract informations from the key
       $keyVersion = 1;
@@ -219,15 +210,15 @@
      * @access private
      * @return string
      **/
-    private static function asn1read (&$Data, &$Offset, &$Type = null, $Length = null) {
+    private static function asn1read (string &$Data, int &$Offset, int &$Type = null, int $Length = null) : string {
       // Make sure we know the length of our input
       if ($Length === null)
         $Length = strlen ($Data);
 
       // Make sure we have enough data to read
       if ($Length - $Offset < 2)
-        return null;
-
+        throw new \LengthException ('Input-data too short');
+      
       $pOffset = $Offset;
       $pType = ord ($Data [$pOffset++]);
       $pLength = ord ($Data [$pOffset++]);
@@ -235,7 +226,7 @@
       if ($pLength > 0x80) {
         // Check if there are enough bytes to read the extended length
         if ($Length - $pOffset < $pLength - 0x80)
-          return null;
+          throw new \LengthException ('Input-data too short');
 
         // Read the extended length
         $b = $pLength - 0x80;
@@ -247,7 +238,7 @@
 
       // Make sure there are enough bytes to read the payload
       if ($Length - $pOffset < $pLength)
-        return null;
+        throw new \LengthException ('Input-data too short');
 
       // Read all data and move the offset
       $Type = $pType;
@@ -261,17 +252,17 @@
     /**
      * Create a new private key
      * 
-     * @param BitWire_Crypto_Curve $onCurve (optional)
+     * @param Curve $onCurve (optional)
      * @param bool $Compressed (optional)
      * @param int $keyVersion (optional)
      * 
      * @access public
-     * @return BitWire_Crypto_PrivateKey
+     * @return PrivateKey
      **/
-    public static function newKey (BitWire_Crypto_Curve $onCurve = null, $Compressed = true, $keyVersion = null) : BitWire_Crypto_PrivateKey {
+    public static function newKey (Curve $onCurve = null, bool $Compressed = true, int $keyVersion = null) : PrivateKey {
       // Make sure we have a curve
       if (!$onCurve)
-        $onCurve = BitWire_Crypto_Curve_secp256k1::singleton ();
+        $onCurve = Curve\Secp256k1::singleton ();
       
       // Create a new key
       $Instance = new static ();
@@ -295,7 +286,7 @@
      * @access public
      * @return int
      **/
-    public function getVersion () {
+    public function getVersion () : int {
       return $this->keyVersion;
     }
     // }}}
@@ -309,8 +300,8 @@
      * @access public
      * @return void
      **/
-    public function setVersion ($keyVersion) {
-      $this->keyVersion = (int)$keyVersion;
+    public function setVersion (int $keyVersion) : void {
+      $this->keyVersion = $keyVersion;
     }
     // }}}
     
@@ -324,13 +315,12 @@
      * @access public
      * @return string
      **/
-    public function signCompact ($Message, $Compressed = null) {
+    public function signCompact (string $Message, bool $Compressed = null) : string {
       // Create hash of the message
       $Digest = hash ('sha256', hash ('sha256', $Message, true), true);
       
       // Generate Nonce
-      if (($Nonce = $this->getNonce ($Digest)) === null)
-         return false;
+      $Nonce = $this->getNonce ($Digest);
       
       // Sign with nonce
       $G = $this->curvePoint->Curve->G;
@@ -338,7 +328,7 @@
       $r = $P->x % $G->getOrder ();
       
       if ($r == 0)
-        return false;
+        throw new \Exception ('r must not be zero');
       
       $edr = gmp_import ($Digest) + ($this->gmpKey * $r);
       $invk = gmp_invert ($Nonce, $G->getOrder ());
@@ -366,9 +356,9 @@
      * @param int $Size (optional)
      * 
      * @access private
-     * @return GMP
+     * @return \GMP
      **/
-    private function getNonce ($Digest, $Size = 32) : ?GMP {
+    private function getNonce (string $Digest, int $Size = 32) : \GMP {
       // Have our key as octet-string available
       $K = gmp_export ($this->gmpKey);
       
@@ -411,7 +401,7 @@
       }
       
       // Return error
-      return null;
+      throw new \Exception ('Failed to generate nonce');
     }
     // }}}
     
@@ -422,18 +412,16 @@
      * @access public
      * @return string
      **/
-    public function toString () {
+    public function toString () : string {
       $Binary =
         chr ($this->keyVersion) .
         str_pad (gmp_export ($this->gmpKey), 32, "\x00", STR_PAD_LEFT) .
         ($this->isCompressed ? "\x01" : '');
       
-      return BitWire_Transaction_Script::base58Encode (
+      return BitWire\Util\Base58::encode (
         $Binary .
         substr (hash ('sha256', hash ('sha256', $Binary, true), true), 0, 4)
       );
     }
     // }}}
   }
-
-?>

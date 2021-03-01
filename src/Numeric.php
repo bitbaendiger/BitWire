@@ -1,4 +1,4 @@
-<?PHP
+<?php
 
   /**
    * BitWire - Numeric
@@ -32,9 +32,9 @@
      * @param bool $isOverflow (optional)
      * 
      * @access public
-     * @return GMP
+     * @return \GMP
      **/
-    public static function fromCompact (int $compactNumber, bool &$isNegative = false, bool &$isOverflow = false) : GMP {
+    public static function fromCompact (int $compactNumber, bool &$isNegative = false, bool &$isOverflow = false) : \GMP {
       $nBytes = (((int)$compactNumber >> 24) & 0xFF);
       $nWord = (int)$compactNumber & 0x7FFFFF;
       $rBase = gmp_init ($nWord);
@@ -61,13 +61,13 @@
     /**
      * Convert a big number to compact representation
      * 
-     * @param GMP $sourceNumber
+     * @param \GMP $sourceNumber
      * @param bool $isNegative (optional)
      * 
      * @access public
      * @return int
      **/
-    public static function toCompact (GMP $sourceNumber, bool $isNegative = false) : int {
+    public static function toCompact (\GMP $sourceNumber, bool $isNegative = false) : int {
       $nBytes = (static::getSize ($sourceNumber) + 7) / 8;
       
       if ($nBytes <= 3)
@@ -96,9 +96,9 @@
      * @param Hash $sourceHash
      * 
      * @access public
-     * @return GMP
+     * @return \GMP
      **/
-    public static function fromHash (Hash $sourceHash) : GMP {
+    public static function fromHash (Hash $sourceHash) : \GMP {
       return gmp_import ($sourceHash->toBinary ());
     }
     // }}}
@@ -107,12 +107,12 @@
     /**
      * Retrive the size in bits of a big number
      * 
-     * @param GMP $sourceNumber
+     * @param \GMP $sourceNumber
      * 
      * @access public
      * @return int
      **/
-    public static function getSize (GMP $sourceNumber) : int {
+    public static function getSize (\GMP $sourceNumber) : int {
       // Find the most significat bit
       $currentSize = 0;
       

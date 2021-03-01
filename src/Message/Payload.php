@@ -1,4 +1,4 @@
-<?PHP
+<?php
 
   /**
    * BitWire - Message Payload

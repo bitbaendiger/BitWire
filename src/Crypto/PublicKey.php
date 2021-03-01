@@ -1,8 +1,8 @@
-<?PHP
+<?php
 
   /**
    * BitWire - ECDSA Public Key
-   * Copyright (C) 2020 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2020-2021 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -18,20 +18,13 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  // Make sure GMP is available
-  if (!extension_loaded ('gmp') && (!function_exists ('dl') || !dl ('gmp.so'))) {
-    trigger_error ('Missing required GMP-Extension');
+  declare (strict_types=1);
+
+  namespace BitBaendiger\BitWire\Crypto;
+  use \BitBaendiger\BitWire;
   
-    return;
-  }
-  
-  require_once ('BitWire/Hash.php');
-  require_once ('BitWire/Address.php');
-  require_once ('BitWire/Crypto/Curve.php');
-  require_once ('BitWire/Crypto/Curve/Point.php');
-  
-  class BitWire_Crypto_PublicKey {
-    const COMPACT_SIGNATURE_SIZE = 65;
+  class PublicKey implements BitWire\ABI\Hashable {
+    private const COMPACT_SIGNATURE_SIZE = 65;
     
     /* Curve-Point of this public key */
     protected $curvePoint = null;
@@ -43,30 +36,28 @@
     /**
      * Restore a public key from binary
      * 
-     * @param BitWire_Crypto_Curve $Curve
      * @param string $Binary
+     * @param Curve $Curve
      * 
      * @access public
-     * @return BitWire_Crypto_PublicKey
+     * @return PublicKey
      **/
-    public static function fromBinary ($Binary, BitWire_Crypto_Curve $Curve = null) : ?BitWire_Crypto_PublicKey {
+    public static function fromBinary (string $Binary, Curve $Curve = null) : PublicKey {
       // Get the length of the key
       if (($Length = strlen ($Binary)) < 1)
-        return null;
+        throw new \LengthException ('Input too short');
       
       // Make sure we have a curve
       if (!$Curve)
-        $Curve = BitWire_Crypto_Curve_secp256k1::singleton ();
+        $Curve = Curve\Secp256k1::singleton ();
       
       // Get the format of the key
       $Type = ord ($Binary [0]);
       
       // Create the result-key
-      $Result = new static;
+      $Result = new static ();
       
-      if (($Result->curvePoint = BitWire_Crypto_Curve_Point::fromPublicKey ($Curve, $Binary)) === null)
-        return null;
-      
+      $Result->curvePoint = Curve\Point::fromPublicKey ($Curve, $Binary)
       $Result->isCompressed = (($Type == 0x02) || ($Type == 0x03));
       
       return $Result;
@@ -79,25 +70,25 @@
      * 
      * @param string $Hash
      * @param string $Signature
-     * @param BitWire_Crypto_Curve $Curve (optional)
+     * @param Curve $Curve (optional)
      * 
      * @access public
-     * @return BitWire_Crypto_PublicKey
+     * @return PublicKey
      **/
-    public static function recoverCompact ($Hash, $Signature, BitWire_Crypto_Curve $Curve = null) : ?BitWire_Crypto_PublicKey {
+    public static function recoverCompact (string $Hash, string $Signature, Curve $Curve = null) : PublicKey {
       // Check size of signature
       if (($sigSize = strlen ($Signature)) != self::COMPACT_SIGNATURE_SIZE)
-        return null;
+        throw new \LengthException ('Invalid size');
       
       // Make sure we have a curve
       if (!$Curve)
-        $Curve = BitWire_Crypto_Curve_secp256k1::singleton ();
+        $Curve = Curve\Secp256k1::singleton ();
       
       // Read signature-flags
       $Flags = ord ($Signature [0]);
       
       if (($Flags < 27) || ($Flags > 34))
-        return null;
+        throw new \Exception ('Invalid flags');
       
       $recID = ($Flags - 27) & 0x03;
       $Compressed = ((($Flags - 27) & 0x04) != 0);
@@ -107,7 +98,7 @@
       $OrderLen = strlen (gmp_export ($Order));
       
       if ($sigSize != $OrderLen * 2 + 1)
-        return null;
+        throw new \LengthException ('Invalid signature-size');
       
       $r = gmp_import (substr ($Signature, 1, $OrderLen));
       $s = gmp_import (substr ($Signature, $OrderLen + 1, $OrderLen));
@@ -125,7 +116,7 @@
       else
         $y = gmp_sub ($Curve->p, $beta);
       
-      $R = new BitWire_Crypto_Curve_Point ($Curve, $x, $y, $Order);
+      $R = new Curve\Point ($Curve, $x, $y, $Order);
       $mE = gmp_mod (gmp_neg ($e), $Order);
       $invR = gmp_invert ($r, $Order);
       
@@ -149,7 +140,7 @@
      * @access public
      * @return string
      **/
-    public function getID ($Compressed = null) {
+    public function getID (bool $Compressed = null) : string {
       // Convert this public key into binary
       $Binary = $this->toBinary ($Compressed);
       
@@ -166,10 +157,10 @@
      * @param int $addressType (optional)
      * 
      * @access public
-     * @return BitWire_Address
+     * @return BitWire\Address
      **/
-    public function getAddress ($Compressed = null, $addressType = 0x00) : BitWire_Address {
-      return new BitWire_Address ($addressType, hash ('ripemd160', hash ('sha256', $this->toBinary ($Compressed), true), true));
+    public function getAddress (bool $Compressed = null, int $addressType = 0x00) : BitWire\Address {
+      return new BitWire\Address ($addressType, hash ('ripemd160', hash ('sha256', $this->toBinary ($Compressed), true), true));
     }
     // }}}
     
@@ -178,9 +169,9 @@
      * Retrive the curve for this public key
      * 
      * @access public
-     * @return BitWire_Crypto_Curve
+     * @return Curve
      **/
-    public function getCurve () : BitWire_Crypto_Curve {
+    public function getCurve () : Curve {
       return $this->curvePoint->Curve;
     }
     // }}}
@@ -190,10 +181,10 @@
      * Create a hash for this public key
      * 
      * @access public
-     * @return BitWire_Hash
+     * @return BitWire\Hash
      **/
-    public function getHash () : BitWire_Hash {
-      return new BitWire_Hash ($this->toBinary (), false);
+    public function getHash () : BitWire\Hash {
+      return new BitWire\Hash ($this->toBinary (), false);
     }
     // }}}
     
@@ -204,7 +195,7 @@
      * @access public
      * @return bool
      **/
-    public function isCompressed () {
+    public function isCompressed () : bool {
       return $this->isCompressed;
     }
     // }}}
@@ -219,7 +210,7 @@
      * @access public
      * @return bool
      **/
-    public function verifyCompact ($Message, $Signature) {
+    public function verifyCompact (string $Message, string $Signature) : bool {
       // Create hash of the message
       $Digest = hash ('sha256', hash ('sha256', $Message, true), true);
       
@@ -236,15 +227,15 @@
      * Make sure this is only a public key
      * 
      * @access public
-     * @return BitWire_Crypto_PublicKey
+     * @return PublicKey
      **/
-    public function toPublicKey () : BitWire_Crypto_PublicKey {
+    public function toPublicKey () : PublicKey {
       // Check if this instance isn't a derivation
       if (strcasecmp (get_class ($this), __CLASS__) == 0)
         return $this;
       
       // Create a copy of our public part
-      $Result = new BitWire_Crypto_PublicKey;
+      $Result = new PublicKey ();
       $Result->curvePoint = clone $this->curvePoint;
       $Result->isCompressed = $this->isCompressed;
       
@@ -259,7 +250,7 @@
      * @access public
      * @return string
      **/
-    public function toBinary ($Compressed = null) {
+    public function toBinary ($Compressed = null) : string {
       if ($Compressed === null)
         $Compressed = $this->isCompressed;
       
@@ -267,5 +258,3 @@
     }
     // }}}
   }
-
-?>

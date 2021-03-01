@@ -1,8 +1,8 @@
-<?PHP
+<?php
 
   /**
    * BitWire - ECDSA Curve
-   * Copyright (C) 2017-2020 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -18,33 +18,19 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  // Make sure GMP is available
-  if (!extension_loaded ('gmp') && (!function_exists ('dl') || !dl ('gmp.so'))) {
-    trigger_error ('Missing required GMP-Extension');
+  declare (strict_types=1);
+
+  namespace BitBaendiger\BitWire\Crypto\Curve;
+  use \BitBaendiger\BitWire\Crypto;
   
-    return;
-  }
-  
-  require_once ('BitWire/Crypto/Curve/Point.php');
-  
-  class BitWire_Crypto_Curve {
-    public $p, $a, $b;
-    
-    function __construct (GMP $p, GMP $a, GMP $b) {
-      $this->p = $p;
-      $this->a = $a;
-      $this->b = $b;
-    }
-  }
-  
-  class BitWire_Crypto_Curve_secp256k1 extends BitWire_Crypto_Curve {
+  class Secp256k1 extends Crypto\Curve {
     private static $default = null;
     
     public $G = null;
     
-    public static function singleton () : BitWire_Crypto_Curve_secp256k1 {
+    public static function singleton () : Secp256k1 {
       if (!self::$default)
-        self::$default = new BitWire_Crypto_Curve_secp256k1;
+        self::$default = new Secp256k1 ();
       
       return self::$default;
     }
@@ -61,7 +47,7 @@
       $this->n = gmp_init ('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141', 16);
       
       // Setup generator-point
-      $this->G = new BitWire_Crypto_Curve_Point (
+      $this->G = new Point (
         $this,
         gmp_init ('79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798', 16),
         gmp_init ('483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8', 16),
@@ -69,5 +55,3 @@
       );
     }
   }
-
-?>

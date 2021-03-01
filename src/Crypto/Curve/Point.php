@@ -1,8 +1,8 @@
-<?PHP
+<?php
 
   /**
    * BitWire - ECDSA Curve Point
-   * Copyright (C) 2017-2020 Bernd Holzmueller <bernd@quarxconnect.de>
+   * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
    * 
    * This program is free software: you can redistribute it and/or modify
    * it under the terms of the GNU General Public License as published by
@@ -18,14 +18,12 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  // Make sure GMP is available
-  if (!extension_loaded ('gmp') && (!function_exists ('dl') || !dl ('gmp.so'))) {
-    trigger_error ('Missing required GMP-Extension');
+  declare (strict_types=1);
+
+  namespace BitBaendiger\BitWire\Crypto\Curve;
+  use \BitBaendiger\BitWire\Crypto;
   
-    return;
-  }
-  
-  class BitWire_Crypto_Curve_Point {
+  class Point {
     private static $g1 = null;
     private static $g2 = null;
     private static $g3 = null;
@@ -39,17 +37,17 @@
     /**
      * Extract a curve-point from a public key
      * 
-     * @param BitWire_Crypto_Curve $Curve
+     * @param Crypto\Curve $Curve
      * @param string $Key
-     * @param GMP $order (optional)
+     * @param \GMP $order (optional)
      * 
      * @access public
-     * @return BitWire_Crypto_Curve_Point
+     * @return Point
      **/
-    public static function fromPublicKey (BitWire_Crypto_Curve $Curve, $Key, GMP $order = null) : ?BitWire_Crypto_Curve_Point {
+    public static function fromPublicKey (Crypto\Curve $Curve, string $Key, \GMP $order = null) : Point {
       // Get the length of the key
       if (($Length = strlen ($Key)) < 1)
-        return null;
+        throw new \LengthException ('Short read');
       
       // Get the format of the key
       $Type = ord ($Key [0]);
@@ -86,22 +84,22 @@
     /**
      * Create a point from compressed representation
      * 
-     * @param BitWire_Crypto_Curve $Curve
-     * @param GMP $x
+     * @param Crypto\Curve $Curve
+     * @param \GMP $x
      * @param bool $Negative (optional)
-     * @param GMP $order (optional)
+     * @param \GMP $order (optional)
      * 
      * @access public
      * @return Point
      **/
-    public static function fromCompressed (BitWire_Crypto_Curve $Curve, GMP $x, $Negative = false, GMP $order = null) : BitWire_Crypto_Curve_Point {
+    public static function fromCompressed (Crypto\Curve $Curve, \GMP $x, bool $Negative = false, \GMP $order = null) : Point {
       // Check if we were initialized before
       if (self::$g1 === null)
         self::init ();
       
       $y = gmp_powm (
-        gmp_mod (gmp_add (gmp_add (gmp_powm ($x, self::$g3, $Curve->p), gmp_mul ($Curve->a, $x)), $Curve->b), $Curve->p),
-        gmp_div_q (gmp_add ($Curve->p, self::$g1), self::$g4),
+        gmp_mod (gmp_powm ($x, self::$g3, $Curve->p) + gmp_mul ($Curve->a, $x) + $Curve->b, $Curve->p),
+        gmp_div_q ($Curve->p + self::$g1, self::$g4),
         $Curve->p
       );
       
@@ -131,15 +129,15 @@
     /**
      * Create a new point
      * 
-     * @param BitWire_Crypto_Curve $Curve
-     * @param GMP $x
-     * @param GMP $y
-     * @param GMP $order (optional)
+     * @param Crypto\Curve $Curve
+     * @param \GMP $x
+     * @param \GMP $y
+     * @param \GMP $order (optional)
      * 
      * @access friendly
      * @return void
      **/
-    function __construct (BitWire_Crypto_Curve $Curve, GMP $x, GMP $y, GMP $order = null) {
+    function __construct (Crypto\Curve $Curve, \GMP $x, \GMP $y, \GMP $order = null) {
       // Check if we were initialized before
       if (self::$g1 === null)
         self::init ();
@@ -173,9 +171,9 @@
      * Retrive the order of this point
      * 
      * @access public
-     * @return GMP
+     * @return \GMP
      **/
-    public function getOrder () : ?GMP {
+    public function getOrder () : ?\GMP {
       return $this->order;
     }
     // }}}
@@ -187,9 +185,9 @@
      * @param bool $New (optional)
      * 
      * @access public
-     * @return BitWire_Crypto_Curve_Point
+     * @return Curve\Point
      **/
-    function double ($New = false) : BitWire_Crypto_Curve_Point {
+    function double (bool $New = false) : Curve\Point {
       if ($New) {
         $New = clone $this;
         $New->double ();
@@ -212,13 +210,13 @@
     /**
      * Add another point to this one
      * 
-     * @param BitWire_Crypto_Curve_Point $Add
+     * @param Point $Add
      * @param bool $New (optional)
      * 
      * @access public
-     * @return BitWire_Crypto_Curve_Point
+     * @return Point
      **/
-    public function add (BitWire_Crypto_Curve_Point $Add, $New = false) : BitWire_Crypto_Curve_Point {
+    public function add (Point $Add, bool $New = false) : Point {
       if ($New) {
         $New = clone $this;
         $New->add ($Add);
@@ -244,12 +242,12 @@
     /**
      * Multiply point with a number
      * 
-     * @param GMP $f
+     * @param \GMP $f
      * 
      * @access public
-     * @return BitWire_Crypto_Curve_Point
+     * @return Point
      **/
-    public function mul (GMP $f) : BitWire_Crypto_Curve_Point {
+    public function mul (\GMP $f) : Point {
       // Find topmost bit
       $bits = 0;
 
@@ -282,7 +280,7 @@
      * @access public
      * @return string
      **/
-    public function toPublicKey ($Compressed = false) {
+    public function toPublicKey (bool $Compressed = false) : string {
       // Preapre x for export
       $x = gmp_export ($this->x);
       $lx = strlen ($x);
@@ -313,7 +311,7 @@
      * @access public
      * @return bool
      **/
-    public function validate () {
+    public function validate () : bool {
       $x = gmp_mod (gmp_add (gmp_add (gmp_powm ($this->x, self::$g3, $this->Curve->p), gmp_mul ($this->Curve->a, $this->x)), $this->Curve->b), $this->Curve->p);
       $y = gmp_mod (gmp_pow ($this->y, 2), $this->Curve->p);
 
@@ -321,5 +319,3 @@
     }
     // }}}
   }
-
-?>
