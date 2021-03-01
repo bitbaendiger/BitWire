@@ -1,7 +1,5 @@
-<?PHP
+<?php
 
-  namespace BitBaendiger\BitWire\Util;
-  
   /**
    * BitWire - Base58 Functions
    * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
@@ -20,7 +18,13 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
+  declare (strict_types=1);
+  
+  namespace BitBaendiger\BitWire\Util;
+  
   class Base58 {
+    private const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    
     // {{{ encode
     /**
      * Generate base58-string from a binary string
@@ -30,15 +34,10 @@
      * @access public
      * @return string
      **/
-    public static function encode ($Data) {
-      static $Alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-      
+    public static function encode (string $Data) : string {
       // Make sure GMP is available
-      if (!extension_loaded ('gmp') && (!function_exists ('dl') || !dl ('gmp.so'))) {
-        trigger_error ('Missing GMP-Extension for base58-encoding');
-        
-        return false;
-      }
+      if (!extension_loaded ('gmp') && (!function_exists ('dl') || !dl ('gmp.so')))
+        throw new \Error ('Missing GMP-Extension for base58-encoding');
       
       // Initialize
       $Number = gmp_import ($Data);
@@ -49,12 +48,12 @@
       while (gmp_cmp ($Number, $Base) >= 0) {
         $r = gmp_div_qr ($Number, $Base);
         
-        $Result = $Alphabet [gmp_intval ($r [1])] . $Result;
+        $Result = self::ALPHABET [gmp_intval ($r [1])] . $Result;
         $Number = $r [0];
       }
       
       if (($Number = gmp_intval ($Number)) > 0)
-        $Result = $Alphabet [$Number] . $Result;
+        $Result = self::ALPHABET [$Number] . $Result;
       
       // Process leading zeros
       $i = 0;
@@ -75,15 +74,10 @@
      * @access public
      * @return string
      **/
-    public static function decode ($Data) {
-      static $Alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-      
+    public static function decode (string $Data) : string {
       // Make sure GMP is available
-      if (!extension_loaded ('gmp') && (!function_exists ('dl') || !dl ('gmp.so'))) {
-        trigger_error ('Missing GMP-Extension for base58-encoding');
-      
-        return false;
-      }
+      if (!extension_loaded ('gmp') && (!function_exists ('dl') || !dl ('gmp.so')))
+        throw new \Error ('Missing GMP-Extension for base58-encoding');
       
       // Initialize
       $Result = gmp_init (0);
@@ -91,8 +85,8 @@
       
       // Decode
       for ($i = 0; $i < strlen ($Data); $i++) {
-        if (($p = strpos ($Alphabet, $Data [$i])) === false)
-          return false;
+        if (($p = strpos (self::ALPHABET, $Data [$i])) === false)
+          throw new \ValueError ('Invalid charater on input');
         
         $Result = gmp_add (gmp_mul ($Result, $Base), gmp_init ($p));
       }
@@ -111,5 +105,3 @@
     }
     // }}}
   }
-
-?>

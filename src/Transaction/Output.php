@@ -1,7 +1,5 @@
-<?PHP
+<?php
 
-  namespace BitBaendiger\BitWire\Transaction;
-  
   /**
    * BitWire - Transaction Output
    * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
@@ -20,11 +18,13 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/src/Message/Payload.php');
-  require_once ('BitWire/src/Transaction/Script.php');
+  declare (strict_types=1);
+  
+  namespace BitBaendiger\BitWire\Transaction;
+  use BitBaendiger\BitWire;
   
   class Output {
-    const DIGITS = 8;
+    public const DIGITS = 8;
     
     /* Amount of coins on this output */
     private $outputAmount = 0;
@@ -42,13 +42,13 @@
      * @access friendly
      * @return void
      **/
-    function __construct ($outputAmount = 0.0, Script $outputScript = null) {
+    function __construct (float $outputAmount = 0.0, Script $outputScript = null) {
       $this->outputAmount = (int)floor ($outputAmount * pow (10, $this::DIGITS));
       
       if ($outputScript)
         $this->outputScript = $outputScript;
       else
-        $this->outputScript = new Script;
+        $this->outputScript = new Script ();
     }
     // }}}
     
@@ -72,10 +72,10 @@
      * @return array
      **/
     function __debugInfo () {
-      return array (
+      return [
         'amount' => $this->getAmount (),
         'script' => strval ($this->outputScript),
-      );
+      ];
     }
     // }}}
     
@@ -83,11 +83,25 @@
     /**
      * Retrive the amount of this output
      * 
+     * @remark This function may lead to precision-errros, use getRawAmount() whenever possible
+     * 
      * @access public
      * @return float
      **/
-    public function getAmount () {
+    public function getAmount () : float {
       return $this->outputAmount / pow (10, $this::DIGITS);
+    }
+    // }}}
+    
+    // {{{ getRawAmount
+    /**
+     * Retrive the raw amount of this output (e.g. in satoshis)
+     * 
+     * @access public
+     * @return int
+     **/
+    public function getRawAmount () : int {
+      return $this->outputAmount;
     }
     // }}}
     
@@ -112,7 +126,7 @@
      * @access public
      * @return array
      **/
-    public function getAddresses (array $addressTypeMap = array ()) : array {
+    public function getAddresses (array $addressTypeMap = [ ]) : array {
       return $this->outputScript->getAddresses ($addressTypeMap);
     }
     // }}}
@@ -126,9 +140,9 @@
      * @param int $dataLength (optional)
      * 
      * @access public
-     * @return bool
+     * @return void
      **/
-    public function parse (&$inputData, &$dataOffset, $dataLength = null) {
+    public function parse (string &$inputData, int &$dataOffset, int $dataLength = null) : void {
       // Make sure we know the length of our input
       if ($dataLength === null)
         $dataLength = strlen ($inputData);
@@ -137,14 +151,13 @@
       $myOffset = $dataOffset;
       
       // Try to read everything into our memory
-      if ((($outputAmount = \BitBaendiger\BitWire\Message\Payload::readUInt64 ($inputData, $myOffset, $dataLength)) === null) ||
-          (($outputScript = \BitBaendiger\BitWire\Message\Payload::readCompactString ($inputData, $myOffset, $dataLength)) === null))
-          return false;
+      $outputAmount = BitWire\Message\Payload::readUInt64 ($inputData, $myOffset, $dataLength);
+      $outputScript = BitWire\Message\Payload::readCompactString ($inputData, $myOffset, $dataLength);
       
       // Check size-constraints for script
       if (strlen ($outputScript) > 10003)
-        return false;
-        
+        throw new \LengthException ('Output-Script too large');
+      
       // Store the results on this instance
       $this->outputAmount = $outputAmount;
       $this->outputScript = new Script ($outputScript);
@@ -161,12 +174,10 @@
      * @access public
      * @return string
      **/
-    public function toBinary () {
+    public function toBinary () : string {
       return
         pack ('P', $this->outputAmount) .
-        \BitBaendiger\BitWire\Message\Payload::toCompactString ($this->outputScript->toBinary ());
+        BitWire\Message\Payload::toCompactString ($this->outputScript->toBinary ());
     }
     // }}}
   }
-
-?>

@@ -1,7 +1,5 @@
-<?PHP
+<?php
 
-  namespace BitBaendiger\BitWire\Transaction;
-  
   /**
    * BitWire - Transaction Script
    * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
@@ -20,64 +18,67 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/src/Address.php');
+  declare (strict_types=1);
+  
+  namespace BitBaendiger\BitWire\Transaction;
+  use BitBaendiger\BitWire;
   
   class Script {
     /* Well-known Opcodes */
-    const OP_0 = 0x00;
-    const OP_FALSE = 0x00;
-    const OP_TRUE = 0x51;
-    const OP_PUSHDATA_8  = 0x4C;
-    const OP_PUSHDATA_16 = 0x4D;
-    const OP_PUSHDATA_32 = 0x4E;
-    const OP_1 = 0x51;
-    const OP_2 = 0x52;
-    const OP_3 = 0x53;
-    const OP_4 = 0x54;
-    const OP_5 = 0x55;
-    const OP_6 = 0x56;
-    const OP_7 = 0x57;
-    const OP_8 = 0x58;
-    const OP_9 = 0x59;
-    const OP_10 = 0x5A;
-    const OP_11 = 0x5B;
-    const OP_12 = 0x5C;
-    const OP_13 = 0x5D;
-    const OP_14 = 0x5E;
-    const OP_15 = 0x5F;
-    const OP_16 = 0x60;
-    const OP_NOP = 0x61;
-    const OP_IF = 0x63;
-    const OP_VERNOTIF = 0x66;
-    const OP_ELSE = 0x67;
-    const OP_VERIFY = 0x69;
-    const OP_RETURN = 0x6A;
-    const OP_2DROP = 0x6D;
-    const OP_2ROT = 0x71;
-    const OP_DUP = 0x76;
-    const OP_PICK = 0x79;
-    const OP_LEFT = 0x80;
-    const OP_INVERT = 0x83;
-    const OP_OR = 0x85;
-    const OP_EQUAL = 0x87;
-    const OP_EQUALVERIFY = 0x88;
-    const OP_1SUB = 0x8C;
-    const OP_NOT = 0x91;
-    const OP_ADD = 0x93;
-    const OP_MOD = 0x97;
-    const OP_BOOLOR = 0x9B;
-    const OP_LESSTHAN = 0x9F;
-    const OP_SHA1 = 0xA7;
-    const OP_HASH160 = 0xA9;
-    const OP_CHECKSIG = 0xAC;
-    const OP_CHECKSIGVERIFY = 0xAD;
-    const OP_CHECKMULTISIG = 0xAE;
-    const OP_NOP1 = 0xB0;
-    const OP_NOP6 = 0xB5;
-    const OP_NOP9 = 0xB8;
+    public const OP_0              = 0x00;
+    public const OP_FALSE          = 0x00;
+    public const OP_TRUE           = 0x51;
+    public const OP_PUSHDATA_8     = 0x4C;
+    public const OP_PUSHDATA_16    = 0x4D;
+    public const OP_PUSHDATA_32    = 0x4E;
+    public const OP_1              = 0x51;
+    public const OP_2              = 0x52;
+    public const OP_3              = 0x53;
+    public const OP_4              = 0x54;
+    public const OP_5              = 0x55;
+    public const OP_6              = 0x56;
+    public const OP_7              = 0x57;
+    public const OP_8              = 0x58;
+    public const OP_9              = 0x59;
+    public const OP_10             = 0x5A;
+    public const OP_11             = 0x5B;
+    public const OP_12             = 0x5C;
+    public const OP_13             = 0x5D;
+    public const OP_14             = 0x5E;
+    public const OP_15             = 0x5F;
+    public const OP_16             = 0x60;
+    public const OP_NOP            = 0x61;
+    public const OP_IF             = 0x63;
+    public const OP_VERNOTIF       = 0x66;
+    public const OP_ELSE           = 0x67;
+    public const OP_VERIFY         = 0x69;
+    public const OP_RETURN         = 0x6A;
+    public const OP_2DROP          = 0x6D;
+    public const OP_2ROT           = 0x71;
+    public const OP_DUP            = 0x76;
+    public const OP_PICK           = 0x79;
+    public const OP_LEFT           = 0x80;
+    public const OP_INVERT         = 0x83;
+    public const OP_OR             = 0x85;
+    public const OP_EQUAL          = 0x87;
+    public const OP_EQUALVERIFY    = 0x88;
+    public const OP_1SUB           = 0x8C;
+    public const OP_NOT            = 0x91;
+    public const OP_ADD            = 0x93;
+    public const OP_MOD            = 0x97;
+    public const OP_BOOLOR         = 0x9B;
+    public const OP_LESSTHAN       = 0x9F;
+    public const OP_SHA1           = 0xA7;
+    public const OP_HASH160        = 0xA9;
+    public const OP_CHECKSIG       = 0xAC;
+    public const OP_CHECKSIGVERIFY = 0xAD;
+    public const OP_CHECKMULTISIG  = 0xAE;
+    public const OP_NOP1           = 0xB0;
+    public const OP_NOP6           = 0xB5;
+    public const OP_NOP9           = 0xB8;
     
     /* Well-known Opcode-Names */
-    private static $opcodeNames = array (
+    private static $opcodeNames = [
       self::OP_0              => 'OP_0',
       self::OP_PUSHDATA_8     => 'OP_PUSHDATA_8',
       self::OP_PUSHDATA_16    => 'OP_PUSHDATA_16',
@@ -127,10 +128,10 @@
       self::OP_NOP1           => 'OP_NOP1',
       self::OP_NOP6           => 'OP_NOP6',
       self::OP_NOP9           => 'OP_NOP9',
-    );
+    ];
     
     /* Parsed stack of script */
-    private $scriptOps = array ();
+    private $scriptOps = [ ];
     
     // {{{ __construct
     /**
@@ -142,8 +143,7 @@
      * @return void
      **/
     function __construct ($Data = '') {
-      if (!$this->parse ($Data))
-        throw new exception ('Failed to parse script');
+      $this->parse ($Data);
     }
     // }}}
     
@@ -161,10 +161,10 @@
         $scriptAddresses = null;
       }
       
-      return array (
+      return [
         'addresses' => $scriptAddresses,
         'script' => $this->__toString (),
-      );
+      ];
     }
     // }}}
     
@@ -201,18 +201,18 @@
      * @access public
      * @return array
      **/
-    public function getAddresses (array $addressTypeMap = array ()) : array {
+    public function getAddresses (array $addressTypeMap = [ ]) : array {
       if ($this->isEmpty ())
-        return array ();
+        return [ ];
       
       if ($this->isSignatureInput ())
-        throw new \exception ('Script is not an output');
+        throw new \Exception ('Script is not an output');
       
-      $typePubkey = $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_PUBKEY] ?? 0;
-      $typeScript = $addressTypeMap [\BitBaendiger\BitWire\Address::TYPE_SCRIPT] ?? 5;
+      $typePubkey = $addressTypeMap [BitWire\Address::TYPE_PUBKEY] ?? 0;
+      $typeScript = $addressTypeMap [BitWire\Address::TYPE_SCRIPT] ?? 5;
       
-      $encodeBase58 = \BitBaendiger\BitWire\Address::ENCODE_BASE58;
-      $encodeBech32 = \BitBaendiger\BitWire\Address::ENCODE_BECH32;
+      $encodeBase58 = BitWire\Address::ENCODE_BASE58;
+      $encodeBech32 = BitWire\Address::ENCODE_BECH32;
       
       if ($this->isPublicKeyHashInput ())
         $outputAddresses = [[ $typePubkey, hash ('ripemd160', hash ('sha256', $this->scriptOps [1][1], true), true), $encodeBase58 ]];
@@ -253,7 +253,7 @@
         throw new \exception ('Unknown Script-Type: ' . (string)$this);
       
       foreach ($outputAddresses as $addressIndex=>$addressData)
-        $outputAddresses [$addressIndex] = new \BitBaendiger\BitWire\Address ($addressData [0], $addressData [1], $addressData [2]);
+        $outputAddresses [$addressIndex] = new BitWire\Address ($addressData [0], $addressData [1], $addressData [2]);
       
       return $outputAddresses;
     }
@@ -266,7 +266,7 @@
      * @access public
      * @return bool
      **/
-    public function isEmpty () {
+    public function isEmpty () : bool {
       return (count ($this->scriptOps) == 0);
     }
     // }}}
@@ -278,7 +278,7 @@
      * @access public
      * @return bool
      **/
-    public function isSignatureInput () {
+    public function isSignatureInput () : bool {
       if ((count ($this->scriptOps) != 1) || !isset ($this->scriptOps [0][1]))
         return false;
       
@@ -293,7 +293,7 @@
      * @access public
      * @return bool
      **/
-    public function isPublicKeyHashInput () {
+    public function isPublicKeyHashInput () : bool {
       // Retrive the stack
       $Length = count ($this->scriptOps);
       
@@ -334,7 +334,7 @@
      * @access public
      * @return bool
      **/
-    public function isScriptHashInput () {
+    public function isScriptHashInput () : boll {
       // Retrive the stack
       $Length = count ($this->scriptOps);
       
@@ -367,7 +367,7 @@
      * @access public
      * @return bool
      **/
-    public function isMultiSignatureScriptInput () {
+    public function isMultiSignatureScriptInput () : bool {
       // Retrive the stack
       $Length = count ($this->scriptOps);
       
@@ -416,7 +416,7 @@
      * @access public
      * @return bool
      **/
-    public function isPublicKeyOutput () {
+    public function isPublicKeyOutput () : bool {
       if (count ($this->scriptOps) != 2)
         return false;
       
@@ -452,7 +452,7 @@
      * @access public
      * @return bool
      **/
-    public function isPublicKeyHashOutput () {
+    public function isPublicKeyHashOutput () : bool {
       $Length = count ($this->scriptOps);
       
       // Work around very buggy transaction
@@ -481,7 +481,7 @@
      * @access public
      * @return bool
      **/
-    public function isScriptHashOutput () {
+    public function isScriptHashOutput () : bool {
       return
         (count ($this->scriptOps) == 3) &&
         ($this->scriptOps [0][0] == $this::OP_HASH160) &&
@@ -497,7 +497,7 @@
      * @access public
      * @return bool
      **/
-    public function isMultiSignatureOutput () {
+    public function isMultiSignatureOutput () : bool {
       // Check size of stack
       $Length = count ($this->scriptOps);
       
@@ -521,7 +521,7 @@
      * @access public
      * @return bool
      **/
-    public function isNullDataOutput () {
+    public function isNullDataOutput () : bool {
       if ($this->isEmpty ())
         return false;
       
@@ -544,7 +544,7 @@
      * @access public
      * @return bool
      **/
-    public function isWitnessProgramOutput () {
+    public function isWitnessProgramOutput () : bool {
       // Check size of script
       if ((count ($this->scriptOps) != 2) ||
           (strlen ($this->scriptOps [1][1]) < 2) ||
@@ -568,7 +568,7 @@
      * @access private
      * @return bool
      **/
-    private function isSignature ($Data) {
+    private function isSignature ($Data) : boll {
       // Retrive the total length of signature
       if (($Length = strlen ($Data)) < 2)
         return false;
@@ -627,11 +627,11 @@
      * @param string $binaryData
      * 
      * @access public
-     * @return boolean
+     * @return void
      **/
-    public function parse ($binaryData) {
+    public function parse ($binaryData) : void {
       // Prepare to generate stack
-      $scriptOps = array ();
+      $scriptOps = [ ];
       
       $dataLength = strlen ($binaryData);
       $dataOffset = 0;
@@ -642,7 +642,7 @@
         
         // Push plain data to script-ops
         if (($scriptOpcode > 0) && ($scriptOpcode < $this::OP_PUSHDATA_8)) {
-          $scriptOps [] = array ($scriptOpcode, substr ($binaryData, $dataOffset, $scriptOpcode));
+          $scriptOps [] = [ $scriptOpcode, substr ($binaryData, $dataOffset, $scriptOpcode) ];
           $dataOffset += $scriptOpcode;
         
         // Push length-prefixed data to script-ops
@@ -662,18 +662,16 @@
             $oLength =  ord ($binaryData [$dataOffset++]);
           
           // Push to script-ops
-          $scriptOps [] = array ($scriptOpcode, substr ($binaryData, $dataOffset, $oLength));
+          $scriptOps [] = [ $scriptOpcode, substr ($binaryData, $dataOffset, $oLength) ];
           $dataOffset += $oLength;
         
         // Push only one opcode
         } else
-          $scriptOps [] = array ($scriptOpcode);
+          $scriptOps [] = [ $scriptOpcode, null ];
       }
       
       // Store the result
       $this->scriptOps = $scriptOps;
-      
-      return true;
     }
     // }}}
     
@@ -684,7 +682,7 @@
      * @access public
      * @return string
      **/
-    public function toBinary () {
+    public function toBinary () : string {
       $outputScript = '';
       
       foreach ($this->scriptOps as $scriptOp) {
@@ -709,5 +707,3 @@
     }
     // }}}
   }
-
-?>

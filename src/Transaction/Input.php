@@ -1,7 +1,5 @@
-<?PHP
+<?php
 
-  namespace BitBaendiger\BitWire\Transaction;
-  
   /**
    * BitWire - Transaction Input
    * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
@@ -20,9 +18,10 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/src/Hash.php');
-  require_once ('BitWire/src/Message/Payload.php');
-  require_once ('BitWire/src/Transaction/Script.php');
+  declare (strict_types=1);
+  
+  namespace BitBaendiger\BitWire\Transaction;
+  use BitBaendiger\BitWire;
   
   class Input {
     /* Transaction containing this input */
@@ -44,13 +43,13 @@
     /**
      * Check if a given hash and index might represent a coinbase
      * 
-     * @param \BitBaendiger\BitWire\Hash $transactionHash
+     * @param BitWire\Hash $transactionHash
      * @param int $transactionIndex
      * 
      * @access private
      * @return bool
      **/
-    private static function checkCoinbase (\BitBaendiger\BitWire\Hash $transactionHash, $transactionIndex) {
+    private static function checkCoinbase (BitWire\Hash $transactionHash, int $transactionIndex) : bool {
       if ($transactionIndex != 0xFFFFFFFF)
         return false;
       
@@ -62,20 +61,16 @@
     /**
      * Create a new transaction-input
      * 
-     * @param \BitBaendiger\BitWire\Transaction $parentTransaction (optional)
-     * @param \BitBaendiger\BitWire\Hash $transactionHash (optional)
+     * @param BitWire\Transaction $parentTransaction (optional)
+     * @param BitWire\Hash $transactionHash (optional)
      * @param int $transactionIndex (optional)
      * 
      * @access friendly
      * @return void
      **/
-    function __construct (\BitBaendiger\BitWire\Transaction $parentTransaction = null, \BitBaendiger\BitWire\Hash $transactionHash = null, $transactionIndex = null) {
+    function __construct (BitWire\Transaction $parentTransaction = null, BitWire\Hash $transactionHash = null, int $transactionIndex = null) {
       $this->parentTransaction = $parentTransaction;
-      
-      if ($transactionHash)
-        $this->transactionHash = $transactionHash;
-      else
-        $this->transactionHash = new \BitBaendiger\BitWire\Hash;
+      $this->transactionHash = $transactionHash ?? new BitWire\Hash;
       
       if ($transactionIndex !== null)
         $this->transactionIndex = $transactionIndex;
@@ -104,12 +99,12 @@
      * @return array
      **/
     function __debugInfo () {
-      return array (
+      return [
         'hash' => strval ($this->transactionHash),
         'index' => $this->transactionIndex,
         'sequence' => $this->Sequence,
         'script' => strval ($this->Script),
-      );
+      ];
     }
     // }}}
     
@@ -120,7 +115,7 @@
      * @access public
      * @return bool
      **/
-    public function isCoinbase () {
+    public function isCoinbase () : bool {
       return self::checkCoinbase ($this->transactionHash, $this->transactionIndex);
     }
     // }}}
@@ -130,9 +125,9 @@
      * Retrive the associated transaction
      * 
      * @access public
-     * @return \BitBaendiger\BitWire\Transaction
+     * @return BitWire\Transaction
      **/
-    public function getTransaction () : ?\BitBaendiger\BitWire\Transaction {
+    public function getTransaction () : ?BitWire\Transaction {
       return $this->parentTransaction;
     }
     // }}}
@@ -144,7 +139,7 @@
      * @access public
      * @return int
      **/
-    public function getIndex () {
+    public function getIndex () : int {
       return $this->transactionIndex;
     }
     // }}}
@@ -158,8 +153,8 @@
      * @access public
      * @return void
      **/
-    public function setIndex ($transactionIndex) {
-      $this->transactionIndex = (int)$transactionIndex;
+    public function setIndex (int $transactionIndex) : void {
+      $this->transactionIndex = $transactionIndex;
     }
     // }}}
     
@@ -170,7 +165,7 @@
      * @access public
      * @return int
      **/
-    public function getSequence () {
+    public function getSequence () : int {
       return $this->Sequence;
     }
     // }}}
@@ -180,9 +175,9 @@
      * Retrive the hash of the previous output
      * 
      * @access public
-     * @return \BitBaendiger\BitWire\Hash
+     * @return BitWire\Hash
      **/
-    public function getHash () : \BitBaendiger\BitWire\Hash {
+    public function getHash () : BitWire\Hash {
       return $this->transactionHash;
     }
     // }}}
@@ -191,12 +186,12 @@
     /**
      * Store the hash if the previous output
      * 
-     * @param \BitBaendiger\BitWire\Hash $transactionHash
+     * @param BitWire\Hash $transactionHash
      * 
      * @access public
      * @return void
      **/
-    public function setHash (\BitBaendiger\BitWire\Hash $transactionHash) {
+    public function setHash (BitWire\Hash $transactionHash) : void {
       $this->transactionHash = $transactionHash;
     }
     // }}}
@@ -246,7 +241,7 @@
      * @access public
      * @return string
      **/
-    public function getStakeUniqueness () {
+    public function getStakeUniqueness () : string {
       return pack ('Va32', $this->transactionIndex, $this->transactionHash->toBinary (true));
     }
     // }}}
@@ -260,7 +255,7 @@
      * @access public
      * @return string
      **/
-    public function toString ($shortHash = false) {
+    public function toString ($shortHash = false) : string {
       $outpointHash = strval ($this->transactionHash);
       
       return
@@ -282,38 +277,35 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return bool
+     * @return void
      **/
-    public function parse (&$Data, &$Offset, $Length = null) {
+    public function parse (string &$Data, int &$Offset, int $Length = null) : void {
       // Make sure we know the length of our input
       if ($Length === null)
         $Length = strlen ($Data);
       
       // Try to read everything into our memory
-      if ((($transactionHash = \BitBaendiger\BitWire\Message\Payload::readHash ($Data, $Offset, $Length)) === null) ||
-          (($transactionIndex = \BitBaendiger\BitWire\Message\Payload::readUInt32 ($Data, $Offset, $Length)) === null) ||
-          (($Script = \BitBaendiger\BitWire\Message\Payload::readCompactString ($Data, $Offset, $Length)) === null) ||
-          (($Sequence = \BitBaendiger\BitWire\Message\Payload::readUInt32 ($Data, $Offset, $Length)) === null))
-        return false;
+      $transactionHash     = BitWire\Message\Payload::readHash ($Data, $Offset, $Length);
+      $transactionIndex    = BitWire\Message\Payload::readUInt32 ($Data, $Offset, $Length);
+      $transactionScript   = BitWire\Message\Payload::readCompactString ($Data, $Offset, $Length);
+      $transactionSequence = BitWire\Message\Payload::readUInt32 ($Data, $Offset, $Length);
       
       // Check size-constraints for script
-      $scriptSize = strlen ($Script);
+      $scriptSize = strlen ($transactionScript);
       
       if (self::checkCoinbase ($transactionHash, $transactionIndex)) {
         if ($scriptSize > 101)
-          return false;
+          throw new \LengthException ('Coinbase-Script too large');
         
         # TODO: Any further checks?
       } elseif ($scriptSize > 10003)
-        return false;
+        throw new \LengthException ('Input-Script too large');
       
       // Store the results on this instance
       $this->transactionHash = $transactionHash;
       $this->transactionIndex = $transactionIndex;
-      $this->Script = new Script ($Script);
-      $this->Sequence = $Sequence;
-      
-      return true;
+      $this->Script = new Script ($transactionScript);
+      $this->Sequence = $transactionSequence;
     }
     // }}}
     
@@ -324,14 +316,12 @@
      * @access public
      * @return string
      **/
-    public function toBinary () {
+    public function toBinary () : string {
       return
-        \BitBaendiger\BitWire\Message\Payload::writeHash ($this->transactionHash) .
-        \BitBaendiger\BitWire\Message\Payload::writeUInt32 ($this->transactionIndex) .
-        \BitBaendiger\BitWire\Message\Payload::writeCompactString ($this->Script->toBinary ()) .
-        \BitBaendiger\BitWire\Message\Payload::writeUInt32 ($this->Sequence);
+        BitWire\Message\Payload::writeHash ($this->transactionHash) .
+        BitWire\Message\Payload::writeUInt32 ($this->transactionIndex) .
+        BitWire\Message\Payload::writeCompactString ($this->Script->toBinary ()) .
+        BitWire\Message\Payload::writeUInt32 ($this->Sequence);
     }
     // }}}
   }
-
-?>

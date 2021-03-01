@@ -1,7 +1,5 @@
-<?PHP
+<?php
 
-  namespace BitBaendiger\BitWire\Util;
-  
   /**
    * BitWire - Bech32 Functions
    * Copyright (C) 2021 Bernd Holzmueller <bernd@quarxconnect.de>
@@ -20,9 +18,13 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
+  declare (strict_types=1);
+  
+  namespace BitBaendiger\BitWire\Util;
+  
   class Bech32 {
     /* Bech32 Charset */
-    const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+    private const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
     
     // {{{ encode
     /**
@@ -35,7 +37,7 @@
      * @access public
      * @return string
      **/
-    public static function encode ($humanReadablePart, $inputString, array $bechPrefix = array ()) {
+    public static function encode (string $humanReadablePart, string $inputString, array $bechPrefix = [ ]) : string {
       // Convert input to uint8_t-array
       $inputValues = self::convertStringToArray ($inputString);
       unset ($inputString);
@@ -94,7 +96,7 @@
      * @access private
      * @return array
      **/
-    private static function convertStringToArray ($inputString) : array {
+    private static function convertStringToArray (string $inputString) : array {
       $outputArray = [ ];
       
       for ($i = 0; $i < strlen ($inputString); $i++)
@@ -136,5 +138,3 @@
     }
     // }}}
   }
-
-?>

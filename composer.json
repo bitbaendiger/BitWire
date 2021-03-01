@@ -1,0 +1,30 @@
+{
+    "name" : "bitbaendiger/bitwire",
+    "description" : "Wire-protocol and primitives for Bitcoin-like Blockchains",
+    "type" : "library",
+    "keywords" : [ "blockchain", "bitcoin", "bitcore" ],
+    "license" : "GPL-3.0-only",
+    "authors" : [
+        {
+            "name" : "Bernd Holzmüller",
+            "email" : "bernd@quarxconnect.de",
+            "homepage" : "https://quarxconnect.de/",
+            "role" : "Developer"
+        }
+    ],
+    "require" : {
+        "php" : ">=7.3.0",
+        "quarxconnect/events" : "dev-psr-14"
+    },
+    "autoload" : {
+        "psr-4" : {
+            "BitBaendiger\\BitWire\\" : "src/"
+        }
+    },
+    "repositories" : [
+        {
+            "type" : "vcs",
+            "url" : "https://gitlab.quarxconnect.de/quarxconnect.de/qcEvents"
+        }
+    ]
+}

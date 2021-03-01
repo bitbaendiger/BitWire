@@ -1,7 +1,5 @@
-<?PHP
+<?php
 
-  namespace BitBaendiger\BitWire\Peer;
-  
   /**
    * BitWire - Peer Address (a.k.a. CAddress)
    * Copyright (C) 2019-2021 Bernd Holzmueller <bernd@quarxconnect.de>
@@ -20,8 +18,10 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('qcEvents/Socket.php');
-  require_once ('BitWire/src/Message/Payload.php');
+  declare (strict_types=1);
+
+  namespace BitBaendiger\BitWire\Peer;
+  use BitBaendiger\BitWire;
   
   class Address {
     /* IP-Address of this peer */
@@ -39,7 +39,7 @@
      * @access public
      * @return Address
      **/
-    public static function fromString ($nodeAddress) : Address {
+    public static function fromString (string $nodeAddress) : Address {
       // Retrive the length of the address
       if (($addressLength = strlen ($nodeAddress)) == 0)
         return new static ();
@@ -49,7 +49,7 @@
       // Check for IPv6
       if ($nodeAddress [0] == '[') {
         if (($p = strpos ($nodeAddress, ']', 1)) === false)
-          throw new exception ('Invalid IPv6');
+          throw new \Exception ('Invalid IPv6');
         
         $nodeIP = substr ($nodeAddress, 1, $p - 1);
         
@@ -75,7 +75,7 @@
      * @access friendly
      * @return void
      **/
-    function __construct ($Address = '::', $Port = 8333) {
+    function __construct (string $Address = '::', int $Port = 8333) {
       $this->Address = $Address;
       $this->Port = $Port;
     }
@@ -88,7 +88,7 @@
      * @access public
      * @return string
      **/
-    public function getFullAddress () {
+    public function getFullAddress () : string {
       return '[' . $this->Address . ']:' . $this->Port;
     }
     // }}}
@@ -102,12 +102,12 @@
      * @access public
      * @return string
      **/
-    public function getAddress ($unmappIPv4 = false) {
+    public function getAddress (bool $unmappIPv4 = false) : string {
       if (!$unmappIPv4)
         return '[' . $this->Address . ']';
       
       // Convert address to binary
-      $Binary = unpack ('n8', \qcEvents_Socket::ip6toBinary ($this->Address));
+      $Binary = unpack ('n8', \quarxConnect\Events\Socket::ip6toBinary ($this->Address));
       
       // Check for IPv4
       if (($Binary [1] == $Binary [2]) && ($Binary [1] == $Binary [3]) && ($Binary [1] == $Binary [4]) && ($Binary [1] == $Binary [5]) && ($Binary [1] == 0) && ($Binary [6] == 0xffff))
@@ -122,7 +122,7 @@
      * @access public
      * @return int
      **/
-    public function getPort () {
+    public function getPort () : int {
       return $this->Port;
     }
     // }}}
@@ -134,7 +134,7 @@
      * @access public
      * @return string
      **/
-    public function toString () {
+    public function toString () : string {
       if ($this->Port)
         return $this->getAddress (true) . ':' . $this->Port;
       
@@ -151,23 +151,21 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return bool
+     * @return void
      **/
-    public function parse (&$Data, &$Offset, $Length = null) {
+    public function parse (string &$Data, int &$Offset, int $Length = null) : void {
       // Make sure we know the length
       if ($Length === null)
         $Length = strlen ($Data);
       
       // Check available size
       if ($Length - $Offset < 18)
-        return null;
+        throw new \LengthException ('Available data too short');
       
       // Get the relevant data from the input-buffer
-      $this->Address = \qcEvents_Socket::ip6fromBinary (substr ($Data, $Offset, 16));
+      $this->Address = \quarxConnect\Events\Socket::ip6fromBinary (substr ($Data, $Offset, 16));
       $Offset += 16;
-      $this->Port = \BitBaendiger\BitWire\Message\Payload::readUInt16 ($Data, $Offset, $Length);
-      
-      return true;
+      $this->Port = BitWire\Message\Payload::readUInt16 ($Data, $Offset, $Length);
     }
     // }}}
     
@@ -180,10 +178,8 @@
      **/
     public function toBinary () {
       return
-        \qcEvents_Socket::ip6toBinary ($this->Address) .
-        \BitBaendiger\BitWire\Message\Payload::writeUInt16 ($this->Port);
+        \quarxConnect\Events\Socket::ip6toBinary ($this->Address) .
+        BitWire\Message\Payload::writeUInt16 ($this->Port);
     }
     // }}}
   }
-
-?>

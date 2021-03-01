@@ -1,7 +1,5 @@
-<?PHP
+<?php
 
-  namespace BitBaendiger\BitWire;
-  
   /**
    * BitWire - Hashable
    * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
@@ -20,16 +18,17 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/src/ABI/Hashable.php');
-  require_once ('BitWire/src/Hash.php');
+  declare (strict_types=1);
   
-  abstract class Hashable implements \BitBaendiger\BitWire\ABI\Hashable {
+  namespace BitBaendiger\BitWire;
+  
+  abstract class Hashable implements ABI\Hashable {
     // {{{ getHash
     /**
      * Retrive a hash for this object
      * 
      * @access public
-     * @return BitWire_Hash
+     * @return Hash
      **/
     public function getHash () : Hash {
       return new Hash ($this->toBinary ());
@@ -43,8 +42,6 @@
      * @access public
      * @return string
      **/
-    abstract public function toBinary ();
+    abstract public function toBinary () : string;
     // }}}
   }
-
-?>

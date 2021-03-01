@@ -1,7 +1,5 @@
-<?PHP
+<?php
 
-  namespace BitBaendiger\BitWire\ABI;
-  
   /**
    * BitWire - Hashable Interface
    * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
@@ -20,16 +18,19 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
+  declare (strict_types=1);
+  
+  namespace BitBaendiger\BitWire\ABI;
+  use BitBaendiger\BitWire;
+  
   interface Hashable {
     // {{{ getHash
     /**
      * Retrive a hash for this object
      * 
      * @access public
-     * @return BitWire_Hash
+     * @return BitWire\Hash
      **/
-    public function getHash () : \BitBaendiger\BitWire\Hash;
+    public function getHash () : BitWire\Hash;
     // }}}
   }
-
-?>

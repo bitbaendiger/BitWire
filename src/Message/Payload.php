@@ -1,7 +1,5 @@
 <?PHP
 
-  namespace BitBaendiger\BitWire\Message;
-  
   /**
    * BitWire - Message Payload
    * Copyright (C) 2019-2021 Bernd Holzmueller <bernd@quarxconnect.de>
@@ -20,16 +18,17 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/src/Transaction/Input.php');
-  require_once ('BitWire/src/Peer/Address.php');
-  require_once ('BitWire/src/Hash.php');
+  declare (strict_types=1);
+
+  namespace BitBaendiger\BitWire\Message;
+  use BitBaendiger\BitWire;
   
   class Payload {
-    const PAYLOAD_COMMAND = null;
-    const PAYLOAD_HAS_DATA = null;
+    protected const PAYLOAD_COMMAND = null;
+    protected const PAYLOAD_HAS_DATA = null;
     
     /* Registered Command-Classes */
-    private static $Commands = array ();
+    private static $Commands = [ ];
     
     /* Instance of Message this payload is for */
     private $Message = null;
@@ -50,7 +49,7 @@
      * @access public
      * @return void
      **/
-    public static function registerCommand ($Command, $Class) {
+    public static function registerCommand (string $Command, string $Class) : void {
       if (!class_exists ($Class) || !is_subclass_of ($Class, __CLASS__))
         return false;
       
@@ -64,12 +63,12 @@
      * 
      * @param string $Command
      * @param string $Data
-     * @param \BitWire_Message $Message (optional)
+     * @param BitWire\Message $Message (optional)
      * 
      * @access public
      * @return Payload
      **/
-    public static function fromString ($Command, $Data, \BitWire_Message $Message = null) : ?Payload {
+    public static function fromString (string $Command, string $Data, BitWire\Message $Message = null) : Payload {
       if (isset (self::$Commands [$Command]))
         $Class = self::$Commands [$Command];
       else
@@ -81,8 +80,7 @@
       if ($Message)
         $Payload->setMessage ($Message);
       
-      if (!$Payload->parse ($Data))
-        return null;
+      $Payload->parse ($Data);
       
       return $Payload;
     }
@@ -99,7 +97,7 @@
      * @access public
      * @return int
      **/
-    public static function readCompactSize (&$Data, &$Offset, $Length = null) {
+    public static function readCompactSize (string &$Data, int &$Offset, int $Length = null) : int {
       // Make sure we know the length of our input
       if ($Length === null)
         $Length = strlen ($Data);
@@ -152,7 +150,7 @@
      * @access public
      * @return string
      **/
-    public static function readCompactString (&$Data, &$Offset, $Length = null) {
+    public static function readCompactString (string &$Data, int &$Offset, int $Length = null) : string {
       // Make sure we know the length of our input
       if ($Length === null)
         $Length = strlen ($Data);
@@ -180,7 +178,7 @@
      * @access public
      * @return string
      **/
-    public static function writeCompactString ($Value) {
+    public static function writeCompactString (string $Value) : string {
       return self::toCompactSize (strlen ($Value)) . $Value;
     }
     // }}}
@@ -194,7 +192,7 @@
      * @access public
      * @return string
      **/
-    public static function toCompactSize ($Value) {
+    public static function toCompactSize (int $Value) : string {
       if ($Value <= 252)
         return chr ($Value);
       
@@ -217,7 +215,7 @@
      * @access public
      * @return string
      **/
-    public static function toCompactString ($Data) {
+    public static function toCompactString (string $Data) : string {
       return self::toCompactSize (strlen ($Data)) . $Data;
     }
     // }}}
@@ -234,7 +232,7 @@
      * @access public
      * @return string
      **/
-    public static function readChar (&$Data, &$Offset, $Size, $Length = null) {
+    public static function readChar (string &$Data, int &$Offset, int $Size, int $Length = null) : string {
       // Make sure we know the length of our data
       if ($Length === null)
         $Length = strlen ($Data);
@@ -262,10 +260,9 @@
      * @access public
      * @return boolean
      **/
-    public static function readBoolean (&$Data, &$Offset, $Length = null) {
+    public static function readBoolean (string &$Data, int &$Offset, int $Length = null) : bool {
       // Try to read the value
-      if (($Value = self::readChar ($Data, $Offset, 1, $Length)) === null)
-        return null;
+      $Value = self::readChar ($Data, $Offset, 1, $Length);
       
       // Return the value
       return (strcmp ($Value, "\x00") != 0);
@@ -281,7 +278,7 @@
      * @access public
      * @return string
      **/
-    public static function writeBoolean ($Value) {
+    public static function writeBoolean (bool $Value) : string {
       return chr ($Value ? 0x01 : 0x00);
     }
     // }}}
@@ -297,10 +294,9 @@
      * @access public
      * @return int
      **/
-    public static function readUInt16 (&$Data, &$Offset, $Length = null) {
+    public static function readUInt16 (string &$Data, int &$Offset, int $Length = null) : int {
       // Try to read the input
-      if (($Value = self::readChar ($Data, $Offset, 2, $Length)) === null)
-        return null;
+      $Value = self::readChar ($Data, $Offset, 2, $Length);
       
       // Convert to uint16
       $Value = unpack ('nvalue', $Value);
@@ -318,7 +314,7 @@
      * @access public
      * @return string
      **/
-    public static function writeUInt16 ($Value) {
+    public static function writeUInt16 (int $Value) : string {
       return pack ('n', $Value);
     }
     // }}}
@@ -334,10 +330,9 @@
      * @access public
      * @return int
      **/
-    public static function readUInt32 (&$Data, &$Offset, $Length = null) {
+    public static function readUInt32 (string &$Data, int &$Offset, int $Length = null) : int {
       // Try to read the input
-      if (($Value = self::readChar ($Data, $Offset, 4, $Length)) === null)
-        return null;
+      $Value = self::readChar ($Data, $Offset, 4, $Length);
       
       // Convert to uint32
       $Value = unpack ('Vvalue', $Value);
@@ -355,7 +350,7 @@
      * @access public
      * @return string
      **/
-    public static function writeUInt32 ($Value) {
+    public static function writeUInt32 (int $Value) : string {
       return pack ('V', $Value);
     }
     // }}}
@@ -371,10 +366,9 @@
      * @access public
      * @return int
      **/
-    public static function readUInt64 (&$Data, &$Offset, $Length = null) {
+    public static function readUInt64 (string &$Data, int &$Offset, int $Length = null) : int {
       // Try to read the input
-      if (($Value = self::readChar ($Data, $Offset, 8, $Length)) === null)
-        return null;
+      $Value = self::readChar ($Data, $Offset, 8, $Length);
       
       // Convert to uint64
       $Value = unpack ('Pvalue', $Value);
@@ -392,7 +386,7 @@
      * @access public
      * @return string
      **/
-    public static function writeUInt64 ($Value) {
+    public static function writeUInt64 (int $Value) : string {
       return pack ('P', $Value);
     }
     // }}}
@@ -406,15 +400,14 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return \BitBaendiger\Bitwire\Hash
+     * @return Bitwire\Hash
      **/
-    public static function readHash (&$Data, &$Offset, $Length = null) : ?\BitBaendiger\Bitwire\Hash {
+    public static function readHash (string &$Data, int &$Offset, int $Length = null) : Bitwire\Hash {
       // Try to read the input
-      if (($Hash = self::readChar ($Data, $Offset, 32, $Length)) === null)
-        return null;
+      $Hash = self::readChar ($Data, $Offset, 32, $Length);
       
       // Create Hash-Instance
-      return\BitBaendiger\Bitwire\Hash::fromBinary ($Hash, true);
+      return Bitwire\Hash::fromBinary ($Hash, true);
     }
     // }}}
     
@@ -422,16 +415,17 @@
     /**
      * Convert a hash to binary
      * 
-     * @param \BitBaendiger\Bitwire\Hash $Hash (optional)
+     * @param Bitwire\Hash $Hash (optional)
      * 
      * @access public
      * @return string
      **/
-    public static function writeHash (\BitBaendiger\Bitwire\Hash $Hash = null) {
+    public static function writeHash (Bitwire\Hash $Hash = null) : string {
       if ($Hash)
         return $Hash->toBinary (true);
       
       trigger_error ('Writing empty hash');
+      
       return str_repeat ("\x00", 32);
     }
     // }}}
@@ -445,13 +439,11 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return \BitBaendiger\BitWire\Transaction\Input
+     * @return BitWire\Transaction\Input
      **/
-    public static function readCTxIn (&$Data, &$Offset, $Length = null) : ?\BitBaendiger\BitWire\Transaction\Input {
-      $Input = new \BitBaendiger\BitWire\Transaction\Input;
-      
-      if (!$Input->parse ($Data, $Offset, $Length))
-        return null;
+    public static function readCTxIn (string &$Data, int &$Offset, int $Length = null) : BitWire\Transaction\Input {
+      $Input = new BitWire\Transaction\Input;
+      $Input->parse ($Data, $Offset, $Length);
       
       return $Input;
     }
@@ -461,16 +453,17 @@
     /**
      * Write a transaction-input to binary
      * 
-     * @param \BitBaendiger\BitWire\Transaction\Input $Input (optional)
+     * @param BitWire\Transaction\Input $Input (optional)
      * 
      * @access public
      * @return string
      **/
-    public static function writeCTxIn (\BitBaendiger\BitWire\Transaction\Input $Input = null) {
+    public static function writeCTxIn (BitWire\Transaction\Input $Input = null) : string {
       if ($Input)
         return $Input->toBinary ();
       
       trigger_error ('Writing empty CTxIn');
+      
       return str_repeat ("\x00", 32) . "\xff\xff\xff\xff\x00\xff\xff\xff\xff";
     }
     // }}}
@@ -484,13 +477,11 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return \BitBaendiger\BitWire\Peer\Address
+     * @return BitWire\Peer\Address
      **/
-    public static function readCAddress (&$Data, &$Offset, $Length = null) : ?\BitBaendiger\BitWire\Peer\Address {
-      $Address = new \BitBaendiger\BitWire\Peer\Address;
-      
-      if (!$Address->parse ($Data, $Offset, $Length))
-        return null;
+    public static function readCAddress (string &$Data, int &$Offset, int $Length = null) : BitWire\Peer\Address {
+      $Address = new BitWire\Peer\Address;
+      $Address->parse ($Data, $Offset, $Length);
       
       return $Address;
     }
@@ -500,12 +491,12 @@
     /**
      * Write a CAddress-Structure to binary
      * 
-     * @param \BitBaendiger\BitWire\Peer\Address $Address
+     * @param BitWire\Peer\Address $Address
      * 
      * @access public
      * @return string
      **/
-    public static function writeCAddress (\BitBaendiger\BitWire\Peer\Address $Address) {
+    public static function writeCAddress (BitWire\Peer\Address $Address) : string {
       return $Address->toBinary ();
     }
     // }}}
@@ -519,16 +510,13 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return \BitWire_Crypto_PublicKey
+     * @return BitWire\Crypto\PublicKey
      **/
-    public static function readCPublicKey (&$Data, &$Offset, $Length = null) : ?\BitWire_Crypto_PublicKey {
+    public static function readCPublicKey (string &$Data, int &$Offset, int $Length = null) : BitWire\Crypto\PublicKey {
       $tOffset = $Offset;
       
-      if (($PublicKey = self::readCompactString ($Data, $tOffset, $Length)) === null)
-        return null;
-      
-      if (($PublicKey = \BitWire_Crypto_PublicKey::fromBinary ($PublicKey)) === null)
-        return null;
+      $PublicKey = self::readCompactString ($Data, $tOffset, $Length);
+      $PublicKey = BitWire\Crypto\PublicKey::fromBinary ($PublicKey);
       
       $Offset = $tOffset;
       
@@ -540,16 +528,17 @@
     /**
      * Write a public key binary
      * 
-     * @param \BitWire_Crypto_PublicKey $PublicKey (optional)
+     * @param BitWire\Crypto\PublicKey $PublicKey (optional)
      * 
      * @access public
      * @return string
      **/
-    public static function writeCPublicKey (\BitWire_Crypto_PublicKey $PublicKey = null) {
+    public static function writeCPublicKey (BitWire\Crypto\PublicKey $PublicKey = null) : string {
       if ($PublicKey)
         return self::writeCompactString ($PublicKey->toBinary ());
       
       trigger_error ('Writing empty (invalid) public key');
+      
       return self::writeCompactString ('');
     }
     // }}}
@@ -561,7 +550,7 @@
      * @access public
      * @return string
      **/
-    public function getCommand () {
+    public function getCommand () : string {
       if ($this::PAYLOAD_COMMAND !== null)
         return $this::PAYLOAD_COMMAND;
       
@@ -574,9 +563,9 @@
      * Retrive the message this payload was made for
      * 
      * @access public
-     * @return BitWire_Message
+     * @return BitWire\Message
      **/
-    public function getMessage () {
+    public function getMessage () : BitWire\Message {
       return $this->Message;
     }
     // }}}
@@ -585,12 +574,12 @@
     /**
      * Assign the message this payload is for
      * 
-     * @param \BitWire_Message $Message
+     * @param BitWire\Message $Message
      * 
      * @access public
      * @return void
      **/
-    public function setMessage (\BitWire_Message $Message) {
+    public function setMessage (BitWire\Message $Message) : void {
       $this->Message = $Message;
     }
     // }}}
@@ -602,15 +591,13 @@
      * @param string $Data
      * 
      * @access public
-     * @return bool
+     * @return void
      **/
-    public function parse ($Data) {
+    public function parse ($Data) : void {
       if ((strlen ($Data) > 0) && ($this::PAYLOAD_HAS_DATA === false))
-        return false;
+        throw new \ValueError ('Payload not expected');
       
       $this->Data = $Data;
-      
-      return true;
     }
     // }}}
     
@@ -621,7 +608,7 @@
      * @access public
      * @return string
      **/
-    public function toBinary () {
+    public function toBinary () : string {
       if ($this::PAYLOAD_HAS_DATA === false)
         return '';
       
@@ -629,5 +616,3 @@
     }
     // }}}
   }
-
-?>

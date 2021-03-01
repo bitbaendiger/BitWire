@@ -1,7 +1,5 @@
-<?PHP
+<?php
 
-  namespace BitBaendiger\BitWire;
-  
   /**
    * BitWire - Hash
    * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
@@ -20,6 +18,10 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
+  declare (strict_types=1);
+  
+  namespace BitBaendiger\BitWire;
+  
   class Hash {
     /* Internally stored hash */
     private $Data = '';
@@ -34,7 +36,7 @@
      * @access public
      * @return Hash
      **/
-    public static function fromBinary ($Data, $networkByteOrder = false) : Hash {
+    public static function fromBinary (string $Data, bool $networkByteOrder = false) : Hash {
       $Instance = new static;
       $Instance->Data = ($networkByteOrder ? strrev ($Data) : $Data);
       
@@ -52,7 +54,7 @@
      * @access public
      * @return Hash
      **/
-    public static function fromHex ($Data, $networkByteOrder = false) : Hash {
+    public static function fromHex (string $Data, bool $networkByteOrder = false) : Hash {
       return static::fromBinary (hex2bin ($Data), $networkByteOrder);
     }
     // }}}
@@ -67,7 +69,7 @@
      * @access friendly
      * @return void
      **/
-    function __construct ($Data = null, $networkByteOrder = true) {
+    function __construct (string $Data = null, bool $networkByteOrder = true) {
       if ($Data === null)
         return;
       
@@ -111,7 +113,7 @@
      * @access public
      * @return bool
      **/
-    public function isEmpty () {
+    public function isEmpty () : bool {
       return (strcmp ($this->Data, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00") == 0);
     }
     // }}}
@@ -120,10 +122,12 @@
     /** 
      * Convert this hash to binary representation
      * 
+     * @param string $networkByteOrder (optional)
+     * 
      * @access public
      * @return string
      **/
-    public function toBinary ($networkByteOrder = false) {
+    public function toBinary (bool $networkByteOrder = false) : string {
       return ($networkByteOrder ? strrev ($this->Data) : $this->Data);
     }
     // }}}
@@ -132,15 +136,13 @@
     /**
      * Compare this hash with another one
      * 
-     * @param BitWire_Hash $With
+     * @param Hash $With
      * 
      * @access public
      * @return bool
      **/
-    public function compare (BitWire_Hash $With) {
+    public function compare (Hash $With) : bool {
       return (strcmp ($this->Data, $With->Data) == 0);
     }
     // }}}
   }
-
-?>

@@ -1,7 +1,5 @@
-<?PHP
+<?php
 
-  namespace BitBaendiger\BitWire;
-  
   /**
    * BitWire - Transaction
    * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
@@ -20,11 +18,9 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/src/Hashable.php');
-  require_once ('BitWire/src/Message/Payload.php');
-  require_once ('BitWire/src/Transaction/Input.php');
-  require_once ('BitWire/src/Transaction/Output.php');
-  require_once ('BitWire/src/Transaction/Script.php');
+  declare (strict_types=1);
+  
+  namespace BitBaendiger\BitWire;
   
   class Transaction extends Hashable {
     /* Version of transaction */
@@ -58,7 +54,7 @@
      * @access public
      * @return Transaction
      **/
-    public static function fromHex ($hexData, $hasTimestamp = null, $hasComment = null) : ?Transaction {
+    public static function fromHex (string $hexData, bool $hasTimestamp = null, bool $hasComment = null) : ?Transaction {
       return static::fromBinary (hex2bin ($hexData), $hasTimestamp, $hasComment);
     }
     // }}}
@@ -74,7 +70,7 @@
      * @access public
      * @return Transaction
      **/
-    public static function fromBinary ($binaryData, $hasTimestamp = null, $hasComment = null) : ?Transaction {
+    public static function fromBinary (string $binaryData, bool $hasTimestamp = null, bool $hasComment = null) : ?Transaction {
       $newTransaction = new static ($hasTimestamp, $hasComment);
       
       if (!$newTransaction->parse ($binaryData))
@@ -95,7 +91,7 @@
      * @access friendly
      * @return void
      **/
-    function __construct ($hasTimestamp = null, $hasComment = null) {
+    function __construct (bool $hasTimestamp = null, bool $hasComment = null) {
       if ($hasTimestamp !== null)
         $this->hasTimestamp = $hasTimestamp;
       
@@ -111,7 +107,7 @@
      * @access public
      * @return bool
      **/
-    public function isCoinbase () {
+    public function isCoinbase () : bool {
       return ((count ($this->transactionInputs) == 1) && $this->transactionInputs [0]->isCoinbase ());
     }
     // }}}
@@ -123,7 +119,7 @@
      * @access public
      * @return bool
      **/
-    public function isCoinStake () {
+    public function isCoinStake () : bool {
       // Check number of in- and outputs
       if ((count ($this->transactionInputs) < 1) ||
           (count ($this->transactionOutputs) < 2))
@@ -145,7 +141,7 @@
      * @access public
      * @return int
      **/
-    public function getVersion () {
+    public function getVersion () : int {
       return $this->Version;
     }
     // }}}
@@ -159,11 +155,11 @@
      * @access public
      * @return bool
      **/
-    public function setVersion ($Version) {
+    public function setVersion (int $Version) {
       if (($Version < 1) || ($Version > 0xFFFFFFFF))
         return false;
       
-      $this->Version = (int)$Version;
+      $this->Version = $Version;
       
       return true;
     }
@@ -176,7 +172,7 @@
      * @access public
      * @return int
      **/
-    public function getLockTime () {
+    public function getLockTime () : int {
       return $this->lockTime;
     }
     // }}}
@@ -190,11 +186,11 @@
      * @access public
      * @return bool
      **/
-    public function setLockTime ($LockTime) {
+    public function setLockTime (int $LockTime) {
       if (($LockTime < 1) || ($LockTime > 0xFFFFFFFF))
         return false;
       
-      $this->lockTime = (int)$LockTime;
+      $this->lockTime = $LockTime;
       
       return true;
     }
@@ -207,7 +203,7 @@
      * @access public
      * @return array
      **/
-    public function getInputs () {
+    public function getInputs () : array {
       return $this->transactionInputs;
     }
     // }}}
@@ -216,12 +212,12 @@
     /**
      * Add another input to this transaction
      * 
-     * @param BitWire_Transaction_Input $transactionInput
+     * @param Transaction\Input $transactionInput
      * 
      * @access public
      * @return void
      **/
-    public function addInput (\BitBaendiger\BitWire\Transaction\Input $transactionInput) {
+    public function addInput (Transaction\Input $transactionInput) : void {
       $this->transactionInputs [] = $transactionInput;
     }
     // }}}
@@ -233,18 +229,16 @@
      * @param array $transactionInputs
      * 
      * @access public
-     * @return bool
+     * @return void
      **/
-    public function setInputs (array $transactionInputs) {
+    public function setInputs (array $transactionInputs) : void {
       // Sanatize the inputs
       foreach ($transactionInputs as $transactionInput)
-        if (!($transactionInput instanceof \BitBaendiger\BitWire\Transaction\Input))
-          return false;
+        if (!($transactionInput instanceof Transaction\Input))
+          throw new \ValueError ('Only inputs are allowed');
       
       // Assign the inputs
       $this->transactionInputs = $transactionInputs;
-      
-      return true;
     }
     // }}}
     
@@ -264,12 +258,12 @@
     /**
      * Add another output to this transaction
      * 
-     * @param BitWire_Transaction_Output $transactionOutput
+     * @param Transaction\Output $transactionOutput
      * 
      * @access public
      * @return void
      **/
-    public function addOutput (\BitBaendiger\BitWire\Transaction\Output $transactionOutput) {
+    public function addOutput (Transaction\Output $transactionOutput) : void {
       $this->transactionOutputs [] = $transactionOutput;
     }
     // }}}
@@ -281,16 +275,14 @@
      * @param array $transactionOutputs
      * 
      * @access public
-     * @return bool
+     * @return void
      **/
-    public function setOutputs (array $transactionOutputs) {
+    public function setOutputs (array $transactionOutputs) : void {
       foreach ($transactionOutputs as $transactionOutput)
         if (!($transactionOutput instanceof \BitBaendiger\BitWire\Transaction\Output))
-          return false;
+          throw new \ValueError ('Only outputs are allowed');
       
       $this->transactionOutputs = $transactionOutputs;
-      
-      return true;
     }
     // }}}
     
@@ -301,7 +293,7 @@
      * @access public
      * @return void
      **/
-    public function shuffleOutputs () {
+    public function shuffleOutputs () : void {
       shuffle ($this->transactionOutputs);
     }
     // }}}
@@ -315,9 +307,9 @@
      * @param int $Length (optional)
      * 
      * @access public
-     * @return bool
+     * @return void
      **/
-    public function parse (&$Data, &$Offset = 0, $Length = null) {
+    public function parse (&$Data, &$Offset = 0, $Length = null) : void {
       // Make sure we know the length of our input
       if ($Length === null)
         $Length = strlen ($Data);
@@ -326,56 +318,51 @@
       $tOffset = $Offset;
       
       // Try to read the version of this transaction
-      if (($Version = \BitBaendiger\BitWire\Message\Payload::readUInt32 ($Data, $tOffset, $Length)) === null)
-        return false;
+      $Version = Message\Payload::readUInt32 ($Data, $tOffset, $Length);
       
       // Read timestamp on PoS-Transaction
       if (!$this->hasTimestamp)
         $Time = null;
-      elseif (($Time = \BitBaendiger\BitWire\Message\Payload::readUInt32 ($Data, $tOffset, $Length)) === null)
-        return false;
+      else
+        $Time = Message\Payload::readUInt32 ($Data, $tOffset, $Length);
       
       // Read number of transaction-inputs
-      $inputCount = \BitBaendiger\BitWire\Message\Payload::readCompactSize ($Data, $tOffset, $Length);
+      $inputCount = Message\Payload::readCompactSize ($Data, $tOffset, $Length);
       
       // Check for Witness
       if (($inputCount == 0) && !($Version & 0x00000004)) {
         $transactionFlags = ord ($Data [$tOffset++]);
-        $inputCount = \BitBaendiger\BitWire\Message\Payload::readCompactSize ($Data, $tOffset, $Length);
+        $inputCount = Message\Payload::readCompactSize ($Data, $tOffset, $Length);
       } else
         $transactionFlags = 0x00;
       
       // Try to read all inputs
-      $transactionInputs = array ();
+      $transactionInputs = [ ];
       
       for ($i = 0; $i < $inputCount; $i++) {
-        $transactionInputs [] = $Input = new \BitBaendiger\BitWire\Transaction\Input ($this);
-        
-        if (!$Input->parse ($Data, $tOffset, $Length))
-          return false;
+        $transactionInputs [] = $Input = new Transaction\Input ($this);
+        $Input->parse ($Data, $tOffset, $Length);
       }
       
       // Read number of outputs on this transaction
-      $outputCount = \BitBaendiger\BitWire\Message\Payload::readCompactSize ($Data, $tOffset, $Length);
+      $outputCount = Message\Payload::readCompactSize ($Data, $tOffset, $Length);
       
       // Try to read all outputs
-      $transactionOutputs = array ();
+      $transactionOutputs = [ ];
       
       for ($i = 0; $i < $outputCount; $i++) {
-        $transactionOutputs [] = $transactionOutput = new \BitBaendiger\BitWire\Transaction\Output;
-        
-        if (!$transactionOutput->parse ($Data, $tOffset, $Length))
-          return false;
+        $transactionOutputs [] = $transactionOutput = new Transaction\Output;
+        $transactionOutput->parse ($Data, $tOffset, $Length);
       }
       
       // Read witness-scripts
       if ($transactionFlags & 1) {
         for ($i = 0; $i < count ($transactionInputs); $i++) {
-          $stackSize = \BitBaendiger\BitWire\Message\Payload::readCompactSize ($Data, $tOffset, $Length);
+          $stackSize = Message\Payload::readCompactSize ($Data, $tOffset, $Length);
           $witnessStack = [ ];
           
           for ($j = 0; $j < $stackSize; $j++)
-            $witnessStack [] = \BitBaendiger\BitWire\Message\Payload::readCompactString ($Data, $tOffset, $Length);
+            $witnessStack [] = Message\Payload::readCompactString ($Data, $tOffset, $Length);
           
           $transactionInputs [$i]->setWitnessStack ($witnessStack);
         }
@@ -387,13 +374,12 @@
         throw new \ValueError ('Unknown transaction-flags');
       
       // Try to read lock-time
-      if (($lockTime = \BitBaendiger\BitWire\Message\Payload::readUInt32 ($Data, $tOffset, $Length)) === null)
-        return false;
+      $lockTime = Message\Payload::readUInt32 ($Data, $tOffset, $Length);
       
       if (!$this->hasComment)
         $Comment = null;
       else
-        $Comment = \BitBaendiger\BitWire\Message\Payload::readCompactString ($Data, $tOffset, $Length);
+        $Comment = Message\Payload::readCompactString ($Data, $tOffset, $Length);
       
       // Commit changes to this instance
       $this->Version = $Version;
@@ -404,8 +390,6 @@
       $this->transactionOutputs = $transactionOutputs;
       
       $Offset = $tOffset;
-      
-      return true;
     }
     // }}}
     
@@ -416,19 +400,19 @@
      * @access public
      * @return string
      **/
-    public function toBinary () {
+    public function toBinary () : string {
       // Generate start of transaction
       if ($this->hasTimestamp)
-        $Buffer = pack ('VV', $this->Version, $this->Time) . \BitBaendiger\BitWire\Message\Payload::toCompactSize (count ($this->transactionInputs));
+        $Buffer = pack ('VV', $this->Version, $this->Time) . Message\Payload::toCompactSize (count ($this->transactionInputs));
       else
-        $Buffer = pack ('V', $this->Version) . \BitBaendiger\BitWire\Message\Payload::toCompactSize (count ($this->transactionInputs));
+        $Buffer = pack ('V', $this->Version) . Message\Payload::toCompactSize (count ($this->transactionInputs));
       
       // Append Inputs
       foreach ($this->transactionInputs as $Input)
         $Buffer .= $Input->toBinary ();
       
       // Append Outputs
-      $Buffer .= \BitBaendiger\BitWire\Message\Payload::toCompactSize (count ($this->transactionOutputs));
+      $Buffer .= Message\Payload::toCompactSize (count ($this->transactionOutputs));
       
       foreach ($this->transactionOutputs as $Output)
         $Buffer .= $Output->toBinary ();
@@ -438,11 +422,9 @@
       
       // Append comment
       if ($this->hasComment)
-        $Buffer .= \BitBaendiger\BitWire\Message\Payload::toCompactString ($this->Comment);
+        $Buffer .= Message\Payload::toCompactString ($this->Comment);
       
       return $Buffer;
     }
     // }}}
   }
-
-?>

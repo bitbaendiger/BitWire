@@ -1,7 +1,5 @@
-<?PHP
+<?php
 
-  namespace BitBaendiger\BitWire;
-  
   /**
    * BitWire - Bitcoin Address
    * Copyright (C) 2017-2021 Bernd Holzmueller <bernd@quarxconnect.de>
@@ -20,34 +18,28 @@
    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
    **/
   
-  require_once ('BitWire/src/Util/Base58.php');
-  require_once ('BitWire/src/Util/Bech32.php');
+  declare (strict_types=1);
+  
+  namespace BitBaendiger\BitWire;
   
   class Address {
     /* Generic address-types */
-    const TYPE_PUBKEY = 0x00;
-    const TYPE_SCRIPT = 0x01;
+    public const TYPE_PUBKEY = 0x00;
+    public const TYPE_SCRIPT = 0x01;
     
-    const OUTPUT_NONSTANDARD = 0x00;
-    const OUTPUT_PUBKEY = 0x01; /* Script::isPublicKeyOutput() */
-    const OUTPUT_PUBKEYHASH = 0x02; /* Script::isPublicKeyHashOutput() */
-    const OUTPUT_SCRIPTHASH = 0x03; /* Script::isScriptHashOutput() */
-    const OUTPUT_MULTISIG = 0x04; /* Script::isMultiSignatureOutput() */
-    const OUTPUT_NULL_DATA = 0x05; /* Script::isNullDataOutput() */
-    const OUTPUT_WITNESS_V0_KEYHASH = 0x06; /* Script::isWitnessProgramOutput() */
-    const OUTPUT_WITNESS_V0_SCRIPTHASH = 0x07; /* Script::isWitnessProgramOutput() */
-    const OUTPUT_WITNESS_UNKNOWN = 0x08; /* Script::isWitnessProgramOutput() */
+    public const OUTPUT_NONSTANDARD = 0x00;
+    public const OUTPUT_PUBKEY = 0x01; /* Script::isPublicKeyOutput() */
+    public const OUTPUT_PUBKEYHASH = 0x02; /* Script::isPublicKeyHashOutput() */
+    public const OUTPUT_SCRIPTHASH = 0x03; /* Script::isScriptHashOutput() */
+    public const OUTPUT_MULTISIG = 0x04; /* Script::isMultiSignatureOutput() */
+    public const OUTPUT_NULL_DATA = 0x05; /* Script::isNullDataOutput() */
+    public const OUTPUT_WITNESS_V0_KEYHASH = 0x06; /* Script::isWitnessProgramOutput() */
+    public const OUTPUT_WITNESS_V0_SCRIPTHASH = 0x07; /* Script::isWitnessProgramOutput() */
+    public const OUTPUT_WITNESS_UNKNOWN = 0x08; /* Script::isWitnessProgramOutput() */
     
     /* Encoding-types */
-    const ENCODE_BASE58 = 0x00;
-    const ENCODE_BECH32 = 0x01;
-    
-    /* Well known numbers */
-    const TYPE_BITCOIN_PUBKEY = 0x00;
-    const TYPE_BITCOIN_SCRIPT = 0x05;
-    
-    const TYPE_LITECOIN_P2PKH = 0x30;
-    const TYPE_PEERCOIN_P2PKH = 0x37;
+    public const ENCODE_BASE58 = 0x00;
+    public const ENCODE_BECH32 = 0x01;
     
     private $addressType = 0x00;
     
@@ -64,15 +56,12 @@
      * @param string $Address
      * 
      * @access public
-     * @return BitWire_Address
+     * @return Address
      **/
-    public static function fromString ($Address) {
+    public static function fromString (string $Address) : Address {
       // Try to decode the address
-      if (strlen ($Address = Util\Base58::decode ($Address)) != 25) {
-        trigger_error ('Invalid address - input size mismatch');
-        
-        return;
-      }
+      if (strlen ($Address = Util\Base58::decode ($Address)) != 25)
+        throw new \Exception ('Invalid address - input size mismatch');
       
       #// Validate the address
       #$Checksum = hash ('sha256', hash ('sha256', substr ($Address, 0, -4), true), true);
@@ -99,7 +88,7 @@
      * @access friendly
      * @return void
      **/
-    function __construct ($addressType, $addressData, $encodingType = Address::ENCODE_BASE58) {
+    function __construct (int $addressType, string $addressData, int $encodingType = Address::ENCODE_BASE58) {
       $this->addressType = $addressType;
       $this->addressData = $addressData;
       $this->encodingType = $encodingType;
@@ -148,7 +137,7 @@
      * @access public
      * @return enum
      **/
-    public function getType () {
+    public function getType () : int {
       return $this->addressType;
     }
     // }}}
@@ -162,7 +151,7 @@
      * @access public
      * @return void
      **/
-    public function setType ($Type) {
+    public function setType (int $Type) : void {
       $this->addressType = (int)$Type;
     }
     // }}}
@@ -174,7 +163,7 @@
      * @access public
      * @return string
      **/
-    public function getHash () {
+    public function getHash () : string {
       return $this->addressData;
     }
     // }}}
@@ -184,19 +173,17 @@
      * Retrive script to pay to public-key-address
      * 
      * @access public
-     * @return \BitBaendiger\BitWire\Transaction\Script
+     * @return Transaction\Script
      **/
-    public function getPublicKeyScript () : \BitBaendiger\BitWire\Transaction\Script {
-      return new \BitBaendiger\BitWire\Transaction\Script (
-        chr (BitWire_Transaction_Script::OP_DUP) .
-        chr (BitWire_Transaction_Script::OP_HASH160) .
+    public function getPublicKeyScript () : Transaction\Script {
+      return new Transaction\Script (
+        chr (Transaction\Script::OP_DUP) .
+        chr (Transaction\Script::OP_HASH160) .
         chr (strlen ($this->addressData)) .
         $this->addressData .
-        chr (BitWire_Transaction_Script::OP_EQUALVERIFY) .
-        chr (BitWire_Transaction_Script::OP_CHECKSIG)
+        chr (Transaction\Script::OP_EQUALVERIFY) .
+        chr (Transaction\Script::OP_CHECKSIG)
       );
     }
     // }}}
   }
-
-?>
