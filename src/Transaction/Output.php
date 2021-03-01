@@ -161,9 +161,8 @@
       // Store the results on this instance
       $this->outputAmount = $outputAmount;
       $this->outputScript = new Script ($outputScript);
-      $dataOffset = $myOffset;
       
-      return true;
+      $dataOffset = $myOffset;
     }
     // }}}
     
