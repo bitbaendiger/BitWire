@@ -51,7 +51,7 @@
      **/
     public static function registerCommand (string $Command, string $Class) : void {
       if (!class_exists ($Class) || !is_subclass_of ($Class, __CLASS__))
-        return false;
+        throw new \Exception ('Invalid class given');
       
       self::$Commands [$Command] = $Class;
     }
