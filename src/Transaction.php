@@ -54,7 +54,7 @@
      * @access public
      * @return Transaction
      **/
-    public static function fromHex (string $hexData, bool $hasTimestamp = null, bool $hasComment = null) : ?Transaction {
+    public static function fromHex (string $hexData, bool $hasTimestamp = null, bool $hasComment = null) : Transaction {
       return static::fromBinary (hex2bin ($hexData), $hasTimestamp, $hasComment);
     }
     // }}}
@@ -70,11 +70,9 @@
      * @access public
      * @return Transaction
      **/
-    public static function fromBinary (string $binaryData, bool $hasTimestamp = null, bool $hasComment = null) : ?Transaction {
+    public static function fromBinary (string $binaryData, bool $hasTimestamp = null, bool $hasComment = null) : Transaction {
       $newTransaction = new static ($hasTimestamp, $hasComment);
-      
-      if (!$newTransaction->parse ($binaryData))
-        return null;
+      $newTransaction->parse ($binaryData);
       
       return $newTransaction;
     }
@@ -309,7 +307,7 @@
      * @access public
      * @return void
      **/
-    public function parse (&$Data, &$Offset = 0, $Length = null) : void {
+    public function parse (string &$Data, int &$Offset = 0, int $Length = null) : void {
       // Make sure we know the length of our input
       if ($Length === null)
         $Length = strlen ($Data);

@@ -16,10 +16,18 @@
         "php" : ">=7.3.0",
         "quarxconnect/events" : "dev-psr-14"
     },
+    "require-dev" : {
+        "phpunit/phpunit" : "^9"
+    },
     "autoload" : {
         "psr-4" : {
             "BitBaendiger\\BitWire\\" : "src/"
         }
+    },
+    "scripts" : {
+        "test" : [
+            "@php vendor/bin/phpunit tests"
+        ]
     },
     "repositories" : [
         {
