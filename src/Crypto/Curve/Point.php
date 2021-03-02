@@ -67,8 +67,11 @@
         if (strcmp ($Point->toPublicKey (true), $Key) != 0) {
           $Point2 = static::fromCompressed ($Curve, $x, ($Type != 0x03), $order);
           
-          if (strcmp ($Point2->toPublicKey (true), $Key) == 0)
+          if (strcmp ($Point2->toPublicKey (true), $Key) == 0) {
+            trigger_error ('Ugly hack for public key applied');
+            
             return $Point2;
+          }
           
           trigger_error ('Export does not equal import, inverting was unsuccessfull');
         }
@@ -98,7 +101,7 @@
         self::init ();
       
       $y = gmp_powm (
-        gmp_mod (gmp_powm ($x, self::$g3, $Curve->p) + gmp_mul ($Curve->a, $x) + $Curve->b, $Curve->p),
+        gmp_mod (gmp_powm ($x, self::$g3, $Curve->p) + ($Curve->a * $x) + $Curve->b, $Curve->p),
         gmp_div_q ($Curve->p + self::$g1, self::$g4),
         $Curve->p
       );
@@ -185,9 +188,9 @@
      * @param bool $New (optional)
      * 
      * @access public
-     * @return Curve\Point
+     * @return Point
      **/
-    function double (bool $New = false) : Curve\Point {
+    function double (bool $New = false) : Point {
       if ($New) {
         $New = clone $this;
         $New->double ();
