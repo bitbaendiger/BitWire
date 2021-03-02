@@ -57,7 +57,7 @@
       // Create the result-key
       $Result = new static ();
       
-      $Result->curvePoint = Curve\Point::fromPublicKey ($Curve, $Binary)
+      $Result->curvePoint = Curve\Point::fromPublicKey ($Curve, $Binary);
       $Result->isCompressed = (($Type == 0x02) || ($Type == 0x03));
       
       return $Result;
