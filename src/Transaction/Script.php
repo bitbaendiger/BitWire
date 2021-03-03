@@ -336,7 +336,7 @@
      * @access public
      * @return bool
      **/
-    public function isScriptHashInput () : boll {
+    public function isScriptHashInput () : bool {
       // Retrive the stack
       $Length = count ($this->scriptOps);
       
@@ -570,7 +570,7 @@
      * @access private
      * @return bool
      **/
-    private function isSignature ($Data) : boll {
+    private function isSignature ($Data) : bool {
       // Retrive the total length of signature
       if (($Length = strlen ($Data)) < 2)
         return false;
