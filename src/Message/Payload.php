@@ -28,7 +28,36 @@
     protected const PAYLOAD_HAS_DATA = null;
     
     /* Registered Command-Classes */
-    private static $Commands = [ ];
+    private static $Commands = [
+      'addr'        => __NAMESPACE__ . '\\Addresses',
+      'block'       => __NAMESPACE__ . '\\Block',
+      'dsee'        => __NAMESPACE__ . '\\DarkSend\\ElectionEntry',
+      'dsee+'       => __NAMESPACE__ . '\\DarkSend\\ElectionEntryPlus',
+      'dseep'       => __NAMESPACE__ . '\\DarkSend\\ElectionEntryPing',
+      'dseg'        => __NAMESPACE__ . '\\Masternode\\Request',
+      'feefilter'   => __NAMESPACE__ . '\\FeeFilter',
+      'getaddr'     => __NAMESPACE__ . '\\GetAddresses',
+      'getblocks'   => __NAMESPACE__ . '\\GetBlocks',
+      'getdata'     => __NAMESPACE__ . '\\GetData',
+      'getheaders'  => __NAMESPACE__ . '\\GetHeaders',
+      'headers'     => __NAMESPACE__ . '\\Headers',
+      'inv'         => __NAMESPACE__ . '\\Inventory',
+      'mempool'     => __NAMESPACE__ . '\\MemPool',
+      'mnb'         => __NAMESPACE__ . '\\Masternode\\Broadcast',
+      'mnp'         => __NAMESPACE__ . '\\Masternode\\Ping',
+      'mnw'         => __NAMESPACE__ . '\\Masternode\\Winner',
+      'notfound'    => __NAMESPACE__ . '\\NotFound',
+      'ping'        => __NAMESPACE__ . '\\Ping',
+      'ping'        => __NAMESPACE__ . '\\Pong',
+      'reject'      => __NAMESPACE__ . '\\Reject',
+      'sendcmpct'   => __NAMESPACE__ . '\\SendCompact',
+      'sendheaders' => __NAMESPACE__ . '\\SendHeaders',
+      'spork'       => __NAMESPACE__ . '\\Spork',
+      'ssc'         => __NAMESPACE__ . '\\Masternode\\SyncStatusCount',
+      'tx'          => __NAMESPACE__ . '\\Transaction',
+      'version'     => __NAMESPACE__ . '\\Version',
+      'verack'      => __NAMESPACE__ . '\\Version\\Acknowledgement',
+    ];
     
     /* Instance of Message this payload is for */
     private $Message = null;
@@ -593,7 +622,7 @@
      * @access public
      * @return void
      **/
-    public function parse ($Data) : void {
+    public function parse (string $Data) : void {
       if ((strlen ($Data) > 0) && ($this::PAYLOAD_HAS_DATA === false))
         throw new \ValueError ('Payload not expected');
       
