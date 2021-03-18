@@ -106,7 +106,7 @@
       if ($this->encodingType == $this::ENCODE_BECH32)
         return Util\Bech32::encode ('bc', $this->addressData, array ($this->addressType));
       
-      $addressData = $this->Hash;
+      $addressData = $this->addressData;
       $addressType = $this->addressType;
       
       do {
