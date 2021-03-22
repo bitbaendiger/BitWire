@@ -150,27 +150,27 @@
     /**
      * Parse data for this payload
      * 
-     * @param string $Data
-     * @param int $Offset (optional)
-     * @param int $Length (optional)
+     * @param string $inputData
+     * @param int $inputOffset (optional)
+     * @param int $inputLength (optional)
      * 
      * @access public
      * @return void
      **/
-    public function parse (string $Data, int &$Offset = 0, int $Length = null) : void {
+    public function parse (string $inputData, int &$inputOffset = 0, int $inputLength = null) : void {
       // Try to read all values
-      if ($Length === null)
-        $Length = strlen ($Data);
+      if ($inputLength === null)
+        $inputLength = strlen ($inputData);
       
-      $tOffset = $Offset;
+      $localOffset = $inputOffset;
       
-      $txIn = self::readCTxIn ($Data, $tOffset, $Length);
-      $blockHash = self::readHash ($Data, $tOffset, $Length);
-      $signatureTime = self::readUInt64 ($Data, $tOffset, $Length);
-      $Signature = self::readCompactString ($Data, $tOffset, $Length);
+      $txIn = self::readCTxIn ($inputData, $localOffset, $inputLength);
+      $blockHash = self::readHash ($inputData, $localOffset, $inputLength);
+      $signatureTime = self::readUInt64 ($inputData, $localOffset, $inputLength);
+      $Signature = self::readCompactString ($inputData, $localOffset, $inputLength);
       
       try {
-        $signatureType = self::readUInt32 ($Data, $Offset, $Length);
+        $signatureType = self::readUInt32 ($inputData, $localOffset, $inputLength);
       } catch (\LengthException $error) {
         $signatureType = null;
       }
@@ -184,7 +184,7 @@
       if ($signatureType !== null)
         $this->signatureType = $signatureType;
       
-      $Offset = $tOffset;
+      $inputOffset = $localOffset;
     }
     // }}}
     
