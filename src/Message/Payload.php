@@ -268,7 +268,7 @@
       
       // Check if there is enough data to read
       if ($Length < $Offset + $Size)
-        throw new \ValueError ('Short read');
+        throw new \LengthException ('Short read');
       
       // Generate the result
       $Result = substr ($Data, $Offset, $Size);

@@ -27,6 +27,11 @@
   class Broadcast extends Message\Payload\Hashable {
     protected const PAYLOAD_COMMAND = 'mnb';
     
+    /* Known signature-types */
+    public const SIGNATURE_OLD  = 0x00;
+    public const SIGNATURE_NEW  = 0xff;
+    public const SIGNATURE_HASH = 0x01;
+    
     /* UTXO of masternode */
     private $txIn = null;
     
@@ -53,6 +58,9 @@
     
     /* Time of last dsq broadcast  */
     private $lastDSQ = 0;
+    
+    /* Message-Type */
+    private $signatureType = Broadcast::SIGNATURE_NEW;
     
     // {{{ fromDarkSendEntry
     /**
@@ -307,7 +315,14 @@
       $signatureTime = self::readUInt64 ($Data, $Offset, $Length);
       $protocolVersion = self::readUInt32 ($Data, $Offset, $Length);
       $lastPing = Ping::readString ($Data, $Offset, $Length);
-      $lastDSQ = self::readUInt64 ($Data, $Offset, $Length);
+      
+      try {
+        $lastDSQ = self::readUInt64 ($Data, $Offset, $Length);
+        $signatureType = null;
+      } catch (\LengthException $error) {
+        $lastDSQ = 0;
+        $signatureType = self::readUInt32 ($Data, $Offset, $Length);
+      }
       
       // Commit to this instance
       $this->txIn = $txIn;
@@ -319,6 +334,9 @@
       $this->protocolVersion = $protocolVersion;
       $this->lastPing = $lastPing;
       $this->lastDSQ = $lastDSQ;
+      
+      if ($signatureType !== null)
+        $this->signatureType = $signatureType;
     }
     // }}}
     
@@ -339,7 +357,7 @@
         self::writeUInt64 ($this->signatureTime) .
         self::writeUInt32 ($this->protocolVersion) .
         $this->lastPing->toBinary () .
-        self::writeUInt64 ($this->lastDSQ);
+        ($this->signatureType == $this::SIGNATURE_HASH ? self::writeUInt32 ($this->signatureType) : self::writeUInt64 ($this->lastDSQ));
     }
     // }}}
     
@@ -350,18 +368,18 @@
      * @param BitWire\Crypto\PrivateKey $privateKey
      * @param int $signatureTimestamp (optional)
      * @param string $messageMagic (optional)
-     * @param bool $useOldSignature (optional)
+     * @param enum $signatureType (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function sign (BitWire\Crypto\PrivateKey $privateKey, int $signatureTimestamp = null, string $messageMagic = null, bool $useOldSignature = false) : bool {
+    public function sign (BitWire\Crypto\PrivateKey $privateKey, int $signatureTimestamp = null, string $messageMagic = null, int $signatureType = null) : bool {
       // Update the timestamp
       $lastTimestamp = $this->signatureTime;
       $this->signatureTime = ($signatureTimestamp ?? time ());
       
       // Try to generate signature
-      if (($Signature = $privateKey->signCompact ($this->getMessageForSignature ($messageMagic, $useOldSignature))) === false) {
+      if (($Signature = $privateKey->signCompact ($this->getMessageForSignature ($messageMagic, $signatureType))) === false) {
         // Restore the old timestamp
         $this->signatureTime = $oldTimestamp;
         
@@ -391,8 +409,9 @@
       
       // Verify the message
       return
-        $this->publicKeyCollateral->verifyCompact ($this->getMessageForSignature ($messageMagic, false), $this->Signature) ||
-        $this->publicKeyCollateral->verifyCompact ($this->getMessageForSignature ($messageMagic, true), $this->Signature);
+        $this->publicKeyCollateral->verifyCompact ($this->getMessageForSignature ($messageMagic, $this::SIGNATURE_OLD), $this->Signature) ||
+        $this->publicKeyCollateral->verifyCompact ($this->getMessageForSignature ($messageMagic, $this::SIGNATURE_NEW), $this->Signature) ||
+        $this->publicKeyCollateral->verifyCompact ($this->getMessageForSignature ($messageMagic, $this::SIGNATURE_HASH), $this->Signature);;
     }
     // }}}
     
@@ -401,12 +420,12 @@
      * Generate message used for signing this broadcast
      * 
      * @param string $messageMagic (optional)
-     * @param bool $useOldSignature (optional)
+     * @param int $signatureType (optional)
      * 
      * @access public
      * @return string
      **/
-    public function getMessageForSignature (string $messageMagic = null, bool $useOldSignature = false) : string {
+    public function getMessageForSignature (string $messageMagic = null, int $signatureType = null) : string {
       // Make sure we have everything we need
       if (!$this->publicKeyCollateral || !$this->publicKeyMasternode || !$this->Address)
         throw new \Exception ('Insufficent data to prepare signature');
@@ -414,15 +433,39 @@
       if ($messageMagic === null)
         $messageMagic = "DarkNet Signed Message:\n";
       
-      return
-        self::writeCompactString ($messageMagic) .
-        self::writeCompactString (
+      $signatureType = $signatureType ?? $this->signatureType;
+      
+      if ($signatureType == $this::SIGNATURE_HASH)
+        $hashedMessage =
+          bin2hex (
+            strrev (
+              hash (
+                'sha256',
+                hash (
+                  'sha256', 
+                  self::writeUInt32 ($signatureType) .
+                  self::writeCAddress ($this->Address) .
+                  self::writeUInt64 ($this->signatureTime) .
+                  self::writeCPublicKey ($this->publicKeyCollateral) .
+                  self::writeCPublicKey ($this->publicKeyMasternode) .
+                  self::writeUInt32 ($this->protocolVersion),
+                  true
+                ),
+                true
+              )
+            )
+          );
+      else
+        $hashedMessage =
           $this->Address->toString () .
           $this->signatureTime .
-          ($useOldSignature ? $this->publicKeyCollateral->toBinary () : $this->publicKeyCollateral->getID ()) .
-          ($useOldSignature ? $this->publicKeyMasternode->toBinary () : $this->publicKeyMasternode->getID ()) .
-          $this->protocolVersion
-        );
+          ($signatureType == $this::SIGNATURE_OLD ? $this->publicKeyCollateral->toBinary () : $this->publicKeyCollateral->getID ()) .
+          ($signatureType == $this::SIGNATURE_OLD ? $this->publicKeyMasternode->toBinary () : $this->publicKeyMasternode->getID ()) .
+          $this->protocolVersion;
+      
+      return
+        self::writeCompactString ($messageMagic) .
+        self::writeCompactString ($hashedMessage);
     }
     // }}}
   }

@@ -30,6 +30,20 @@
     /* UTXO of masternode */
     private $txIn = null;
     
+    // {{{ __construct
+    /**
+     * Create a new masternode-request
+     * 
+     * @param BitWire\Transaction\Input $transactionInput (optional)
+     * 
+     * @access friendly
+     * @return void
+     **/
+    public function __construct (BitWire\Transaction\Input $transactionInput = null) {
+      $this->txIn = $transactionInput;
+    }
+    // }}}
+    
     // {{{ getTransactionInput
     /**
      * Retrive the transaction-input of this masternode-ping

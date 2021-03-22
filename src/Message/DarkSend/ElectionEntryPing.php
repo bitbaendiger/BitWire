@@ -165,7 +165,7 @@
      * @access private
      * @return string
      **/
-    private function getMessageForSignature (BitWire\Peer\Address $forPeer, string $messageMagic = null) : void {
+    private function getMessageForSignature (BitWire\Peer\Address $forPeer, string $messageMagic = null) : string {
       if ($messageMagic === null)
         $messageMagic = "DarkNet Signed Message:\n";
       

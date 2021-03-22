@@ -27,17 +27,25 @@
   class Ping extends Message\Payload\Hashable {
     protected const PAYLOAD_COMMAND = 'mnp';
     
+    /* Known signature-types */
+    public const SIGNATURE_OLD  = 0x00;
+    public const SIGNATURE_NEW  = 0xff;
+    public const SIGNATURE_HASH = 0x01;
+    
     /* UTXO of masternode */
     private $txIn = null;
     
     /* Hash of block */
-    private $Hash = null;
+    private $blockHash = null;
     
     /* Time of signature */
     private $signatureTime = 0;
     
     /* The signature itself */
     private $Signature = '';
+    
+    /* Type of the signature (optional)  */
+    private $signatureType = Ping::SIGNATURE_NEW;
     
     // {{{ fromString
     /**
@@ -68,6 +76,7 @@
     public function getHash () : BitWire\Hash {
       return new BitWire\Hash (
         self::writeCTxIn ($this->txIn) .
+        ($this->signatureType == $this::SIGNATURE_HASH ? self::writeHash ($this->blockHash) : '') . 
         self::writeUInt64 ($this->signatureTime)
       );
     }
@@ -107,7 +116,7 @@
      * @return BitWire\Hash
      **/
     public function getBlockHash () : ?BitWire\Hash {
-      return $this->Hash;
+      return $this->blockHash;
     }
     // }}}
     
@@ -115,13 +124,13 @@
     /**
      * Set the blockhash contained in this ping
      * 
-     * @param BitWire\Hash $Hash
+     * @param BitWire\Hash $blockHash
      * 
      * @access public
      * @return void
      **/
-    public function setBlockHash (BitWire\Hash $Hash) : void {
-      $this->Hash = $Hash;
+    public function setBlockHash (BitWire\Hash $blockHash) : void {
+      $this->blockHash = $blockHash;
     }
     // }}}
     
@@ -156,15 +165,25 @@
       $tOffset = $Offset;
       
       $txIn = self::readCTxIn ($Data, $tOffset, $Length);
-      $Hash = self::readHash ($Data, $tOffset, $Length);
+      $blockHash = self::readHash ($Data, $tOffset, $Length);
       $signatureTime = self::readUInt64 ($Data, $tOffset, $Length);
       $Signature = self::readCompactString ($Data, $tOffset, $Length);
       
+      try {
+        $signatureType = self::readUInt32 ($Data, $Offset, $Length);
+      } catch (\LengthException $error) {
+        $signatureType = null;
+      }
+      
       // Commit to this instance
       $this->txIn = $txIn;
-      $this->Hash = $Hash;
+      $this->blockHash = $blockHash;
       $this->signatureTime = $signatureTime;
       $this->Signature = $Signature;
+      
+      if ($signatureType !== null)
+        $this->signatureType = $signatureType;
+      
       $Offset = $tOffset;
     }
     // }}}
@@ -179,9 +198,10 @@
     public function toBinary () : string {
       return
         self::writeCTxIn ($this->txIn) .
-        self::writeHash ($this->Hash) .
+        self::writeHash ($this->blockHash) .
         self::writeUInt64 ($this->signatureTime) .
         self::writeCompactString ($this->Signature);
+        ($this->signatureType >= $this::SIGNATURE_HASH ? self::writeUInt32 ($this->signatureType) : '');
     }
     // }}}
     
@@ -191,18 +211,18 @@
      * 
      * @param BitWire\Crypto\PrivateKey $privateKey
      * @param string $magicString (optional)
-     * @param bool $useShortHash (optional)
+     * @param int $signatureType (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function sign (BitWire\Crypto\PrivateKey $privateKey, string $magicString = null, bool $useShortHash = false) : bool {
+    public function sign (BitWire\Crypto\PrivateKey $privateKey, string $magicString = null, int $signatureType = null) : bool {
       // Update the timestamp
       $oTimestamp = $this->signatureTime;
       $this->signatureTime = time ();
       
       // Try to generate signature
-      if (($Signature = $privateKey->signCompact ($this->getMessageForSignature ($magicString, $useShortHash))) === false) {
+      if (($Signature = $privateKey->signCompact ($this->getMessageForSignature ($magicString, $signatureType))) === false) {
         // Restore the old timestamp
         $this->signatureTime = $oTimestamp;
         
@@ -222,13 +242,13 @@
      * 
      * @param BitWire\Crypto\PublicKey $publicKey
      * @param string $magicString (optional)
-     * @param bool $useShortHash (optional)
+     * @param int $signatureType (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function verify (BitWire\Crypto\PublicKey $publicKey, string $magicString = null, bool $useShortHash = false) : bool {
-      return $publicKey->verifyCompact ($this->getMessageForSignature ($magicString, $useShortHash), $this->Signature);
+    public function verify (BitWire\Crypto\PublicKey $publicKey, string $magicString = null, int $signatureType = null) : bool {
+      return $publicKey->verifyCompact ($this->getMessageForSignature ($magicString, $signatureType), $this->Signature);
     }
     // }}}
     
@@ -237,20 +257,28 @@
      * Prepare the message for our signature
      * 
      * @param string $magicString (optional)
-     * @param bool $shortHash (optional)
+     * @param int $signatureType (optional)
      * 
      * @access private
      * @return string
      **/
-    private function getMessageForSignature (string $magicString = null, bool $shortHash = false) : string {
+    private function getMessageForSignature (string $magicString = null, int $signatureType = null) : string {
       if ($magicString === null)
         $magicString = "DarkNet Signed Message:\n";
+      
+      $signatureType = $signatureType ?? $this->signatureType;
+      
+      if ($signatureType == $this::SIGNATURE_HASH)
+        return
+          self::writeCTxIn ($this->txIn) .
+          self::writeHash ($this->blockHash) . 
+          self::writeUInt64 ($this->signatureTime);
       
       return
         self::writeCompactString ($magicString) .
         self::writeCompactString (
-          $this->txIn->toString ($shortHash) .
-          strval ($this->Hash) .
+          $this->txIn->toString ($signatureType == $this::SIGNATURE_OLD) .
+          (string)$this->blockHash .
           $this->signatureTime
         );
     }
