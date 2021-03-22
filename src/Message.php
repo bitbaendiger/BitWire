@@ -23,6 +23,9 @@
   namespace BitBaendiger\BitWire;
   
   class Message {
+    /* Debug message-parser */
+    public static $debugMessages = false;
+    
     /* Well known Bitcore-Networks (see their chainparams.cpp) */
     public const BITCOIN_MAIN = 0xF9BEB4D9;
     public const BITCOIN_TEST = 0x0B110907;
@@ -128,7 +131,7 @@
       }
       
       // Double-Check the result on debug-mode
-      if (defined ('BITWIRE_DEBUG') && BITWIRE_DEBUG) {
+      if ($this::$debugMessages) {
         // Re-Convert payload to binary
         $pPayload = $this->Payload->toBinary ();
         

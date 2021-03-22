@@ -9,17 +9,21 @@ as a consumer on top of qcEvents's Sockets (or any other kind of sources, but
 only sockets make sense at the moment):
 
 ~~~ {.php}
-  $Base = new qcEvents_Base;
-  $Socket = new qcEvents_Socket;
-  $Peer = new BitWire_Peer;
+  $eventBase = new \quarxConnect\Events\Base ();
+  $eventSocket = new \quarxConnect\Events\Socket ($eventBase);
+  $wirePeer = new \BitBaendiger\BitWire\Peer ();
 
-  $Socket->connect ('', 8333, $Socket::TYPE_TCP);
-  $Socket->pipeStream ($Peer);
+  $eventSocket->connect ('...', 8333, $eventSocket::TYPE_TCP);
+  $eventSocket->pipeStream ($wirePeer);
 
-  $Base->loop ();
+  $eventBase->loop ();
 ~~~
 
 ## Debuging
+Incoming messages may be checked by setting
+`\BitBaendiger\BitWire\Message::$debugMessages` to `true`.
+
+(DEPRECATED)
 There is a constant called `BITWIRE_DEBUG`. When set to `true` BitWire will
 start to output debugging-information related to its work.
 
