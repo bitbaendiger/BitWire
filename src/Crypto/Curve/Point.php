@@ -24,11 +24,6 @@
   use \BitBaendiger\BitWire\Crypto;
   
   class Point {
-    private static $g1 = null;
-    private static $g2 = null;
-    private static $g3 = null;
-    private static $g4 = null;
-
     public $Curve, $x, $y;
     
     private $order = null;
@@ -60,25 +55,9 @@
       // Generate the values
       $x = gmp_import (substr ($Key, 1, 32));
       
-      if (($Type == 0x02) || ($Type == 0x03)) {
-        $Point = static::fromCompressed ($Curve, $x, ($Type == 0x03), $order);
+      if (($Type == 0x02) || ($Type == 0x03))
+        return static::fromCompressed ($Curve, $x, ($Type == 0x03), $order);
         
-        // UGLY HACK: Check twice if imported key exports to the same
-        if (strcmp ($Point->toPublicKey (true), $Key) != 0) {
-          $Point2 = static::fromCompressed ($Curve, $x, ($Type != 0x03), $order);
-          
-          if (strcmp ($Point2->toPublicKey (true), $Key) == 0) {
-            trigger_error ('Ugly hack for public key applied');
-            
-            return $Point2;
-          }
-          
-          trigger_error ('Export does not equal import, inverting was unsuccessfull');
-        }
-        
-        return $Point;
-      }
-      
       return new static ($Curve, $x, gmp_import (substr ($Key, 33, 32)), $order);
     }
     // }}}
@@ -87,44 +66,25 @@
     /**
      * Create a point from compressed representation
      * 
-     * @param Crypto\Curve $Curve
+     * @param Crypto\Curve $onCurve
      * @param \GMP $x
-     * @param bool $Negative (optional)
+     * @param bool $isOdd (optional)
      * @param \GMP $order (optional)
      * 
      * @access public
      * @return Point
      **/
-    public static function fromCompressed (Crypto\Curve $Curve, \GMP $x, bool $Negative = false, \GMP $order = null) : Point {
-      // Check if we were initialized before
-      if (self::$g1 === null)
-        self::init ();
+    public static function fromCompressed (Crypto\Curve $onCurve, \GMP $x, bool $isOdd = false, \GMP $order = null) : Point {
+      $y2 = (((($x**3) % $onCurve->p) + (($x * $onCurve->a) % $onCurve->p) + $onCurve->b) % $onCurve->p);
+      $y = gmp_sqrt ($y2);
       
-      $y = gmp_powm (
-        gmp_mod (gmp_powm ($x, self::$g3, $Curve->p) + ($Curve->a * $x) + $Curve->b, $Curve->p),
-        gmp_div_q ($Curve->p + self::$g1, self::$g4),
-        $Curve->p
-      );
+      # if ($y * $y != $y2)
+      #   throw new \Exception ('Invalid number');
       
-      if (!$Negative)
-        return new static ($Curve, $x, gmp_mod (gmp_sub ($Curve->p, $y), $Curve->p), $order);
+      if ($isOdd != ($y % 2 == 1))
+        $y = (($onCurve->p - $y) % $onCurve->p);
       
-      return new static ($Curve, $x, $y, $order);
-    }
-    // }}}
-    
-    // {{{ init
-    /**
-     * Setup some static stuff
-     * 
-     * @access private
-     * @return void
-     **/
-    private static function init () {
-      self::$g1 = gmp_init (1);
-      self::$g2 = gmp_init (2);
-      self::$g3 = gmp_init (3);
-      self::$g4 = gmp_init (4);
+      return new static ($onCurve, $x, $y, $order);
     }
     // }}}
     
@@ -141,10 +101,6 @@
      * @return void
      **/
     function __construct (Crypto\Curve $Curve, \GMP $x, \GMP $y, \GMP $order = null) {
-      // Check if we were initialized before
-      if (self::$g1 === null)
-        self::init ();
-
       // Setup ourself
       $this->Curve = $Curve;
       $this->x = $x;
@@ -198,9 +154,9 @@
         return $New;
       }
 
-      $l = gmp_mod (gmp_mul (gmp_invert (gmp_mod (gmp_mul (self::$g2, $this->y), $this->Curve->p), $this->Curve->p), gmp_add (gmp_mul (self::$g3, gmp_pow ($this->x, 2)), $this->Curve->a)), $this->Curve->p);
-      $x = gmp_mod (gmp_sub (gmp_sub (gmp_pow ($l, 2), $this->x), $this->x), $this->Curve->p);
-      $y = gmp_mod (gmp_sub (gmp_mul ($l, gmp_sub ($this->x, $x)), $this->y), $this->Curve->p);
+      $l = ((gmp_invert ((($this->y * 2) % $this->Curve->p), $this->Curve->p) * ((($this->x**2) * 3) + $this->Curve->a)) % $this->Curve->p);
+      $x = ((($l**2) - ($this->x * 2)) % $this->Curve->p);
+      $y = ((($l * ($this->x - $x)) - $this->y) % $this->Curve->p);
 
       $this->x = $x;
       $this->y = $y;
@@ -227,12 +183,12 @@
         return $New;
       }
 
-      if ((gmp_cmp ($this->x, $Add->x) == 0) && (gmp_cmp ($this->y, $Add->y) == 0))
+      if (($this->x == $Add->x) && ($this->y == $Add->y))
         return $this->double ();
 
-      $l = gmp_mod (gmp_mul (gmp_sub ($this->y, $Add->y), gmp_invert (gmp_sub ($this->x, $Add->x), $this->Curve->p)), $this->Curve->p);
-      $x = gmp_mod (gmp_sub (gmp_sub (gmp_pow ($l, 2), $this->x), $Add->x), $this->Curve->p);
-      $y = gmp_mod (gmp_sub (gmp_mul ($l, gmp_sub ($this->x, $x)), $this->y), $this->Curve->p);
+      $l = ((($this->y - $Add->y) * gmp_invert (($this->x - $Add->x), $this->Curve->p)) % $this->Curve->p);
+      $x = (((($l**2) - $this->x) - $Add->x) % $this->Curve->p);
+      $y = ((($l * ($this->x - $x)) - $this->y) % $this->Curve->p);
 
       $this->x = $x;
       $this->y = $y;
@@ -293,7 +249,7 @@
 
       // Export compressed key
       if ($Compressed)
-        return (gmp_cmp (gmp_mod ($this->y, self::$g2), self::$g1) == 0 ? "\x03" : "\x02") . $x;
+        return ($this->y % 2 == 1 ? "\x03" : "\x02") . $x;
 
       // Prepare y for export
       $y = gmp_export ($this->y);
@@ -315,10 +271,10 @@
      * @return bool
      **/
     public function validate () : bool {
-      $x = gmp_mod (gmp_add (gmp_add (gmp_powm ($this->x, self::$g3, $this->Curve->p), gmp_mul ($this->Curve->a, $this->x)), $this->Curve->b), $this->Curve->p);
-      $y = gmp_mod (gmp_pow ($this->y, 2), $this->Curve->p);
+      $x = ((((($this->x**3) % $this->Curve->p) + ($this->Curve->a * $this->x)) + $this->Curve->b) % $this->Curve->p);
+      $y = (($this->y**2) % $this->Curve->p);
 
-      return (gmp_cmp ($x, $y) == 0);
+      return ($x == $y);
     }
     // }}}
   }

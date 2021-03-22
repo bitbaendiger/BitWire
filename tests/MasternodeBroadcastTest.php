@@ -15,7 +15,7 @@
       
       foreach ($broadcasts as $broadcast) {
         $mnBroadcast = new \BitBaendiger\BitWire\Message\Masternode\Broadcast ();
-        @$mnBroadcast->parse (hex2bin ($broadcast));
+        $mnBroadcast->parse (hex2bin ($broadcast));
         
         $this->assertTrue ($mnBroadcast->verify ());
       }

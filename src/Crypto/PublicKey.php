@@ -32,6 +32,21 @@
     /* Prefer compressed output */
     protected $isCompressed = true;
     
+    // {{{ fromHex
+    /**
+     * Restore a public key from hex
+     * 
+     * @param string $hexData
+     + @param Curve $onCurve (optional)
+     * 
+     * @access public
+     * @return PublicKey
+     **/
+    public static function fromHex (string $hexData, Curve $onCurve = null) : PublicKey {
+      return static::fromBinary (hex2bin ($hexData), $onCurve);
+    }
+    // }}}
+    
     // {{{ fromBinary
     /**
      * Restore a public key from binary
