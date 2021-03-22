@@ -200,8 +200,8 @@
         self::writeCTxIn ($this->txIn) .
         self::writeHash ($this->blockHash) .
         self::writeUInt64 ($this->signatureTime) .
-        self::writeCompactString ($this->Signature);
-        ($this->signatureType >= $this::SIGNATURE_HASH ? self::writeUInt32 ($this->signatureType) : '');
+        self::writeCompactString ($this->Signature) .
+        ($this->signatureType == $this::SIGNATURE_HASH ? self::writeUInt32 ($this->signatureType) : '');
     }
     // }}}
     
