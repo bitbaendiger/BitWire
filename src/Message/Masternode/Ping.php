@@ -232,6 +232,9 @@
       // Set the signature
       $this->Signature = $Signature;
       
+      if ($signatureType !== null)
+        $this->signatureType = $signatureType;
+      
       return true;
     }
     // }}}
