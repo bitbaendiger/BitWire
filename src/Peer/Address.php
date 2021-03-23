@@ -103,17 +103,19 @@
      * @return string
      **/
     public function getAddress (bool $unmappIPv4 = false) : string {
-      if (!$unmappIPv4)
+      // Convert address to binary
+      if ($unmappIPv4) {
+        $Binary = unpack ('n8', \quarxConnect\Events\Socket::ip6toBinary ($this->Address));
+        
+        // Check for IPv4
+        if (($Binary [1] == $Binary [2]) && ($Binary [1] == $Binary [3]) && ($Binary [1] == $Binary [4]) && ($Binary [1] == $Binary [5]) && ($Binary [1] == 0) && ($Binary [6] == 0xffff))
+          return sprintf ('%u.%u.%u.%u', ($Binary [7] >> 8) & 0xFF, $Binary [7] & 0xFF, ($Binary [8] >> 8) & 0xFF, $Binary [8] & 0xFF);
+      }
+      
+      if ($this->Address [0] != '[')
         return '[' . $this->Address . ']';
       
-      // Convert address to binary
-      $Binary = unpack ('n8', \quarxConnect\Events\Socket::ip6toBinary ($this->Address));
-      
-      // Check for IPv4
-      if (($Binary [1] == $Binary [2]) && ($Binary [1] == $Binary [3]) && ($Binary [1] == $Binary [4]) && ($Binary [1] == $Binary [5]) && ($Binary [1] == 0) && ($Binary [6] == 0xffff))
-        return sprintf ('%u.%u.%u.%u', ($Binary [7] >> 8) & 0xFF, $Binary [7] & 0xFF, ($Binary [8] >> 8) & 0xFF, $Binary [8] & 0xFF);
-      
-      return '[' . $this->Address . ']';
+      return $this->Address;
     }
     // }}}
     
