@@ -291,6 +291,32 @@
     }
     // }}}
     
+    // {{{ getAccumulatorCheckpoint
+    /**
+     * Retrive the accumulator checkpoint (if one)
+     * 
+     * @access public
+     * @return Hash
+     **/
+    public function getAccumulatorCheckpoint () : ?Hash {
+      return $this->accumulatorCheckpoint;
+    }
+    // }}}
+    
+    // {{{ setAccumulatorCheckpoint
+    /**
+     * Set a new accumulator checkpoint
+     * 
+     * @param Hash $accumulatorCheckpoint
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setAccumulatorCheckpoint (Hash $accumulatorCheckpoint) : void {
+      $this->accumulatorCheckpoint = $accumulatorCheckpoint;
+    }
+    // }}}
+    
     // {{{ getTransactions
     /**
      * Retrive all transactions from this block
