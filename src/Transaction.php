@@ -34,10 +34,10 @@
     private $lockTime = 0;
     
     /* Inputs of transaction */
-    private $transactionInputs = array ();
+    private $transactionInputs = [ ];
     
     /* Outputs of transaction */
-    private $transactionOutputs = array ();
+    private $transactionOutputs = [ ];
     
     /* Comment of this transaction */
     private $hasComment = false;
@@ -95,6 +95,24 @@
       
       if ($hasComment !== null)
         $this->hasComment = $hasComment;
+    }
+    // }}}
+    
+    // {{{ __clone
+    /**
+     * Create a copy of this object
+     * 
+     * @access friendly
+     * @return void
+     **/
+    function __clone () {
+      foreach ($this->transactionInputs as $inputKey=>$transactionInput) {
+        $this->transactionInputs [$inputKey] = clone $transactionInput;
+        $this->transactionInputs [$inputKey]->setTransaction ($this);
+      }
+      
+      foreach ($this->transactionOutputs as $outputKey=>$transactionOutput)
+        $this->transactionOutputs [$outputKey] = clone $transactionOutput;
     }
     // }}}
     

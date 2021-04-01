@@ -712,12 +712,54 @@
         elseif ($scriptOp [0] == $this::OP_PUSHDATA_16)
           $outputScript .= pack ('v', $dataLength &= 0xFFFF);
         elseif ($scriptOp [0] == $this::OP_PUSHDATA_32)
-          $outputScript .= pack ('V', $dataLength &= 0xFFFF);
+          $outputScript .= pack ('V', $dataLength &= 0xFFFFFFFF);
         
         $outputScript .= substr ($scriptOp [1], 0, $dataLength);
       }
       
       return $outputScript;
+    }
+    // }}}
+    
+    // {{{ empty
+    /**
+     * Clean up this script
+     * 
+     * @access public
+     * @return void
+     **/
+    public function empty () : void {
+      $this->scriptOps = [ ];
+    }
+    // }}}
+    
+    // {{{ pushData
+    /**
+     * Push abitrary data to this script
+     * 
+     * @param string $pushedData
+     * 
+     * @access public
+     * @return void
+     **/
+    public function pushData (string $pushedData) : void {
+      $pushedLength = strlen ($pushedData);
+      
+      if (($pushedLength > 0) && ($pushedLength < $this::OP_PUSHDATA_8))
+        $pushedOp = $pushedLength;
+      elseif ($pushedLength <= 0xFF)
+        $pushedOp = $this::OP_PUSHDATA_8;
+      elseif ($pushedLength <= 0xFFFF)
+        $pushedOp = $this::OP_PUSHDATA_16;
+      elseif ($pushedLength <= 0xFFFFFFFF)
+        $pushedOp = $this::OP_PUSHDATA_32;
+      else
+        throw new \LengthException ('Cannot push that much data');
+      
+      $this->scriptOps [] = [
+        $pushedOp,
+        $pushedData,
+      ];
     }
     // }}}
   }

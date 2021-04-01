@@ -34,7 +34,7 @@
     private $transactionIndex = 0xffffffff;
     
     /* Signature-Script */
-    private $Script = null;
+    private $inputScript = null;
     
     /* Sequence of input */
     private $Sequence = 0xffffffff;
@@ -70,12 +70,12 @@
      **/
     function __construct (BitWire\Transaction $parentTransaction = null, BitWire\Hash $transactionHash = null, int $transactionIndex = null) {
       $this->parentTransaction = $parentTransaction;
-      $this->transactionHash = $transactionHash ?? new BitWire\Hash;
+      $this->transactionHash = $transactionHash ?? new BitWire\Hash ();
       
       if ($transactionIndex !== null)
         $this->transactionIndex = $transactionIndex;
       
-      $this->Script = new Script;
+      $this->inputScript = new Script ();
     }
     // }}}
     
@@ -103,7 +103,7 @@
         'hash' => strval ($this->transactionHash),
         'index' => $this->transactionIndex,
         'sequence' => $this->Sequence,
-        'script' => strval ($this->Script),
+        'script' => (string)$this->inputScript,
       ];
     }
     // }}}
@@ -131,7 +131,7 @@
       if (!self::checkCoinbase ($this->transactionHash, $this->transactionIndex))
         return false;
       
-      return $this->Script->isZerocoinSpend ();
+      return $this->inputScript->isZerocoinSpend ();
     }
     // }}}
     
@@ -144,6 +144,20 @@
      **/
     public function getTransaction () : ?BitWire\Transaction {
       return $this->parentTransaction;
+    }
+    // }}}
+    
+    // {{{ setTransaction
+    /**
+     * Associate a transaction with this input
+     * 
+     * @param BitWire\Transaction $myTransaction
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setTransaction (BitWire\Transaction $myTransaction) : void {
+      $this->parentTransaction = $myTransaction;
     }
     // }}}
     
@@ -219,7 +233,21 @@
      * @return Script
      **/
     public function getScript () : Script {
-      return $this->Script;
+      return $this->inputScript;
+    }
+    // }}}
+    
+    // {{{ setScript
+    /**
+     * Replace our script
+     * 
+     * @param Script $inputScript
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setScript (Script $inputScript) : void {
+      $this->inputScript = $inputScript;
     }
     // }}}
     
@@ -245,7 +273,7 @@
      * @return array
      **/
     public function getAddresses () : array {
-      return $this->Script->getAddresses ();
+      return $this->inputScript->getAddresses ();
     }
     // }}}
     
@@ -277,7 +305,7 @@
         'CTxIn(' .
           'COutPoint(' . ($shortHash ? substr ($outpointHash, 0, 10) : $outpointHash) . ', ' . $this->transactionIndex . ')' .
           # TODO: Missing support for zerocoin
-          ($this->isCoinbase () ? ', coinbase ' . bin2hex ($this->Script->toBinary ()) : ', scriptSig=' . substr (strval ($this->Script), 0, 24)) .
+          ($this->isCoinbase () ? ', coinbase ' . bin2hex ($this->inputScript->toBinary ()) : ', scriptSig=' . substr (strval ($this->inputScript), 0, 24)) .
           ($this->Sequence != 0xffffffff ? ', nSequence=' . $this->Sequence : '') .
         ')';
     }
@@ -322,7 +350,7 @@
       // Store the results on this instance
       $this->transactionHash = $transactionHash;
       $this->transactionIndex = $transactionIndex;
-      $this->Script = new Script ($transactionScript);
+      $this->inputScript = new Script ($transactionScript);
       $this->Sequence = $transactionSequence;
     }
     // }}}
@@ -338,8 +366,64 @@
       return
         BitWire\Message\Payload::writeHash ($this->transactionHash) .
         BitWire\Message\Payload::writeUInt32 ($this->transactionIndex) .
-        BitWire\Message\Payload::writeCompactString ($this->Script->toBinary ()) .
+        BitWire\Message\Payload::writeCompactString ($this->inputScript->toBinary ()) .
         BitWire\Message\Payload::writeUInt32 ($this->Sequence);
+    }
+    // }}}
+    
+    // {{{ sign
+    /**
+     * Create a signature for this input
+     * 
+     * @todo THIS ONLY SIGNS P2PKH-TRANSACTIONS
+     * 
+     * @param Output $previousOutput
+     * @param BitWire\Crypto\PrivateKey $privateKey
+     * 
+     * @access public
+     * @return void
+     **/
+    public function sign (Output $previousOutput, BitWire\Crypto\PrivateKey $privateKey) : void {
+      // Make sure we have a transaction assigned
+      if (!$this->parentTransaction)
+        throw new \Exception ('No transaction assigned');
+      
+      // Check if we are able to sign
+      if (!$previousOutput->getScript ()->isPublicKeyHashOutput ())
+        throw new \Exception ('Unsupported output-type');
+      
+      // Find my place in the original transaction
+      $myPlace = null;
+      
+      foreach ($this->parentTransaction->getInputs () as $txIndex=>$transactionInput)
+        if ($transactionInput === $this) {
+          $myPlace = $txIndex;
+          
+          break;
+        }
+      
+      if ($myPlace === null)
+        throw new \Exception ('Failed to find myself on the transaction');
+      
+      // Create a copy of our transaction
+      $signTransaction = clone $this->parentTransaction;
+      
+      foreach ($signTransaction->getInputs () as $txIndex=>$transactionInput)
+        if ($txIndex === $myPlace)
+          $transactionInput->setScript ($previousOutput->getScript ());
+        else
+          $transactionInput->getScript ()->empty ();
+      
+      // Convert transaction to binary
+      $signBinary = $signTransaction->toBinary () . "\x01\x00\x00\x00";
+      
+      // Try to sign
+      $inputScript = new Script ();
+      $inputScript->pushData ($privateKey->sign ($signBinary) . "\x01");
+      $inputScript->pushData ($privateKey->toPublicKey ()->toBinary ());
+      
+      // Replace the input-script
+      $this->inputScript = $inputScript;
     }
     // }}}
   }
