@@ -132,7 +132,7 @@
      * @return void
      **/
     public function setVersion (int $blockVersion) : void {
-      $this->Version = $blockVersion;
+      $this->blockVersion = $blockVersion;
     }
     // }}}
     
