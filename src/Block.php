@@ -333,14 +333,14 @@
     /**
      * Append a transaction to this block
      * 
-     * @param BitWire_Transaction $Tx
+     * @param Transaction $addTransaction
      * 
      * @access public
      * @return void
      **/
-    public function addTransaction (BitWire_Transaction $Tx) : void {
+    public function addTransaction (Transaction $addTransaction) : void {
       // Append to transactions
-      $this->Transactions [] = $Tx;
+      $this->Transactions [] = $addTransaction;
       
       // Refresh merkle-root-hash
       $this->setMerkleRootHash ($this->getMerkleRootHash (true));
