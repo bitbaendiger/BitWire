@@ -30,7 +30,7 @@
     private $Type = Block::TYPE_POW;
     
     /* Version of this block */
-    private $Version = 0x00000000;
+    private $blockVersion = 0x00000000;
     
     /* Hash of previous block */
     private $PreviousHash = null;
@@ -46,6 +46,9 @@
     
     /* Nonce of this block */
     private $Nonce = 0x00000000;
+    
+    /* Accumulator-Checkpoint for zerocoin-enabled chains */
+    private $accumulatorCheckpoint = null;
     
     /* Signature of PoS-Blocks */
     private $Signature = '';
@@ -87,7 +90,7 @@
      **/
     function __debugInfo () {
       $Info = [
-        'version' => sprintf ('0x%08x', $this->Version),
+        'version' => sprintf ('0x%08x', $this->blockVersion),
         'timestamp' => date ('Y-m-d H:i:s', $this->Timestamp),
         'hash' => strval ($this->getHash ()),
         'hash_previous' => strval ($this->getPreviousHash ()),
@@ -99,6 +102,9 @@
       
       if ($this->Type == $this::TYPE_POS)
         $Info ['Signature'] = bin2hex ($this->Signature);
+      
+      if ($this->accumulatorCheckpoint !== null)
+        $Info ['accumulatorCheckpoint'] = (string)$this->accumulatorCheckpoint;
       
       return $Info;
     }
@@ -112,7 +118,7 @@
      * @return int
      **/
     public function getVersion () : int {
-      return $this->Version;
+      return $this->blockVersion;
     }
     // }}}
     
@@ -120,13 +126,13 @@
     /**
      * Set the version of this block
      * 
-     * @param int $Version
+     * @param int $blockVersion
      * 
      * @access public
      * @return void
      **/
-    public function setVersion (int $Version) : void {
-      $this->Version = $Version;
+    public function setVersion (int $blockVersion) : void {
+      $this->Version = $blockVersion;
     }
     // }}}
     
@@ -335,7 +341,9 @@
      * @return string
      **/
     public function getHeader () : string {
-      return pack ('Va32a32VVV', $this->Version, $this->PreviousHash->toBinary (true), $this->MerkleRootHash->toBinary (true), $this->Timestamp, $this->TargetThreshold, $this->Nonce);
+      return
+        pack ('Va32a32VVV', $this->blockVersion, $this->PreviousHash->toBinary (true), $this->MerkleRootHash->toBinary (true), $this->Timestamp, $this->TargetThreshold, $this->Nonce) .
+        ($this->accumulatorCheckpoint ? $this->accumulatorCheckpoint->toBinary (true) : '');
     }
     // }}}
     
@@ -343,47 +351,51 @@
     /**
      * Try to parse data for this payload
      * 
-     * @param string $Data
-     * @param int $Offset
-     * @param int $Length (optional)
+     * @param string $inputData
+     * @param int $inputOffset (optional)
+     * @param int $inputLength (optional)
      * 
      * @access public
      * @return void
      **/
-    public function parse (string &$Data, int &$Offset, int $Length = null) : void {
+    public function parse (string &$inputData, int &$inputOffset = 0, int $inputLength = null) : void {
       // Check the length of input
-      if ($Length === null)
-        $Length = strlen ($Data);
+      if ($inputLength === null)
+        $inputLength = strlen ($inputData);
       
       // Parse the header
-      $tOffset = $Offset;
+      $localOffset = $inputOffset;
       
-      $Version    = Message\Payload::readUInt32 ($Data, $tOffset, $Length);
-      $Hash       = Message\Payload::readHash ($Data, $tOffset, $Length);
-      $MerkleRoot = Message\Payload::readHash ($Data, $tOffset, $Length);
-      $Timestamp  = Message\Payload::readUInt32 ($Data, $tOffset, $Length);
-      $Threshold  = Message\Payload::readUInt32 ($Data, $tOffset, $Length);
-      $Nonce      = Message\Payload::readUInt32 ($Data, $tOffset, $Length);
-      $Count      = Message\Payload::readCompactSize ($Data, $tOffset, $Length);
+      $blockVersion = Message\Payload::readUInt32 ($inputData, $localOffset, $inputLength);
+      $Hash         = Message\Payload::readHash ($inputData, $localOffset, $inputLength);
+      $MerkleRoot   = Message\Payload::readHash ($inputData, $localOffset, $inputLength);
+      $Timestamp    = Message\Payload::readUInt32 ($inputData, $localOffset, $inputLength);
+      $Threshold    = Message\Payload::readUInt32 ($inputData, $localOffset, $inputLength);
+      $Nonce        = Message\Payload::readUInt32 ($inputData, $localOffset, $inputLength);
+      
+      if ($blockVersion > 3)
+        $accumulatorCheckpoint = Message\Payload::readHash ($inputData, $localOffset, $inputLength);
+      
+      $Count        = Message\Payload::readCompactSize ($inputData, $localOffset, $inputLength);
       
       // Check if there is more than just the header
-      if ($tOffset != $Length) {
+      if ($localOffset != $inputLength) {
         // Try to read all transactions
         $Transactions = [ ];
         
         for ($i = 0; $i < $Count; $i++) {
           // Create a new transaction
-          $Transaction = new Transaction ($this->Type, $this->hasTxComments);
+          $Transaction = new Transaction (false, $this->hasTxComments);
           
           // Try to parse the transaction
-          $pOffset = $tOffset;
+          $pOffset = $localOffset;
           
-          $Transaction->parse ($Data, $tOffset, $Length);
+          $Transaction->parse ($inputData, $localOffset, $inputLength);
           
           // Double-check the transaction
           if (defined ('BITWIRE_DEBUG') && BITWIRE_DEBUG) {
             $Binary = $Transaction->toBinary ();
-            $Original = substr ($Data, $pOffset, $tOffset - $pOffset);
+            $Original = substr ($inputData, $pOffset, $localOffset - $pOffset);
             
             if (strcmp ($Binary, $Original) != 0) {
               echo
@@ -406,14 +418,13 @@
           
           // Push to transactions
           $Transactions [] = $Transaction;
-          $tOffset += $Size;
         }
        
         // Read Signature of PoS-Blocks
         if ($this->Type != $this::TYPE_POS)
           $Signature = null;
         else
-          $Signature = Message\Payload::readCompactString ($Data, $tOffset, $Length);
+          $Signature = Message\Payload::readCompactString ($inputData, $localOffset, $inputLength);
       
       } else {
         $Transactions = [ ];
@@ -421,17 +432,18 @@
       }
       
       // Store all values read
-      $this->Version = $Version;
+      $this->blockVersion = $blockVersion;
       $this->PreviousHash = $Hash;
       $this->MerkleRootHash = $MerkleRoot;
       $this->Timestamp = $Timestamp;
       $this->TargetThreshold = $Threshold;
       $this->Nonce = $Nonce;
+      $this->accumulatorCheckpoint = $accumulatorCheckpoint;
       $this->Transactions = $Transactions;
       $this->Signature = $Signature;
       
       // Push back the offset
-      $Offset = $tOffset;
+      $inputOffset = $localOffset;
     }
     // }}}
     
