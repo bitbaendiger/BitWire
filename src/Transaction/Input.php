@@ -64,18 +64,19 @@
      * @param BitWire\Transaction $parentTransaction (optional)
      * @param BitWire\Hash $transactionHash (optional)
      * @param int $transactionIndex (optional)
+     * @param Script $inputScript (optional)
      * 
      * @access friendly
      * @return void
      **/
-    function __construct (BitWire\Transaction $parentTransaction = null, BitWire\Hash $transactionHash = null, int $transactionIndex = null) {
+    function __construct (BitWire\Transaction $parentTransaction = null, BitWire\Hash $transactionHash = null, int $transactionIndex = null, Script $inputScript = null) {
       $this->parentTransaction = $parentTransaction;
       $this->transactionHash = $transactionHash ?? new BitWire\Hash ();
       
       if ($transactionIndex !== null)
         $this->transactionIndex = $transactionIndex;
       
-      $this->inputScript = new Script ();
+      $this->inputScript = $inputScript ?? new Script ();
     }
     // }}}
     
