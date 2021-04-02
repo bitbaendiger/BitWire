@@ -146,6 +146,56 @@
     }
     // }}}
     
+    // {{{ asn1read
+    /**
+     * Read an ASN.1-Bucket from a string
+     * 
+     * @param string $Data
+     * @param int $Offset
+     * @param int $Type (optional)
+     * @param int $Length (optional)
+     * 
+     * @access protected
+     * @return string
+     **/
+    protected static function asn1read (string &$Data, int &$Offset, int &$Type = null, int $Length = null) : string {
+      // Make sure we know the length of our input
+      if ($Length === null)
+        $Length = strlen ($Data);
+      
+      // Make sure we have enough data to read
+      if ($Length - $Offset < 2)
+        throw new \LengthException ('Input-data too short');
+      
+      $pOffset = $Offset;
+      $pType = ord ($Data [$pOffset++]);
+      $pLength = ord ($Data [$pOffset++]);
+      
+      if ($pLength > 0x80) {
+        // Check if there are enough bytes to read the extended length
+        if ($Length - $pOffset < $pLength - 0x80)
+          throw new \LengthException ('Input-data too short');
+        
+        // Read the extended length
+        $b = $pLength - 0x80;
+        $pLength = 0;
+        
+        for ($i = 0; $i < $b; $i++)
+          $pLength = ($pLength << 8) | ord ($Data [$pOffset++]);
+      }
+      
+      // Make sure there are enough bytes to read the payload
+      if ($Length - $pOffset < $pLength)
+        throw new \LengthException ('Input-data too short');
+      
+      // Read all data and move the offset
+      $Type = $pType;
+      $Offset = $pOffset + $pLength;
+      
+      return substr ($Data, $pOffset, $pLength);
+    }
+    // }}}
+    
     // {{{ getID
     /**
      * Retrive the unique ID of this public key
