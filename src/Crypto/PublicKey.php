@@ -265,6 +265,67 @@
     }
     // }}}
     
+    // {{{ verify
+    /**
+     * Verify a signature for a given message
+     * 
+     * @param string $messageToVerify
+     * @param string $messageSignature
+     * @param bool $isDigest (optional)
+     * 
+     * @access public
+     * @return bool
+     **/
+    public function verify (string $messageToVerify, string $messageSignature, bool $isDigest = false) : bool {
+      // Unpack the signature
+      $inputOffset = 0;
+      $asnType = 0;
+      $asnSequence = self::asn1read ($messageSignature, $inputOffset, $asnType);
+
+      if ($asnType != 0x30)
+        throw new \ValueError ('Invalid signature-type');
+
+      $inputOffset = 0;
+      $signatureR = self::asn1read ($asnSequence, $inputOffset, $asnType);
+
+      if ($asnType != 0x02)
+        throw new \ValueError ('Invalid signature-type');
+
+      $signatureS = self::asn1read ($asnSequence, $inputOffset, $asnType);
+      
+      if ($asnType != 0x02)
+        throw new \ValueError ('Invalid signature-type');
+      
+      $signatureR = gmp_import ($signatureR);
+      $signatureS = gmp_import ($signatureS);
+      
+      $n = $this->curvePoint->Curve->G->getOrder ();
+      
+      if (($signatureR < 1) || ($signatureR >= $n))
+        throw new \ValueError ('Invalid signature-type');
+      
+      if (($signatureS < 1) || ($signatureS >= $n))
+        throw new \ValueError ('Invalid signature-type');
+      
+      // Create message-digest
+      if ($isDigest)
+        $messageDigest = $messageToVerify;
+      else
+        $messageDigest = hash ('sha256', hash ('sha256', $messageToVerify, true), true);
+      
+      $messageDigest = gmp_import ($messageDigest);
+      
+      // Verify the signature
+      $sInvert = gmp_invert ($signatureS, $n);
+      $u1 = ($sInvert * $messageDigest) % $n;
+      $u2 = ($sInvert * $signatureR) % $n;
+      
+      $xy = $this->curvePoint->Curve->G->mul ($u1)->add ($this->curvePoint->mul ($u2));
+      
+      return ($xy->x == $signatureR);
+    }
+    // }}}
+    
     // {{{ verifyCompact
     /**
      * Verify the signature for a given message
