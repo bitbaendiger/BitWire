@@ -344,9 +344,15 @@
       if ($r == 0)
         throw new \Exception ('r must not be zero');
       
+      $rKeyDigest = ((($r * $this->gmpKey) % $G->getOrder ()) + gmp_import ($messageDigest)) % $G->getOrder ();
+      $s = ($rKeyDigest * gmp_invert ($signatureNonce, $G->getOrder ())) % $G->getOrder ();
+      
+      if ($s > ($this->curvePoint->Curve->n >> 1))
+        $s = $this->curvePoint->Curve->n - $s;
+      
       return [
         'r' => $r ,
-        's' => ((gmp_import ($messageDigest) + ($this->gmpKey * $r)) * gmp_invert ($signatureNonce, $G->getOrder ())) % $G->getOrder (),
+        's' => $s,
         'P' => $P,
       ];
     }
