@@ -273,6 +273,12 @@
       $binaryR = gmp_export ($signatureData ['r']);
       $binaryS = gmp_export ($signatureData ['s']);
       
+      if (ord ($binaryR [0]) & 0x80)
+        $binaryR = chr (0) . $binaryR;
+      
+      if (ord ($binaryS [0]) & 0x80)
+        $binaryS = chr (0) . $binaryS;
+      
       $lenR = strlen ($binaryR);
       $lenS = strlen ($binaryS);
       
