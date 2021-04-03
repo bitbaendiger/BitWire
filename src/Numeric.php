@@ -35,8 +35,8 @@
      * @return \GMP
      **/
     public static function fromCompact (int $compactNumber, bool &$isNegative = false, bool &$isOverflow = false) : \GMP {
-      $nBytes = (((int)$compactNumber >> 24) & 0xFF);
-      $nWord = (int)$compactNumber & 0x7FFFFF;
+      $nBytes = (((int)$compactNumber >> 24) & 0xff);
+      $nWord = (int)$compactNumber & 0x007fffff;
       $rBase = gmp_init ($nWord);
       
       if ($nBytes <= 3)
@@ -44,13 +44,14 @@
       else
         $rBase <<= (8 * ($nBytes - 3));
       
-      $isNegative = (((int)$compactNumber & 0x7FFFFF) != 0) && (((int)$compactNumber & 0x00800000) != 0);
+      $isNegative = (($nWord != 0) && (($compactNumber & 0x00800000) != 0));
       $isOverflow =
-        (((int)$compactNumber & 0x7FFFFF) != 0) &&
-        (
+        (($nWord != 0) &&
+         (
           ($nBytes > 34) ||
-          (($nBytes > 33) && (((int)$compactNumber & 0x7FFF00) != 0)) ||
-          (($nBytes > 32) && (((int)$compactNumber & 0x7F0000) != 0))
+          (($nBytes > 33) && ($nWord > 0xff)) ||
+          (($nBytes > 32) && ($nWord > 0xffff))
+         )
         );
       
       return $rBase;
@@ -68,14 +69,14 @@
      * @return int
      **/
     public static function toCompact (\GMP $sourceNumber, bool $isNegative = false) : int {
-      $nBytes = (static::getSize ($sourceNumber) + 7) / 8;
+      $nBytes = floor ((static::getSize ($sourceNumber) + 7) / 8);
       
       if ($nBytes <= 3)
         $nCompact = $sourceNumber << (8 * (3 - $nBytes));
       else
         $nCompact = $sourceNumber >> (8 * ($nBytes - 3));
       
-      $nCompact = gmp_intval ($nCompact) & 0x00FFFFFF;
+      $nCompact = gmp_intval ($nCompact) & 0x00ffffff;
       
       if ($nCompact & 0x00800000) {
         $nCompact >>= 8;
@@ -83,7 +84,7 @@
       }
       
       $nCompact |= ($nBytes << 24);
-      $nCompact |= ($isNegative && ($nCompact & 0x007FFFFF) ? 0x00800000 : 0x00000000);
+      $nCompact |= ($isNegative && ($nCompact & 0x007fffff) ? 0x00800000 : 0x00000000);
       
       return $nCompact;
     }
