@@ -390,7 +390,8 @@
         throw new \Exception ('No transaction assigned');
       
       // Check if we are able to sign
-      if (!$previousOutput->getScript ()->isPublicKeyHashOutput ())
+      if (($appendPublicKey = !$previousOutput->getScript ()->isPublicKeyHashOutput ()) &&
+          !$previousOutput->getScript ()->isPublicKeyOutput ())
         throw new \Exception ('Unsupported output-type');
       
       // Find my place in the original transaction
@@ -421,7 +422,9 @@
       // Try to sign
       $inputScript = new Script ();
       $inputScript->pushData ($privateKey->sign ($signBinary) . "\x01");
-      $inputScript->pushData ($privateKey->toPublicKey ()->toBinary ());
+      
+      if ($appendPublicKey)
+        $inputScript->pushData ($privateKey->toPublicKey ()->toBinary ());
       
       // Replace the input-script
       $this->inputScript = $inputScript;
