@@ -390,7 +390,7 @@
         throw new \Exception ('No transaction assigned');
       
       // Check if we are able to sign
-      if (($appendPublicKey = !$previousOutput->getScript ()->isPublicKeyHashOutput ()) &&
+      if (!($appendPublicKey = $previousOutput->getScript ()->isPublicKeyHashOutput ()) &&
           !$previousOutput->getScript ()->isPublicKeyOutput ())
         throw new \Exception ('Unsupported output-type');
       
