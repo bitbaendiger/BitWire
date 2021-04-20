@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6632951443ea4d3bc92c818c9f5f5c64",
+    "content-hash": "5fd7007c39a3cf1d785a172822cd3e87",
     "packages": [
         {
             "name": "psr/event-dispatcher",
@@ -58,11 +58,11 @@
         },
         {
             "name": "quarxconnect/events",
-            "version": "dev-psr-14",
+            "version": "dev-composer",
             "source": {
                 "type": "git",
                 "url": "https://gitlab.quarxconnect.de/quarxconnect.de/qcEvents",
-                "reference": "418ea0cd523bdfa9dd6dee7dab3c01e527a28820"
+                "reference": "96b0ae5fbd2a4b25363fedd266d0192fcb16d28a"
             },
             "require": {
                 "php": ">=7.3",
@@ -98,7 +98,7 @@
                 "asynchronous",
                 "events"
             ],
-            "time": "2021-03-30T21:20:30+00:00"
+            "time": "2021-04-20T14:30:56+00:00"
         }
     ],
     "packages-dev": [

@@ -15,7 +15,7 @@
     "require" : {
         "php" : ">=7.3.0",
         "ext-gmp" : "*",
-        "quarxconnect/events" : "dev-psr-14"
+        "quarxconnect/events" : "dev-composer"
     },
     "require-dev" : {
         "phpunit/phpunit" : "^9"
