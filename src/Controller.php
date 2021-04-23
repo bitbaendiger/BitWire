@@ -226,13 +226,13 @@
     /**
      * Create a new peer on a given stream
      * 
-     * @param Events\Interface\Stream $parentStream
+     * @param Events\ABI\Stream $parentStream
      * @param bool $addAsPeer (optional)
      * 
      * @access public
      * @return Events\Promise
      **/
-    public function newPeer (Events\Interface\Stream $parentStream, bool $addAsPeer = true) : Events\Promise {
+    public function newPeer (Events\ABI\Stream $parentStream, bool $addAsPeer = true) : Events\Promise {
       // Create a new peer
       $newPeer = new Peer ($this, $this->getProtocolVersion (), $this->getMessageMagic (), $this->getUserAgent ());
       

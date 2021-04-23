@@ -23,7 +23,7 @@
   namespace BitBaendiger\BitWire;
   use \quarxConnect\Events;
   
-  class Peer extends Events\Hookable implements Events\Interface\Stream\Consumer {
+  class Peer extends Events\Hookable implements Events\ABI\Stream\Consumer {
     /* Publish-Methods */
     private const PUBLISH_INVENTORY = 0;
     private const PUBLISH_HEADERS = 1;
@@ -97,12 +97,12 @@
     /**
      * Check if a given peer is valid for this stream
      * 
-     * @param Events\Interface\Stream $Peer
+     * @param Events\ABI\Stream $Peer
      * 
      * @access private
      * @return bool
      **/
-    private function validatePeer (Events\Interface\Stream $Peer) : bool {
+    private function validatePeer (Events\ABI\Stream $Peer) : bool {
       return ($Peer === $this->Peer);
     }
     // }}}
@@ -186,12 +186,12 @@
      * Consume a set of data
      * 
      * @param mixed $Data
-     * @param Events\Interface\Source $Source
+     * @param Events\ABI\Source $Source
      * 
      * @access public
      * @return void
      **/
-    public function consume ($Data, Events\Interface\Source $Source) : void {
+    public function consume ($Data, Events\ABI\Source $Source) : void {
       // Make sure we receive from a well-known peer
       if (!$this->validatePeer ($Source))
         return;
@@ -351,12 +351,12 @@
     /**
      * Setup ourself to consume data from a stream
      * 
-     * @param Events\Interface\Source $Source
+     * @param Events\ABI\Source $Source
      * 
      * @access public
      * @return Events\Promise
      **/
-    public function initStreamConsumer (Events\Interface\Stream $Peer) : Events\Promise {
+    public function initStreamConsumer (Events\ABI\Stream $Peer) : Events\Promise {
       return new Events\Promise (
         function (callable $Resolve, callable $Reject) use ($Peer) {
           // Store our new peer
@@ -408,12 +408,12 @@
     /**
      * Callback: A source was removed from this consumer
      * 
-     * @param Events\Interface\Source $Source
+     * @param Events\ABI\Source $Source
      * 
      * @access public
      * @return Events\Promise
      **/
-    public function deinitConsumer (Events\Interface\Source $Source) : Events\Promise {
+    public function deinitConsumer (Events\ABI\Source $Source) : Events\Promise {
       return Events\Promise::resolve ();
     }
     // }}}
@@ -445,23 +445,23 @@
     /**
      * Callback: A stream was attached to this consumer
      * 
-     * @param Events\Interface\Stream $Source
+     * @param Events\ABI\Stream $Source
      * 
      * @access protected
      * @return void
      **/
-    protected function eventPipedStream (Events\Interface\Stream $Source) { }
+    protected function eventPipedStream (Events\ABI\Stream $Source) { }
     // }}}
     
     // {{{ eventUnpiped
     /**
      * Callback: A source was removed from this consumer
      * 
-     * @param Events\Interface\Source $Source
+     * @param Events\ABI\Source $Source
      * 
      * @access protected
      * @return void
      **/
-    protected function eventUnpiped (Events\Interface\Source $Source) { }
+    protected function eventUnpiped (Events\ABI\Source $Source) { }
     // }}}
   }
