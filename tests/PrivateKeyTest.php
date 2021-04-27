@@ -6,7 +6,7 @@
   use \BitBaendiger\BitWire;
 
   final class PrivateKeyTest extends TestCase {
-    public function testCreateAndConvertKey () : void {
+    public function testCreateAndConvertKey () : BitWire\Crypto\PrivateKey {
       // Create a new private key
       $this->assertIsObject (
         $newKey = BitWire\Crypto\PrivateKey::newKey ()
@@ -34,6 +34,29 @@
       $this->assertEquals (
         $newKey->getID (),
         $newPublicKey->getID ()
+      );
+      
+      return $newKey;
+    }
+    
+    /**
+     * @depends testCreateAndConvertKey
+     **/
+    public function testCompactSignature (BitWire\Crypto\PrivateKey $privateKey) : void {
+      $messageBinary = random_bytes (64);
+      
+      $compactSignature = $privateKey->signCompact ($messageBinary);
+      
+      $this->assertIsString ($compactSignature);
+      $this->assertEquals (
+        65,
+        strlen ($compactSignature)
+      );
+      
+      $publicKey = $privateKey->toPublicKey ();
+      
+      $this->assertTrue (
+        $publicKey->verifyCompact ($messageBinary, $compactSignature)
       );
     }
   }

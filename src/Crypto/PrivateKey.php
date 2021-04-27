@@ -305,14 +305,25 @@
       $signatureData = $this->signInternal ($messageToSign);
       
       // Create recoverable signature
-      $Overflow = ($signatureData ['r'] > $this->curvePoint->Curve->G->getOrder () ? 2 : 0);
       $forceCompressed = (($forceCompressed === true) || (($forceCompressed === null) && $this->isCompressed) ? 4 : 0);
-      $Odd = ($signatureData ['P']->y % 2 == 1 ? 1 : 0);
       
-      return
-        chr (27 + $Odd + $Overflow + $forceCompressed) .
-        str_pad (gmp_export ($signatureData ['r']), 32, chr (0), STR_PAD_LEFT) .
-        str_pad (gmp_export ($signatureData ['s']), 32, chr (0), STR_PAD_LEFT);
+      # TODO: We have a problem with at least $isOdd here unsure why, so we probe
+      #       four variants of the signature and return the first valid one
+      
+      # $isOverflow = ($signatureData ['r'] > $this->curvePoint->Curve->G->getOrder () ? 2 : 0);
+      # $isOdd = (($signatureData ['P']->y % $this->curvePoint->Curve->G->getOrder ()) % 2 == 1 ? 1 : 0);
+      
+      for ($recID = 0; $recID < 4; $recID++) {
+        $compactSignature = 
+          chr (27 + $recID + $forceCompressed) .
+          str_pad (gmp_export ($signatureData ['r']), 32, chr (0), STR_PAD_LEFT) .
+          str_pad (gmp_export ($signatureData ['s']), 32, chr (0), STR_PAD_LEFT);
+        
+        if ($this->verifyCompact ($messageToSign, $compactSignature))
+          return $compactSignature;
+      }
+      
+      throw new \Exception ('Failed to generate a valid signature');
     }
     // }}}
     
@@ -351,7 +362,7 @@
         $s = $this->curvePoint->Curve->n - $s;
       
       return [
-        'r' => $r ,
+        'r' => $r,
         's' => $s,
         'P' => $P,
       ];
