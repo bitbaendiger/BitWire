@@ -43,7 +43,7 @@
      * @return void
      **/
     function __construct (float $outputAmount = 0.0, Script $outputScript = null) {
-      $this->outputAmount = (int)floor ($outputAmount * pow (10, $this::DIGITS));
+      $this->setAmount ($outputAmount);
       
       if ($outputScript)
         $this->outputScript = $outputScript;
@@ -93,6 +93,22 @@
     }
     // }}}
     
+    // {{{ setAmount
+    /**
+     * Change the amount of this output
+     * 
+     * @remark This function may lead to precision-errros, use setRawAmount() whenever possible
+     * 
+     * @param float $outputAmount
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setAmount (float $outputAmount) : void {
+      $this->outputAmount = (int)($outputAmount * pow (10, $this::DIGITS));
+    }
+    // }}}
+    
     // {{{ getRawAmount
     /**
      * Retrive the raw amount of this output (e.g. in satoshis)
@@ -102,6 +118,20 @@
      **/
     public function getRawAmount () : int {
       return $this->outputAmount;
+    }
+    // }}}
+    
+    // {{{ setRawAmount
+    /**
+     * Change the raw amount of this output (in satoshis)
+     * 
+     * @param int $rawOutputAmount
+     * 
+     * @access public
+     * @return void
+     **/
+    public function setRawAmount (int $rawOutputAmount) : void {
+      $this->outputAmount = $rawOutputAmount;
     }
     // }}}
     
