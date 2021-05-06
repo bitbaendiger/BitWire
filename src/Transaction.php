@@ -314,6 +314,32 @@
     }
     // }}}
     
+    // {{{ getTransactionFee
+    /**
+     * Calculate fee for this transaction
+     * 
+     * @param float $costPerKB
+     * 
+     * @access public
+     * @return float
+     **/
+    public function getTransactionFee (float $costPerKB) : float {
+      // Calculate actual size of this transaction
+      $transactionSize = strlen ($this->toBinary ());
+      
+      // Check for unsigned inputs (we assume all are unsigned)
+      foreach ($this->getInputs () as $transactionInput)
+        if (!$transactionInput->getScript ()->isEmpty ())
+          continue;
+        else
+          # TODO: Size for a P2PKH-Signature, P2PK is shorter...
+          $transactionSize += 107;
+      
+      // Calculate the costs
+      return ($transactionSize * $costPerKB) / 1024;
+    }
+    // }}}
+    
     // {{{ parse
     /**
      * Try to parse an transaction from an input-buffer
