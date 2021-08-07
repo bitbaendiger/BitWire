@@ -212,17 +212,18 @@
      * @param BitWire\Crypto\PrivateKey $privateKey
      * @param string $magicString (optional)
      * @param int $signatureType (optional)
+     * @param mixed $messageExtra (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function sign (BitWire\Crypto\PrivateKey $privateKey, string $magicString = null, int $signatureType = null) : bool {
+    public function sign (BitWire\Crypto\PrivateKey $privateKey, string $magicString = null, int $signatureType = null, $messageExtra = null) : bool {
       // Update the timestamp
       $oTimestamp = $this->signatureTime;
       $this->signatureTime = time ();
       
       // Try to generate signature
-      if (($Signature = $privateKey->signCompact ($this->getMessageForSignature ($magicString, $signatureType))) === false) {
+      if (($Signature = $privateKey->signCompact ($this->getMessageForSignature ($magicString, $signatureType, $messageExtra))) === false) {
         // Restore the old timestamp
         $this->signatureTime = $oTimestamp;
         
@@ -246,12 +247,13 @@
      * @param BitWire\Crypto\PublicKey $publicKey
      * @param string $magicString (optional)
      * @param int $signatureType (optional)
+     * @param mixed $messageExtra (optional)
      * 
      * @access public
      * @return bool
      **/
-    public function verify (BitWire\Crypto\PublicKey $publicKey, string $magicString = null, int $signatureType = null) : bool {
-      return $publicKey->verifyCompact ($this->getMessageForSignature ($magicString, $signatureType), $this->Signature);
+    public function verify (BitWire\Crypto\PublicKey $publicKey, string $magicString = null, int $signatureType = null, $messageExtra = null) : bool {
+      return $publicKey->verifyCompact ($this->getMessageForSignature ($magicString, $signatureType, $messageExtra), $this->Signature);
     }
     // }}}
     
@@ -261,11 +263,12 @@
      * 
      * @param string $magicString (optional)
      * @param int $signatureType (optional)
+     * @param mixed $messageExtra (optional)
      * 
      * @access private
      * @return string
      **/
-    private function getMessageForSignature (string $magicString = null, int $signatureType = null) : string {
+    private function getMessageForSignature (string $magicString = null, int $signatureType = null, $messageExtra = null) : string {
       if ($magicString === null)
         $magicString = "DarkNet Signed Message:\n";
       
@@ -275,7 +278,8 @@
         return
           self::writeCTxIn ($this->txIn) .
           self::writeHash ($this->blockHash) . 
-          self::writeUInt64 ($this->signatureTime);
+          self::writeUInt64 ($this->signatureTime) .
+          (is_int ($messageExtra) && ($messageExtra > 0) ? self::writeUInt64 ($messageExtra) : '');
       
       return
         self::writeCompactString ($magicString) .
